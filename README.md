@@ -230,7 +230,7 @@ Cada Standalone (`<Nome>-standalone.exe`) abre o plugin sem instalar.
 git init -b main
 git add .
 git commit -m "Forja: suíte de 29 plugins com DSP Airwindows"
-git remote add origin git@github.com:<usuario>/forja.git
+git remote add origin git@github.com:<usuario>/forja-suite.git
 git push -u origin main
 ```
 

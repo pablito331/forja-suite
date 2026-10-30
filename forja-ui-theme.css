@@ -1,0 +1,253 @@
+/* Tokens e componentes-base do padrão visual Forja.
+   Inclua este arquivo e use as variáveis --forja-* em cada UI.
+   O arquivo não define layout específico nem valores/limiares de áudio. */
+:root {
+  --forja-iron-0: #0d0f13;
+  --forja-iron-1: #13161c;
+  --forja-iron-2: #191d24;
+  --forja-iron-3: #20252d;
+  --forja-iron-4: #282e37;
+  --forja-line: #303743;
+  --forja-line-strong: #3b4451;
+  --forja-text: #eceef1;
+  --forja-muted: #9aa3ae;
+  --forja-dim: #68727f;
+  --forja-ember: #ff7a18;
+  --forja-ember-soft: #ffb05a;
+  --forja-ember-pale: #ffdcae;
+  --forja-success: #76b58b;
+  --forja-error: #db6d60;
+
+  /* Meter colors express semantics only. Thresholds come from the audio engine. */
+  --forja-meter-safe: #76b58b;
+  --forja-meter-caution: #ffb05a;
+  --forja-meter-hot: #ff7a18;
+  --forja-meter-clip: #db6d60;
+  --forja-meter-track: #101318;
+  --forja-meter-peak: #eceef1;
+  --forja-graph-grid: #303743;
+  --forja-graph-trace: #ff7a18;
+  --forja-graph-reference: #ffb05a;
+
+  --forja-space-1: 4px;
+  --forja-space-2: 8px;
+  --forja-space-3: 12px;
+  --forja-space-4: 16px;
+  --forja-space-5: 24px;
+  --forja-radius-sm: 3px;
+  --forja-radius-md: 5px;
+  --forja-border: 1px solid var(--forja-line);
+  --forja-font-ui: Inter, "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --forja-font-display: Georgia, "Times New Roman", serif;
+}
+
+.forja-window {
+  color: var(--forja-text);
+  background: var(--forja-iron-1);
+  border: 1px solid var(--forja-line-strong);
+  border-radius: var(--forja-radius-md);
+  font-family: var(--forja-font-ui);
+}
+
+.forja-surface {
+  background: var(--forja-iron-2);
+  border: var(--forja-border);
+  border-radius: var(--forja-radius-sm);
+}
+
+.forja-group {
+  min-width: 0;
+  color: var(--forja-text);
+  background: linear-gradient(155deg, var(--forja-iron-3), var(--forja-iron-2) 80%);
+  border: var(--forja-border);
+  border-radius: var(--forja-radius-md);
+}
+
+.forja-group__heading {
+  color: var(--forja-muted);
+  font: 800 9px/1.2 var(--forja-font-ui);
+  letter-spacing: .14em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.forja-label {
+  color: var(--forja-muted);
+  font: 600 10px/1.25 var(--forja-font-ui);
+}
+
+.forja-value {
+  color: var(--forja-text);
+  font: 600 9px/1.2 var(--forja-font-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.forja-meta {
+  color: var(--forja-dim);
+  font: 400 8px/1.35 var(--forja-font-ui);
+}
+
+.forja-button {
+  min-height: 28px;
+  padding: 0 var(--forja-space-2);
+  color: var(--forja-muted);
+  background: linear-gradient(180deg, var(--forja-iron-4), var(--forja-iron-2));
+  border: var(--forja-border);
+  border-radius: var(--forja-radius-sm);
+  font: 500 10px/1.2 var(--forja-font-ui);
+  cursor: pointer;
+}
+
+.forja-button:hover:not(:disabled) {
+  color: var(--forja-ember-pale);
+  border-color: #885021;
+}
+
+.forja-button:active:not(:disabled) {
+  background: var(--forja-iron-0);
+}
+
+.forja-button:disabled {
+  color: var(--forja-dim);
+  opacity: .55;
+  cursor: default;
+}
+
+.forja-button:focus-visible,
+.forja-interactive:focus-visible {
+  outline: 2px solid var(--forja-ember);
+  outline-offset: 2px;
+}
+
+.forja-selection {
+  border-inline-start: 2px solid var(--forja-ember);
+  background: var(--forja-iron-4);
+}
+
+.forja-status {
+  color: var(--forja-success);
+  border: 1px solid #34523d;
+  background: #1e3027;
+  border-radius: var(--forja-radius-sm);
+}
+
+.forja-status--loading {
+  color: var(--forja-ember-soft);
+  border-color: #785126;
+  background: #342617;
+}
+
+.forja-status--error {
+  color: var(--forja-error);
+  border-color: #71403b;
+  background: #321d1b;
+}
+
+/* Base horizontal/vertical level meter. Set --forja-meter-level and --forja-meter-peak. */
+.forja-meter {
+  display: flex;
+  align-items: center;
+  gap: var(--forja-space-2);
+  color: var(--forja-muted);
+  font: 500 9px/1.2 var(--forja-font-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.forja-meter__scale {
+  display: flex;
+  justify-content: space-between;
+  color: var(--forja-dim);
+  font: 400 8px/1.2 var(--forja-font-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.forja-meter__rail {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 24px;
+  height: 10px;
+  overflow: hidden;
+  background: var(--forja-meter-track);
+  border: 1px solid var(--forja-line);
+  border-radius: 2px;
+}
+
+.forja-meter__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--forja-meter-level, 0%);
+  background: var(--forja-meter-color, var(--forja-meter-safe));
+  transition: width 60ms linear;
+}
+
+.forja-meter__peak {
+  position: absolute;
+  z-index: 1;
+  inset: 0 auto 0 var(--forja-meter-peak, 0%);
+  width: 2px;
+  background: var(--forja-meter-peak-color, var(--forja-meter-peak));
+}
+
+.forja-meter--caution { --forja-meter-color: var(--forja-meter-caution); }
+.forja-meter--hot { --forja-meter-color: var(--forja-meter-hot); }
+.forja-meter--clip { --forja-meter-color: var(--forja-meter-clip); }
+
+.forja-meter--vertical {
+  align-items: center;
+  flex-direction: column-reverse;
+}
+
+.forja-meter--vertical .forja-meter__rail {
+  flex: 1 1 auto;
+  width: 10px;
+  min-width: 10px;
+  min-height: 24px;
+  height: 120px;
+}
+
+.forja-meter--vertical .forja-meter__fill {
+  inset: auto 0 0;
+  width: 100%;
+  height: var(--forja-meter-level, 0%);
+  transition: height 60ms linear;
+}
+
+.forja-meter--vertical .forja-meter__peak {
+  inset: auto 0 var(--forja-meter-peak, 0%);
+  width: auto;
+  height: 2px;
+}
+
+.forja-meter__clip {
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--forja-line-strong);
+  border-radius: 2px;
+  background: var(--forja-meter-track);
+}
+
+.forja-meter__clip[aria-pressed="true"] {
+  border-color: var(--forja-meter-clip);
+  background: var(--forja-meter-clip);
+  box-shadow: 0 0 7px color-mix(in srgb, var(--forja-meter-clip) 55%, transparent);
+}
+
+/* Neutral graph surface and axes; render the actual trace with SVG/canvas. */
+.forja-graph {
+  min-width: 0;
+  color: var(--forja-muted);
+  background: var(--forja-iron-0);
+  border: var(--forja-border);
+  border-radius: var(--forja-radius-sm);
+  overflow: hidden;
+}
+
+.forja-graph__axis {
+  color: var(--forja-dim);
+  font: 400 8px/1.2 var(--forja-font-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.forja-graph__grid { stroke: var(--forja-graph-grid); stroke-width: 1; }
+.forja-graph__trace { stroke: var(--forja-graph-trace); fill: none; }
+.forja-graph__reference { stroke: var(--forja-graph-reference); fill: none; stroke-dasharray: 3 3; }

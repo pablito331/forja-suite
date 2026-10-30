@@ -1,0 +1,6 @@
+add_subdirectory(Gabinete)
+add_subdirectory(Ponta)
+add_subdirectory(Chime)
+add_subdirectory(Crick)
+add_subdirectory(Lobo)
+add_subdirectory(Deluxe)

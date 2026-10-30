@@ -1,0 +1,54 @@
+FORJA - INSTALACAO NO WINDOWS
+=============================
+
+Esta pasta contem os plugins da suite Forja em VST3 e os executaveis
+Standalone. Todos usam DSP Airwindows (MIT, Chris Johnson) com
+interface Forja.
+
+1. Feche o seu DAW.
+2. Copie as pastas .vst3 INTEIRAS de VST3\ para:
+      C:\Program Files\Common Files\VST3\
+   Cada caminho final fica assim:
+      C:\Program Files\Common Files\VST3\Cinzel.vst3\Contents\...
+3. Nao copie o arquivo .vst3 de dentro de Contents\x86_64-win.
+   Copie a pasta .vst3.
+4. Abra a DAW e refaca o escaneamento de plugins.
+
+A DAW mostra o nome do plugin seguido da familia, por exemplo:
+   Torno (Forja - EQ)
+   Laminador (Forja - Fita)
+   Deluxe (Forja - Amp)
+
+
+STANDALONE
+----------
+Cada plugin tem um "<Nome>-standalone.exe" na pasta Standalone que abre o
+mesmo processamento fora do DAW, sem instalacao. No Standalone o audio de
+entrada pode vir silenciado para evitar realimentacao; o processamento e
+o mesmo do VST3.
+
+
+FUNDAMENTOS
+-----------
+O botao FUNDAMENTOS no topo abre um painel nativo (sem WebView) com o que
+o plugin faz, como funciona, a descricao de cada controle e a origem/
+licenca Airwindows. Fecha pelo botao FECHAR, pela tecla Esc ou clicando
+fora do painel.
+
+
+LATENCIA E BYPASS
+-----------------
+A maioria dos plugins tem latencia 0. Reportam compensacao:
+   Prensa, Malho, Cadinho, Laminador   1 amostra
+   Crick                               1, 3 ou 5 amostras conforme a taxa
+Repique, Eco, Salao e Folego nao usam PDC: o atraso interno e musical.
+Todo plugin tem BYPASS exposto ao host, com crossfade de 10 ms.
+
+
+LICENCA E CREDITOS
+------------------
+DSP original: Airwindows, (c) Chris Johnson, licenca MIT. O codigo
+original fica verbatim em Forja/Source/forja/vendor/airwindows/, com
+LICENSE e PROVENANCE.md (URL, commit, data e SHA-256). O adaptador Forja
+de cada modelo fica em Forja/Source/forja/dsp/. Interface, medidores,
+bypass e a camada dinamica do Cinzel sao Forja.

@@ -1,0 +1,6 @@
+add_subdirectory(Lixa)
+add_subdirectory(Mel)
+add_subdirectory(Cera)
+add_subdirectory(Corpo)
+add_subdirectory(Impeto)
+add_subdirectory(Rebarba)

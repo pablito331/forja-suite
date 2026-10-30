@@ -1,0 +1,40 @@
+FORJA - INSTALACAO NO MACOS
+===========================
+
+O arquivo traz os plugins em VST3 (universal, Apple Silicon + Intel) e os
+aplicativos Standalone. Todos usam DSP Airwindows (MIT, Chris Johnson).
+
+VST3
+----
+1. Feche o seu DAW.
+2. Copie as pastas .vst3 de VST3/ para:
+      ~/Library/Audio/Plug-Ins/VST3/
+   (para todos os usuarios: /Library/Audio/Plug-Ins/VST3/)
+3. Abra a DAW e refaca o escaneamento de plugins.
+
+Se o macOS bloquear o plugin por falta de assinatura, libere uma vez:
+   xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Cinzel.vst3
+
+
+STANDALONE
+----------
+Os aplicativos em Standalone/ abrem o mesmo processamento fora do DAW.
+Na primeira execucao use clique com o botao direito > Abrir. Depois de
+liberado, o app abre normalmente.
+
+
+FUNDAMENTOS, LATENCIA E BYPASS
+------------------------------
+O botao FUNDAMENTOS abre um painel nativo (sem WebView) com o que o
+plugin faz, como funciona, cada controle e a proveniencia MIT.
+A maioria dos plugins tem latencia 0; Prensa, Malho, Cadinho e Laminador
+reportam 1 amostra e Crick varia de 1 a 5 conforme a taxa. Repique, Eco,
+Salao e Folego nao usam PDC. Todo plugin tem BYPASS com crossfade de 10 ms.
+
+
+LICENCA E CREDITOS
+------------------
+DSP original: Airwindows, (c) Chris Johnson, licenca MIT. Codigo original
+verbatim em Forja/Source/forja/vendor/airwindows/ com LICENSE e
+PROVENANCE.md. Adaptadores Forja em Forja/Source/forja/dsp/.
+Interface, medidores e bypass sao Forja.

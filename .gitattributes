@@ -1,0 +1,15 @@
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.zip binary
+*.vst3 binary
+*.dll binary
+*.dylib binary
+*.so binary
+*.exe binary
+
+*.bat text eol=crlf
+*.ps1 text eol=crlf

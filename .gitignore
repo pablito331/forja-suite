@@ -1,0 +1,64 @@
+# Build trees (CMake/Visual Studio/Xcode)
+build/
+build-*/
+Brasa/build/
+**/_artefacts/
+**/CMakeFiles/
+CMakeCache.txt
+CMakeUserPresets.json
+cmake_install.cmake
+CTestTestfile.cmake
+compile_commands.json
+out/
+
+# Compiler and linker output
+*.obj
+*.o
+*.a
+*.lib
+*.dll
+*.dylib
+*.so
+*.pdb
+*.ilk
+*.exp
+*.exe
+*.vst3
+*.component
+
+# Visual Studio / Xcode / CLion / VS Code
+.vs/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.xcodeproj/
+*.xcworkspace/
+.idea/
+.vscode/
+.cache/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Local agent state and plans
+.qoder/
+.claude/
+.cursor/
+
+# Screenshots and review scripts produced during development
+build/_shots/
+
+# Reference material kept locally (not part of the shipped suite)
+_ref/
+_src/
+Brasa-Concept-v1/
+*.zip
+
+# Scratch files
+compile_tmp.bat
+test_dsp_tmp.cpp

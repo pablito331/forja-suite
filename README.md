@@ -238,8 +238,8 @@ O workflow aceita `workflow_dispatch` (aba Actions → Release → Run workflow)
 os três pacotes sem tag. Para publicar uma versão:
 
 ```bash
-git tag v0.4.0
-git push origin v0.4.0
+git tag v0.4.1
+git push origin v0.4.1
 ```
 
 O `.gitignore` já exclui `build/`, artefatos compilados, capturas locais, `.qoder/` e o

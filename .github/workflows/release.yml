@@ -50,7 +50,7 @@ jobs:
 
   macos:
     name: macOS universal
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
@@ -96,6 +96,7 @@ jobs:
             build-essential cmake ninja-build pkg-config \
             libasound2-dev libx11-dev libxext-dev libxinerama-dev \
             libxrandr-dev libxcursor-dev libxcomposite-dev libxrender-dev \
+            libxi-dev \
             libfreetype6-dev libfontconfig1-dev libglu1-mesa-dev \
             libcurl4-openssl-dev
 

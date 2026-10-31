@@ -116,6 +116,10 @@ set(ADCLIP9_SOURCES
     ${FORJA_VENDOR}/ADClip9/ADClip9.cpp
     ${FORJA_VENDOR}/ADClip9/ADClip9Proc.cpp)
 
+set(FINALCLIP_SOURCES
+    ${FORJA_VENDOR}/FinalClip/FinalClip.cpp
+    ${FORJA_VENDOR}/FinalClip/FinalClipProc.cpp)
+
 set_source_files_properties(${FORJA_VENDOR}/ButterComp2/ButterComp2_plug.cpp
     PROPERTIES COMPILE_DEFINITIONS "createEffectInstance=createButterComp2Instance")
 
@@ -199,4 +203,5 @@ forja_add_parity_model(crick Crick CrickBass ${CRICKBASS_SOURCES})
 forja_add_parity_model(lobo Lobo Wolfbot ${WOLFBOT_SOURCES})
 forja_add_parity_model(deluxe Deluxe ChimeyDeluxe ${CHIMEYDELUXE_SOURCES})
 forja_add_parity_model(muralha Muralha ADClip9 ${ADCLIP9_SOURCES})
+forja_add_parity_model(dique Dique FinalClip ${FINALCLIP_SOURCES})
 

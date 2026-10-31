@@ -6,6 +6,7 @@
 #include "forja/dsp/ForjaCorpo.h"
 #include "forja/dsp/ForjaCrick.h"
 #include "forja/dsp/ForjaDeluxe.h"
+#include "forja/dsp/ForjaDique.h"
 #include "forja/dsp/ForjaEco.h"
 #include "forja/dsp/ForjaEscoria.h"
 #include "forja/dsp/ForjaGabinete.h"
@@ -191,6 +192,7 @@ int main()
     forja::dsp::LoboDSP lobo;
     forja::dsp::DeluxeDSP deluxe;
     forja::dsp::MuralhaDSP muralha;
+    forja::dsp::DiqueDSP dique;
 
     bool ok = true;
     ok = checkNoAllocations ("Tempera", tempera) && ok;
@@ -222,6 +224,7 @@ int main()
     ok = checkNoAllocations ("Lobo", lobo) && ok;
     ok = checkNoAllocations ("Deluxe", deluxe) && ok;
     ok = checkNoAllocations ("Muralha", muralha) && ok;
+    ok = checkNoAllocations ("Dique", dique) && ok;
 
     std::printf (ok ? "Allocation guard: PASS\n" : "Allocation guard: FAIL\n");
     return ok ? 0 : 1;

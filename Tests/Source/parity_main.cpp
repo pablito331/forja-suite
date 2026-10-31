@@ -1,3 +1,4 @@
+#include "forja/dsp/ForjaDique.h"
 #include "forja/dsp/ForjaMalho.h"
 #include "forja/dsp/ForjaMuralha.h"
 #include "forja/dsp/ForjaPrensa.h"
@@ -181,6 +182,17 @@ int main()
         {
             forja::dsp::MuralhaDSP::Parameters p;
             p.boost = 1.0f;
+            d.setParameters (p);
+        }) && ok;
+    }
+
+    {
+        forja::dsp::DiqueDSP dsp;
+        ok = checkLatency ("Dique", impulseLatency (dsp, 44100.0), 1) && ok;
+        ok = checkHighRate ("Dique", dsp) && ok;
+        ok = checkMetersAndSilence ("Dique", dsp, [] (forja::dsp::DiqueDSP& d)
+        {
+            forja::dsp::DiqueDSP::Parameters p;
             d.setParameters (p);
         }) && ok;
     }

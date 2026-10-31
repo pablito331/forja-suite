@@ -54,7 +54,10 @@ Desvios do adaptador:
   harness; a alocação acontece só na construção;
 - metering de pico de entrada/saída e leitura de clipe;
 - bypass com crossfade de 10 ms;
-- hook de teste `setNoiseState()` para semear o RNG como o `rand()` original.
+- hook de teste `setNoiseState()` para semear o RNG como o `rand()` original;
+- campo `roomTone` em `Parameters` (padrão 1,0, bit-exato com o original). O DRUMFORGE usa
+  0 no FX 1 do master para a mesa ficar em silêncio com nada tocando; o SALÃO standalone
+  continua com o piso de ruído de sala do kRockstar2.
 
 ## Interface
 

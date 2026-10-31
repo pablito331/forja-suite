@@ -7,7 +7,9 @@
 // feedback reverb per channel, the room-noise generators, the undersampled
 // Bezier reconstruction and the distance filter (25-stage averaging stack).
 //
-// Deviations: Forja adds metering and a 10 ms bypass crossfade. The original's
+// Deviations: Forja adds metering, a 10 ms bypass crossfade and a room-tone level
+// (default 1.0 keeps parity with the original; DRUMFORGE runs its master reverb at
+// 0 so the sampler stays silent when nothing is playing). The original's
 // commented-out 64-bit dither stays commented; only the RNG advances (including
 // the asymmetric extra step on the right channel). The 90 delay lines live on
 // the heap (std::vector) because the type is also created on the stack by the
@@ -39,6 +41,7 @@ public:
         float downRez = 1.0f;
         float distance = 0.25f;
         float dryWet = 0.5f;
+        float roomTone = 1.0f;
         bool bypass = false;
     };
 
@@ -218,6 +221,7 @@ public:
         params.downRez = clamp01 (newParams.downRez);
         params.distance = clamp01 (newParams.distance);
         params.dryWet = clamp01 (newParams.dryWet);
+        params.roomTone = clamp01 (newParams.roomTone);
         params.bypass = newParams.bypass;
     }
 
@@ -517,7 +521,7 @@ private:
 			//of gusts and fluctuations (avoid hurricane force inside realistic rooms)
 			//and the scaling of roomNoiseR (as added to reg6n) is sqrt(wind MPH)*0.00002
 			//but check against pure tones, don't let it dirty them up too much!
-			f6BL += roomNoiseL;
+			f6BL += roomNoiseL * params.roomTone;
 			a6AL[c6AL] = f6BL*roomNoiseR + inputSampleL;
 			a6BL[c6BL] = f6CL*roomNoiseR + inputSampleL;
 			a6CL[c6CL] = f6DL*roomNoiseR + inputSampleL;
@@ -525,7 +529,7 @@ private:
 			a6EL[c6EL] = f6FL*roomNoiseR + inputSampleL;
 			a6FL[c6FL] = f6AL*roomNoiseR + inputSampleL;
 			
-			f6LR += roomNoiseL;
+			f6LR += roomNoiseL * params.roomTone;
 			a6FR[c6FR] = f6LR*roomNoiseR + inputSampleR;
 			a6LR[c6LR] = f6RR*roomNoiseR + inputSampleR;
 			a6RR[c6RR] = f6XR*roomNoiseR + inputSampleR;

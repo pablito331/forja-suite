@@ -63,9 +63,18 @@ suite de plugins/
 │   │       ├── README.md
 │   │       └── Source/
 │   │           └── PluginProcessor.* · PluginEditor.* · ForjaInfoText.h
-├── drumforge/                      base 2 em concepção: sampler de bateria, DSP Forja
+├── drumforge/                      base 2: sampler de bateria, DSP Forja
 │   ├── ideia para o plugin.md
-│   └── Drum Forge_ protótipo de UI.html
+│   ├── Drum Forge_ protótipo de UI.html
+│   └── Drumforge/
+│       ├── CMakeLists.txt          forja_add_instrument(Drumforge …)
+│       ├── README.md
+│       └── Source/
+│           ├── PluginProcessor.* · PluginEditor.* · ForjaInfoText.h
+│           ├── engine/             Kit, SampleStore, VoicePool, DrumEngine,
+│           │                       ChannelStrip, Compressor, Filters, MasterBus
+│           ├── loops/              LoopLibrary (leitura/varredura) e LoopPlayer (preview)
+│           └── ui/                 KitPanel, MixerPanel, LoopsPanel, MiniKnob
 ├── Forja/
 │   ├── CMakeLists.txt              add_library(forja_ui STATIC …)
 │   └── Source/forja/
@@ -147,6 +156,9 @@ IDs estáveis. Um bloco não muda de ID depois de publicado, mesmo que a impleme
 | `DSP-042` | DI comprimido | dez bandas fixas, 16 cascatas e seguidores Bèzier | Airwindows **ChimeyDeluxe** (`forja::dsp::Deluxe`) | MIT · Chris Johnson | parcial: DSP, paridade 46/46 e UI; host pendente | DELUXE |
 | `DSP-043` | Limitador adaptativo | clip adaptativo com Boost/Match, ceiling dinâmico e ClipOnly3 | Airwindows **ADClip9** (`forja::dsp::Muralha`) | MIT · Chris Johnson | parcial: DSP, paridade 41/41, latência 1; host pendente | MURALHA |
 | `DSP-044` | Clipe de pico extremo | pré-clipe ±4, slew áureo e ClipOnly2; atua só acima de +4,18 dBFS | Airwindows **FinalClip** (`forja::dsp::Dique`) | MIT · Chris Johnson | parcial: DSP, paridade 17/17, latência 1; host pendente | DIQUE |
+| `DSP-045` | Engine de sampler | 64 vozes, 8 camadas de velocity, 16 round-robins, choke de 5 ms, roubo da voz mais antiga, interpolação linear | própria (`forja::drumforge::DrumEngine`, `VoicePool`) | Forja | parcial: existe no engine do DRUMFORGE, com teste de RT-safety; promoção para biblioteca pendente | DRUMFORGE |
+| `DSP-046` | Compressor de canal | estéreo-linkado, joelho suave de 6 dB, limiar −40…0 dB e razão 1:1…20:1 | própria (`forja::drumforge::Compressor`) | Forja | parcial: existe no engine do DRUMFORGE; promoção para `forja::dsp` pendente | DRUMFORGE |
+| `DSP-047` | Limiter de pico | teto −0,3 dBFS, ataque instantâneo e retorno de 80 ms, sem lookahead | própria (`forja::drumforge::MasterBus`) | Forja | parcial: existe no engine do DRUMFORGE; latência 0 medida por impulso | DRUMFORGE |
 
 **Estados possíveis:** `existe` · `parcial` · `planejado` · `descartado`.
 Nunca escreva `existe` sem ter rodado no host.
@@ -157,14 +169,14 @@ Nunca escreva `existe` sem ter rodado no host.
 
 | ID | Bloco | O que faz | Estado |
 |---|---|---|---|
-| `MIX-001` | Strip (BIGORNA) | cadeia ordenada de `DSP-*`: gain → TÊMPERA → CINZÉL → SALÃO/FÔLEGO → BRASA → pan → M/S/ø → PESO | planejado |
-| `MIX-002` | Bus / Master | soma em bus, master strip 1.4× com EQ, comp e limiter | planejado |
+| `MIX-001` | Strip (BIGORNA) | cadeia ordenada de `DSP-*`: gain → TÊMPERA → CINZÉL → SALÃO/FÔLEGO → BRASA → pan → M/S/ø → PESO | parcial: o DRUMFORGE implementa a ordem com blocos próprios (`DSP-046` no lugar da TÊMPERA, EQ fixo no lugar do CINZÉL); promoção para `forja::mixer` pendente |
+| `MIX-002` | Bus / Master | soma em bus, master strip 1.4× com EQ, comp e limiter | parcial: o DRUMFORGE soma 5 barramentos com trim, TÊMPERA e limiter (`DSP-047`); EQ de master pendente |
 | `MIX-003` | Mute group (MARCA) | 4 grupos, membros por peça, sobrescrita manual sobre a classificação automática | planejado |
-| `MIX-004` | Solo | solo-in-place e PFL, com exclusão de mute herdado | planejado |
-| `MIX-005` | Routing chip | endereçamento multi-out junto ao fader (L/R, 1-2, 3-4…) | planejado |
-| `MIX-006` | Meter bank | N strips + master, telemetria read-only, sem matemática na thread de UI | planejado |
+| `MIX-004` | Solo | solo-in-place e PFL, com exclusão de mute herdado | parcial: solo-in-place no DRUMFORGE, com rampa de 12 ms; PFL pendente |
+| `MIX-005` | Routing chip | endereçamento multi-out junto ao fader (L/R, 1-2, 3-4…) | parcial: chip MAIN/AUX 1-4 por canal no DRUMFORGE |
+| `MIX-006` | Meter bank | N strips + master, telemetria read-only, sem matemática na thread de UI | parcial: pico, GR, clip e hold publicados em atômicos e consumidos a 30 Hz no DRUMFORGE |
 | `MIX-007` | Strip preset | estado do strip serializável, independente do plugin | planejado |
-| `MIX-008` | Dynamic layout | contagem de strips derivada do engine; 54–96 px por strip; < 64 px colapsa rótulo | planejado |
+| `MIX-008` | Dynamic layout | contagem de strips derivada do engine; 54–96 px por strip; < 64 px colapsa rótulo | parcial: 16 canais fixos de 92 px com `MiniKnob` e scroll horizontal |
 | `MIX-009` | Vocabulário | léxico compartilhado: TÊMPERA, BRASA, MALHO, CINZÉL, TORNO, LIMA, ESCÓRIA, BIGORNA, CADINHO, LAMINADOR, ÓXIDO, REPIQUE, ECO, SALÃO, FÔLEGO, GRANALHA, LIXA, MEL, CERA, CORPO, ÍMPETO, REBARBA, GABINETE, PONTA, CHIME, CRICK, LOBO, DELUXE, MARCA, PESO | definido |
 
 ### Ordem da cadeia (não é negociável entre plugins)
@@ -303,9 +315,10 @@ Mesma disciplina prevista para o Drumforge (`drumforge/`):
 
 ## 10. Estado atual e pendências
 
-**Já existe:** `DSP-002`, `DSP-005`, `DSP-013`; `MIX-009` definido; `forja::ui` implementado
-como biblioteca estática `forja_ui` (tema, card, knob, medidores, topo, status, painel
-Fundamentos, curva de EQ por FFT e chip REDES oculto enquanto não há link).
+**Já existe:** `DSP-002`, `DSP-005`, `DSP-013` e, dentro do DRUMFORGE, `DSP-045` a
+`DSP-047`; `MIX-009` definido; `forja::ui` implementado como biblioteca estática
+`forja_ui` (tema, card, knob, medidores, topo, status, painel Fundamentos, curva de EQ por
+FFT e chip REDES oculto enquanto não há link).
 
 A base **Airwindows** tem **31 plugins** em nove famílias, todos com DSP, paridade, UI e
 FUNDAMENTOS:
@@ -330,22 +343,47 @@ e reverbs não usam PDC (o atraso interno é musical). CINZÉL é o único DSP h
 desvio. Delays e reverbs internos são testados com factory por caso; a tabela de paridade
 mede a latência por impulso em vez de presumi-la.
 
-**Fora do catálogo DSP-0xx:** o **Drumforge** (`drumforge/`) é a primeira base de DSP
-original Forja — sampler de bateria com kits, mixer, groove browser e multi-out. Não é
-adaptação da Airwindows, então não tem paridade com vendor: os testes dele serão
-funcionais (sampler, mapeamento MIDI, estado, multi-out, round-robin/velocity) e de
-RT-safety. Ele está em concepção; o protótipo de UI simplificou o conceito para três abas
-(Kits, Mixer e Loops MIDI), com TRIM/PAN, HPF/LO/MID/HI, THR/RATIO, M/S, fader/medidor,
-limiter no master e uma grade de 16 passos com BPM/sync/drag. Sends, racks de FX, tela de
-Settings e editor de mapas ficam para depois. Os adaptadores existentes entram como blocos
-de canal, sem mudar o catálogo.
+**Fora do catálogo DSP-0xx:** o **DRUMFORGE** (`drumforge/Drumforge/`) é a primeira base de
+DSP original Forja — sampler de bateria com kits, mixer e multi-out. Não é adaptação da
+Airwindows, então não tem paridade com vendor: os testes dele são funcionais (sampler,
+mapeamento MIDI, estado, multi-out, round-robin/velocity, choke, roubo de voz) e de
+RT-safety. Estado atual:
+
+| Item | Estado |
+| --- | --- |
+| Engine (`DrumEngine`, `VoicePool`, `SampleStore`) | Pronto: 64 vozes, camadas, RR, choke, importação assíncrona |
+| Kit | `.dfkit` (XML com caminhos relativos) e importação por pasta com classificação por nome |
+| Processor | 249 parâmetros, MIDI GM, 5 barramentos estéreo, estado, bypass |
+| Loops MIDI (`LoopLibrary`, `LoopPlayer`) | Pronto: leitura em beats, biblioteca por pacote, preview por amostra e arrasto |
+| UI | Abas KITS, MIXER e LOOPS MIDI prontas |
+| Testes | `forja_drumforge_engine` no `ctest`, incluindo zero alocação em `process()` |
+| Latência | 0 (medida por impulso) |
+
+O engine mora hoje em `Source/engine/` do próprio plugin. `ChannelStrip`, `Compressor`,
+`Filters` e `MasterBus` são candidatos naturais a subir para `forja::mixer`/`forja::dsp`
+(`DSP-045` a `DSP-047`, `MIX-001`, `MIX-002`) quando um segundo produto precisar deles —
+até lá, ficam no plugin para não inventar contrato antes do segundo consumidor.
+
+O protótipo de UI simplificou o conceito para três abas (Kits, Mixer e Loops MIDI), e as
+três estão implementadas. Sends, racks de FX dedicados, tela de Settings e editor de mapas
+de pads ficam para depois; os dois envios pós-fader para SALÃO e LIXA já existem. Os
+adaptadores Airwindows entram como blocos de canal e de master, sem mudar o catálogo.
+
+O preview de loops tem módulo próprio (`Source/loops/`): o arquivo MIDI é lido em beats,
+o loop fecha em compasso inteiro e o `LoopPlayer` enfileira cada golpe com o offset exato
+em amostras no mesmo caminho do MIDI ao vivo. O BPM vem do playhead (`loop_sync`) ou do
+controle manual `loop_bpm`, e o `.mid` selecionado pode ser arrastado para a DAW.
 
 **Pendências, em ordem:**
 
 - [ ] Rodar os 31 plugins no host: bypass da DAW, automação, mono, SR 96 kHz.
+- [ ] Implementar o DRUMFORGE no host: automação dos 249 parâmetros, multi-out em DAW,
+      bypass, preview sincronizado e arrasto de loop para a timeline; aqui não há DAW,
+      então segue pendente como nos demais.
+- [ ] Editor de passos/gravação de groove no DRUMFORGE (a grade atual é só de leitura).
 - [ ] Preencher `forja::ui::kSocialUrl` quando o link agregador das redes existir (o chip
       REDES aparece sozinho).
-- [ ] Implementar `MIX-003` (MARCA) e `MIX-004` (solo) no `ValueTreeState`.
+- [ ] Implementar `MIX-003` (MARCA) no `ValueTreeState`.
 - [ ] Sincronizar REPIQUE/ECO ao BPM do host (`DSP-011`).
 - [ ] Validar o catálogo no PianoForge: se um bloco não serve lá, o contrato está errado.
 - [ ] Backlog fora do build: consoles (ConsoleX3), filtros XYZ, VerbSevens e a

@@ -155,6 +155,31 @@ target_include_directories(forja_alloc_guard PRIVATE ${CMAKE_SOURCE_DIR}/Forja/S
 target_compile_features(forja_alloc_guard PRIVATE cxx_std_20)
 add_test(NAME alloc_guard COMMAND forja_alloc_guard)
 
+# Engine do Drumforge: sampler proprio, sem vendor Airwindows e sem paridade.
+# O teste cobre camadas, round-robin, choke, roubo de voz, auxiliares, bypass,
+# mapa MIDI e ausencia de alocacao no caminho de audio.
+add_executable(forja_drumforge_engine
+    Source/drumforge_engine.cpp
+    ${CMAKE_SOURCE_DIR}/drumforge/Drumforge/Source/engine/DrumEngine.cpp
+    ${CMAKE_SOURCE_DIR}/drumforge/Drumforge/Source/engine/SampleStore.cpp)
+
+target_include_directories(forja_drumforge_engine PRIVATE
+    ${CMAKE_SOURCE_DIR}/drumforge/Drumforge/Source
+    ${CMAKE_SOURCE_DIR}/Forja/Source)
+
+target_compile_definitions(forja_drumforge_engine PRIVATE _USE_MATH_DEFINES)
+target_compile_options(forja_drumforge_engine PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+target_compile_features(forja_drumforge_engine PRIVATE cxx_std_20)
+
+target_link_libraries(forja_drumforge_engine PRIVATE
+    juce::juce_audio_basics
+    juce::juce_audio_formats
+    juce::juce_events
+    juce::juce_graphics
+    juce::juce_recommended_config_flags)
+
+add_test(NAME drumforge_engine COMMAND forja_drumforge_engine)
+
 # One parity executable per model: each compiles only its own vendored sources,
 # so a failure in one model never masks another.
 function(forja_add_parity_model slug model_name vendor_dir)

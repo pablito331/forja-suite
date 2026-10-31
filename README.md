@@ -11,8 +11,8 @@ parâmetros, DSP, latência medida, desvios do adaptador e créditos. Os editore
 redimensionáveis com aspecto fixo (70% a 200% do tamanho de projeto).
 
 O repositório é organizado por **bases de DSP**: `Airwindows/` reúne as 31 adaptações
-MIT; `drumforge/` é a nova empreitada de DSP original (sampler de bateria), ainda em
-concepção e fora dos pacotes desta suíte.
+MIT; `drumforge/` é a segunda base, com DSP original da Forja — o **DRUMFORGE**, sampler
+de bateria com engine própria, mesa de 16 canais e multi-out, já compilado junto da suíte.
 
 ![CINZÉL](docs/images/cinzel.png)
 
@@ -35,16 +35,18 @@ desenvolvimento.
 
 | Item | Estado |
 | --- | --- |
-| Targets locais (`<Nome>_VST3`, `<Nome>_Standalone`) | 31 plugins · 62 binários |
+| Targets locais (`<Nome>_VST3`, `<Nome>_Standalone`) | 32 plugins · 64 binários |
 | Paridade com os originais Airwindows | Verde em todos os executáveis |
-| Guarda de alocação em `process()` | PASS (30 adaptadores; BRASA usa DSP próprio) |
+| Guarda de alocação em `process()` | PASS (30 adaptadores; BRASA e DRUMFORGE usam DSP próprio) |
 | Latência por impulso | Medida em todos os modelos |
 | Interface e FUNDAMENTOS | Conferidos por captura DPI-aware |
-| UIs redimensionáveis | 31 editores com aspecto fixo, conferidos em 100% e 150% |
+| UIs redimensionáveis | 32 editores com aspecto fixo, conferidos em 100% e 150% |
 | Builds Windows/macOS/Linux | GitHub Actions em tags `v*` |
-| Artefatos em `Documents/prototipos` | 31 `.vst3` + 31 Standalone (local) |
-| Capturas da interface | 32 imagens em `docs/images/` |
+| Artefatos em `Documents/prototipos` | 32 `.vst3` + 32 Standalone (local) |
+| Capturas da interface | 35 imagens em `docs/images/` |
 | Gerador de plugins | `new_plugin.ps1` gera plugin que compila de imediato |
+| DRUMFORGE (sampler) | Engine, mesa, multi-out e abas KITS/MIXER/LOOPS prontos |
+| Loops MIDI do DRUMFORGE | Biblioteca, grade de passos, preview no BPM do host e arrasto prontos |
 | Validação em host (DAW) | Pendente · não há DAW no ambiente |
 
 ## Famílias
@@ -60,6 +62,7 @@ desenvolvimento.
 | Lo-Fi | `Airwindows/Lofi/` | GRANALHA | bitcrusher com undersampling |
 | Mix | `Airwindows/OneKnob/` | LIXA, MEL, CERA, CORPO, ÍMPETO, REBARBA | um controle, mixagem rápida |
 | Amp | `Airwindows/Amps/` | GABINETE, PONTA, CHIME, CRICK, LOBO, DELUXE | amps, baixo e DI |
+| Bateria | `drumforge/Drumforge/` | DRUMFORGE | sampler de bateria com mesa e multi-out |
 
 ## Plugins
 
@@ -96,6 +99,7 @@ desenvolvimento.
 | CRICK | Amp | CrickBass | 2 | 1 / 3 / 5 |
 | LOBO | Amp | Wolfbot | 0 | 0 |
 | DELUXE | Amp | ChimeyDeluxe | 10 | 0 |
+| DRUMFORGE | Bateria | engine Forja (FX: SALÃO, LIXA) | 249 | 0 |
 
 Contagens não incluem o bypass Forja, presente em todos e exposto por
 `getBypassParameter()`. Em REPIQUE, ECO, SALÃO e FÔLEGO o atraso interno é musical e não
@@ -103,6 +107,34 @@ compensação: o PDC é 0. A latência do CRICK varia com a taxa (1 em 44,1/48 k
 88,2/96 kHz, 5 em 192 kHz). Todas as demais são medidas por impulso no harness.
 O DIQUE (FinalClip) é um clipe de pico extremo: só atua acima de +4,18 dBFS e é
 transparente em material que já está em 0 dBFS. Para limitar em 0 dBFS use o MURALHA.
+
+### DRUMFORGE
+
+O sampler de bateria da base `drumforge/` é DSP próprio da Forja, não uma adaptação: o
+engine de vozes, o mixer, o limiter e a interface são originais. Apenas os dois efeitos do
+master reutilizam adaptadores já validados da suíte — SALÃO (kRockstar2) no FX 1 e LIXA
+(PurestDrive) no FX 2 —, e o compressor do master é o TÊMPERA (ButterComp2).
+
+- 16 pads fixos, até 8 camadas de velocity por pad, até 16 tomadas em round-robin e
+  grupos de choke com rampa de 5 ms.
+- 64 vozes com roubo da mais antiga; interpolação linear e correção da taxa do arquivo
+  para a da sessão.
+- 5 saídas estéreo: MAIN e AUX 1 a 4, escolhidas por pad.
+- Canal por pad: trim, HPF, compressor, EQ de três bandas, pan, mute, solo, fase, dois
+  envios pós-fader e fader com medidor. Master com trim, compressor, limiter a −0,3 dBFS
+  e os dois efeitos.
+- Kit por pasta de samples (classificação por nome, marcadores `vl/v/vel/layer` e
+  `rr/rt/take`) ou por arquivo `.dfkit`; a importação grava o kit em
+  `Documentos/Forja/Drumforge/Kits`.
+- MIDI por General MIDI (36 bumbo, 38 caixa, 42/46 chimbais, 49 prato…), com o evento
+  aplicado na amostra exata. Latência 0, sem preamp, sem oversampling.
+- Loops MIDI: biblioteca em `Documentos/Forja/Drumforge/Loops` (`.mid`/`.midi`, com
+  subpastas por pacote), busca e filtro por pacote, grade de 1/16 com uma faixa por pad
+  que o arquivo toca e preview que toca o groove no BPM do host (`loop_sync`) ou num BPM
+  manual de 40 a 240. Os golpes entram no mesmo ponto do bloco que um evento MIDI;
+  o loop fecha em compassos inteiros.
+- Arrasto do `.mid` selecionado para a DAW pela alça ARRASTAR MIDI.
+- 249 parâmetros de automação (15 por pad, 6 do master, 2 do preview de loops e o bypass).
 
 ## Interface
 
@@ -118,6 +150,11 @@ transparente em material que já está em 0 dBFS. Para limitar em 0 dBFS use o M
 - FUNDAMENTOS abre um painel nativo (sem WebView) com o que faz, como funciona, controles,
   operação e proveniência; fecha por botão, `Esc` ou clique fora.
 - LAMINADOR e ÓXIDO trazem arte de máquina de fita no cabeçalho.
+- DRUMFORGE tem três abas no topo (KITS, MIXER e LOOPS): a biblioteca de kits com
+  arrastar-e-soltar de pasta, o mapa dos 16 pads, a mesa com 16 canais mais o master fixo
+  à direita e o navegador de grooves MIDI com grade de 1/16, preview no BPM do host e
+  arrasto do `.mid` para a DAW. Os knobs da mesa são compactos (`MiniKnob`) para caber um
+  canal inteiro em 92 px de largura.
 - Todo texto acentuado passa por `forja::ui::utf8()`.
 
 ## Capturas
@@ -130,6 +167,10 @@ transparente em material que já está em 0 dBFS. Para limitar em 0 dBFS use o M
 | Channel strip completo (CStrip2) | Amp comprimido (ChimeyGuitar2) |
 | ![LIXA](docs/images/lixa.png) | ![FUNDAMENTOS](docs/images/fundamentos-cinzel.png) |
 | One-knob compacto (PurestDrive) | Painel FUNDAMENTOS nativo |
+| ![DRUMFORGE KITS](docs/images/drumforge-kits.png) | ![DRUMFORGE MIXER](docs/images/drumforge-mixer.png) |
+| Sampler: biblioteca e mapa dos 16 pads | Sampler: mesa de 16 canais e master |
+| ![DRUMFORGE LOOPS](docs/images/drumforge-loops.png) | |
+| Sampler: biblioteca de loops MIDI, grade e preview | |
 
 <details>
 <summary><strong>Galeria completa (31 plugins)</strong></summary>
@@ -187,8 +228,10 @@ Cada plugin também compila sozinho, por exemplo:
 cmake --build build --config Release --target Cinzel_VST3 Cinzel_Standalone
 ```
 
-Os alvos ficam em `build/Airwindows/<Família>/<Plugin>/<Plugin>_artefacts/Release/`. Os testes ficam
-em `build/Tests/Release/` (`forja_parity_<modelo>.exe` e `forja_alloc_guard.exe`).
+Os alvos ficam em `build/Airwindows/<Família>/<Plugin>/<Plugin>_artefacts/Release/`. O
+DRUMFORGE fica fora dessa árvore, em `build/drumforge/Drumforge/Drumforge_artefacts/Release/`.
+Os testes ficam em `build/Tests/Release/` (`forja_parity_<modelo>.exe`,
+`forja_alloc_guard.exe` e `forja_drumforge_engine.exe`).
 
 LTO é o padrão local (`-DFORJA_LTO=OFF` desliga). A CI usa `FORJA_LTO=OFF` para os três
 SOs caberem no tempo do runner; o código e os testes são os mesmos.
@@ -204,9 +247,15 @@ SOs caberem no tempo do runner; o código e os testes são os mesmos.
 - ECO: as 17 posições de espaço são testadas uma a uma.
 - Delays e reverbs usam factory por caso para comparar estados equivalentes.
 - `ctest` executa os 28 executáveis de paridade (TÊMPERA/PRENSA/MALHO juntos + 27 modelos
-  individuais) e o `forja_alloc_guard` nos três SOs.
-- Última execução local (Windows, Release): `ctest` com 29/29 testes verdes; MURALHA e
-  DIQUE compilados como VST3 e Standalone e conferidos por captura DPI-aware.
+  individuais), o `forja_alloc_guard` e o `forja_drumforge_engine` nos três SOs.
+- DRUMFORGE não tem paridade (o DSP é Forja): o teste do engine monta um kit sintético e
+  cobre troca de kit sem alocar no áudio, camadas de velocity, round-robin, choke,
+  roubo de voz, isolamento dos 5 barramentos, mute/solo, mapa General MIDI, latência
+  0 por impulso, rampa de bypass com vozes preservadas, zero alocação em `process()` e a
+  importação de pasta (WAV, classificação, `.dfkit` ida e volta). O mesmo executável grava
+  MIDI na hora e valida a biblioteca de loops, o fechamento em compasso inteiro, a
+  importação e o preview disparando no frame medido, com o cursor voltando ao início.
+- Última execução local (Windows, Release): `ctest` com 30/30 testes verdes.
 
 ## Instalação
 
@@ -266,3 +315,10 @@ DSP original: Airwindows, © Chris Johnson, licença MIT. O código original fic
 commit `b110fac3991fff7c4655cc2d25d6a3e221f9799c`, data e SHA-256). Nenhum original é
 compilado dentro dos plugins: os adaptadores Forja ficam em `Forja/Source/forja/dsp/`.
 Interface, medidores, bypass e camada dinâmica do CINZÉL são Forja.
+
+O DRUMFORGE é DSP da Forja: engine de sampler, mixer, limiter, importação de pasta e
+interface foram escritos para esta suíte e não derivam de código de terceiros. Os blocos
+de efeito do master usam os mesmos adaptadores Airwindows MIT já validados na suíte
+(ButterComp2, kRockstar2 e PurestDrive), e o crédito a Chris Johnson aparece no README,
+no FUNDAMENTOS e no `PROVENANCE.md` de cada modelo. Nenhum sample ou biblioteca de
+bateria acompanha o plugin.

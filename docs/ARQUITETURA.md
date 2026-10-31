@@ -3,9 +3,9 @@
 ## Visão geral
 
 A suíte é dividida em **bases**: pastas irmãs na raiz que agrupam produtos por origem de
-DSP. `Airwindows/` guarda as 31 adaptações MIT com paridade; `drumforge/` será a primeira
-base de DSP original Forja (em concepção). A camada Forja — UI, adaptadores, tema e
-vendor — é compartilhada por todas.
+DSP. `Airwindows/` guarda as 31 adaptações MIT com paridade; `drumforge/` é a primeira base
+de DSP original Forja, já com o sampler DRUMFORGE compilado. A camada Forja — UI,
+adaptadores, tema e vendor — é compartilhada por todas.
 
 ```
              ┌─────────────────────────────────────────────────────┐
@@ -82,6 +82,41 @@ usado pelo BRASA fica no vendor privado do plugin, em
   vetor no contexto do pai, então não há perda de nitidez.
 - Textos acentuados: `forja::ui::utf8()`; rótulos originais aparecem no FUNDAMENTOS.
 
+## Base drumforge (DSP próprio)
+
+O DRUMFORGE não segue o pipeline vendor → adapter: o DSP nasce em
+`drumforge/Drumforge/Source/engine/` e a UI em `Source/ui/`. O alvo é criado por
+`forja_add_instrument` (VST3 instrumento, `NEEDS_MIDI_INPUT`, categoria `Instrument|Drum`).
+
+- **`Kit` / `SampleStore`** — o kit é um modelo puro (pads, camadas, caminhos), lido e
+  gravado em XML `.dfkit`. Os samples são decodificados em uma thread do `ThreadPool` e o
+  resultado vira um `LoadedKit` imutável.
+- **Publicação do kit** — `requestKit(ptr, token)` guarda ponteiro + token em atômicos; o
+  áudio adota no início do bloco e publica `acceptedToken`. Quem importou espera o token
+  ser aceito antes de liberar o kit anterior — troca sem lock e sem alocação no áudio.
+- **`VoicePool`** — 64 vozes fixas, cada uma com sample, posição fracionária, incremento
+  (taxa do arquivo ÷ taxa da sessão), envelope de choke e grupo. Roubo da voz mais antiga.
+- **`DrumEngine`** — fila SPSC de disparos (128), segmentação do bloco nos eventos de MIDI,
+  cursor de round-robin por pad e camada, mapa nota → pad, 16 `ChannelStrip` e 5
+  `AudioBuffer` de saída (MAIN + AUX 1–4).
+- **Canal** — `Filters` (biquads RBJ em double, forma direta transposta II),
+  `Compressor` (estéreo-linkado, joelho suave, GR por ganho de make-up) e `MasterBus`
+  (trim, TÊMPERA, limiter de −0,3 dBFS, retornos de FX 1 e FX 2).
+- **Medidores** — pico, GR e clip por pad e por master em `std::atomic`; a leitura
+  consome o valor (`exchange`), então a UI lê uma vez por tique e repassa o retrato só
+  para a aba visível.
+- **Multi-out** — o processor expõe 5 saídas estéreo e usa `getBusBuffer` por barramento
+  em buffers de vista (`AudioBuffer` que aponta para o buffer do host, sem cópia).
+- **Biblioteca de loops** — `Source/loops/LoopLibrary.h` lê `.mid`/`.midi` para uma
+  sequência em **beats** (o meta-evento de tempo define o BPM de origem) e fecha o loop no
+  compasso inteiro seguinte ao último golpe. A varredura de
+  `Documentos/Forja/Drumforge/Loops` trata cada subpasta como pacote.
+- **Preview de loops** — `Source/loops/LoopPlayer.h` roda antes de `DrumEngine::process` e
+  enfileira cada golpe com o offset exato em amostras, no mesmo caminho do MIDI ao vivo.
+  A sequência é trocada por token, como o kit, então o áudio nunca lê ponteiro liberado.
+  O BPM vem do playhead (`loop_sync`) ou de `loop_bpm`; o fim do loop volta o cursor sem
+  cortar as vozes que ainda soam.
+
 ## Testes e paridade
 
 `Tests/Source/parity_common.h` fornece:
@@ -106,6 +141,14 @@ comparar. Os testes delas cobrem o comportamento esperado — sampler, mapeament
 serialização de estado, barramentos múltiplos, round-robin/velocity, carregamento de
 samples — e a ausência de alocação no caminho de áudio. A guarda de alocação continua
 valendo para toda base.
+
+O `forja_drumforge_engine` segue esse modelo: monta um `LoadedKit` sintético na memória
+(sem depender de biblioteca de samples), substitui `operator new`/`delete` para flagrar
+alocação e mede a saída por barramento. Além do comportamento do engine, ele exporta WAVs
+em uma pasta temporária para exercitar a importação e o `.dfkit` de ida e volta, e grava
+MIDI na hora para cobrir `LoopLibrary` (leitura em beats, BPM do meta-evento, fechamento em
+compasso inteiro, recusa de arquivo inválido/sem notas, varredura e importação) e
+`LoopPlayer` (disparo no frame medido, volta do loop, cursor dentro do loop e `stop`).
 
 ## Build
 

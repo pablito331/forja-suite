@@ -23,4 +23,5 @@ enable_testing()
 
 add_subdirectory(Forja)
 add_subdirectory(Airwindows)
+add_subdirectory(drumforge)
 add_subdirectory(Tests)

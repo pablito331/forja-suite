@@ -5,24 +5,29 @@ Ele explica de onde vem o DSP, qual padrão a suíte segue e o que **não** pode
 
 ## O que é a Forja
 
-Forja é uma suíte de 29 plugins VST3 + Standalone em JUCE 9 (C++20) para Windows,
-macOS e Linux. O áudio não é original: cada plugin adapta um plugin da
+Forja é uma suíte de 31 plugins VST3 + Standalone em JUCE 9 (C++20) para Windows,
+macOS e Linux, organizada em bases de DSP. A base `Airwindows/` adapta plugins da
 [Airwindows](https://www.airwindows.com/vsts/) de **Chris Johnson**, licenciado em MIT.
-A Forja acrescenta interface nativa (sem WebView), painel FUNDAMENTOS em português,
-bypass suavizado, medição, presets/estado via APVTS e validação de paridade amostra a
-amostra contra o código original.
+A base `drumforge/` é a nova empreitada de DSP original (sampler de bateria) e está em
+concepção. A Forja acrescenta interface nativa (sem WebView), painel FUNDAMENTOS em
+português, bypass suavizado, medição, presets/estado via APVTS e validação de paridade
+amostra a amostra contra o código original nas adaptações Airwindows.
 
-Regra de ouro: **não inventamos DSP**. O timbre e o comportamento vêm do original. O que
-a Forja adiciona é explicitamente marcado como camada Forja (por exemplo, a dinâmica do
-CINZÉL e o sync de BPM de REPIQUE/ECO) e sempre documentado no README, no FUNDAMENTOS e
-no `PROVENANCE.md`.
+Regra de ouro da base Airwindows: **não inventamos DSP**. O timbre e o comportamento vêm
+do original. O que a Forja adiciona é explicitamente marcado como camada Forja (por
+exemplo, a dinâmica do CINZÉL e o sync de BPM de REPIQUE/ECO) e sempre documentado no
+README, no FUNDAMENTOS e no `PROVENANCE.md`. O Drumforge segue a especificação em
+`drumforge/ideia para o plugin.md`, mas o protótipo de UI já a simplificou para três abas
+(Kits, Mixer e Loops MIDI) — sends, racks de FX, Settings e editor de mapas ficam para
+depois. O DSP é próprio, sem vendor Airwindows.
 
 ## Mapa do repositório
 
 ```
-Brasa/ Tempera/ Prensa/ Malho/     plugins originais (não usam ForjaEditorBase)
-Eq/ Dynamics/ Strips/ Tape/        famílias (cada plugin é um target CMake próprio)
-Space/ Lofi/ OneKnob/ Amps/
+Airwindows/                        base 1: adaptações MIT da Airwindows (31 plugins)
+  Dynamics/ Saturation/ Eq/        famílias (cada plugin é um target CMake próprio)
+  Strips/ Space/ Lofi/ OneKnob/ Amps/ Tape/
+drumforge/                         base 2 em concepção: sampler de bateria, DSP Forja
 Forja/                             biblioteca compartilhada forja_ui + DSP + vendor
   Source/forja/dsp/                adapters header-only (Forja<Modelo>.h)
   Source/forja/ui/                 chrome nativo (topBar, statusBar, cards, knobs, painel)
@@ -32,6 +37,18 @@ cmake/ForjaSuite.cmake             helper forja_add_plugin(...)
 docs/                              arquitetura, guia de novo plugin, imagens do README
 tools/                             gerador de scaffold de plugin
 ```
+
+## Bases
+
+- `Airwindows/` — 31 adaptações, uma pasta por família. Paridade, vendor e
+  `PROVENANCE.md` são obrigatórios.
+- `drumforge/` — produto Forja original (sampler, mixer e groove browser). Não usa
+  vendor Airwindows por padrão e **não** tem teste de paridade; os testes cobrem sampler,
+  MIDI, estado, multi-out e ausência de alocação no áudio. Pode reutilizar adaptadores
+  Airwindows como blocos de canal.
+- Uma base nova é uma pasta irmã com `CMakeLists.txt` listando suas famílias/plugins e
+  `add_subdirectory(<Base>)` na raiz. `forja_add_plugin` já é agnóstico de pasta; os
+  geradores `tools/new_plugin.*` são específicos da base Airwindows.
 
 ## Pipeline de um plugin
 
@@ -89,8 +106,8 @@ tools/                             gerador de scaffold de plugin
 - Canais/ordem L-R devem seguir o original; não "corrija" assimetrias do modelo.
 - Nada de comentários óbvios; comentários só para desvios e invariantes.
 - Código e pastas em ASCII. Acentos só em strings via `utf8()` e nos docs.
-- `COMPANY_NAME` recebe a família em escapes hexadecimais UTF-8 no CMake
-  (ex.: `"Forja \\xC2\\xB7 EQ"`), porque o CMake converte para a página de código local.
+- `COMPANY_NAME` recebe a família em ASCII no CMake (ex.: `"Forja - EQ"`); o metadado
+  do host não decodifica UTF-8 de forma confiável. Acentos existem só na UI, via `utf8()`.
 
 ## Build e testes
 
@@ -100,7 +117,7 @@ cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-- Binários: `build/<Família>/<Plugin>/<Plugin>_artefacts/Release/{VST3,Standalone}/`.
+- Binários: `build/Airwindows/<Família>/<Plugin>/<Plugin>_artefacts/Release/{VST3,Standalone}/`.
 - Testes: `build/Tests/Release/forja_parity_<slug>.exe` e `forja_alloc_guard.exe`.
 - Um target isolado: `cmake --build build --config Release --target Cinzel_VST3`.
 - `FORJA_LTO` (padrão `ON`) liga o LTO dos plugins; a CI configura com `OFF` por tempo de
@@ -111,8 +128,8 @@ ctest --test-dir build -C Release --output-on-failure
 
 Siga `docs/NOVO-PLUGIN.md`. Resumo:
 
-1. `tools/new_plugin.ps1` (Windows) ou `tools/new_plugin.py` gera a pasta com
-   processor/editor/FUNDAMENTOS/CMakeLists.
+1. `tools/new_plugin.ps1` (Windows) ou `tools/new_plugin.py` gera a pasta em
+   `Airwindows/<Família>/<Plugin>/` com processor/editor/FUNDAMENTOS/CMakeLists.
 2. Vendorize o original e escreva o adapter.
 3. Ajuste parâmetros, defaults e UI; escreva o README.
 4. Adicione o caso de paridade e o adapter ao `alloc_guard`.
@@ -132,7 +149,7 @@ Siga `docs/NOVO-PLUGIN.md`. Resumo:
 
 ## Estado conhecido
 
-- Paridade verde nos 29 modelos; `alloc_guard` PASS; latências medidas.
+- Paridade verde nos 31 modelos; `alloc_guard` PASS; latências medidas.
 - Sem DAW no ambiente de desenvolvimento: automação/bypass de host seguem pendentes de
   validação manual (ver README).
 - REPIQUE e ECO têm sync de BPM opcional; com `sync = false` o caminho é bit-exato.

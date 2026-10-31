@@ -1,8 +1,8 @@
 FORJA - INSTALACAO NO LINUX
 ===========================
 
-O arquivo traz os plugins em VST3 e os executaveis Standalone (x86_64).
-Todos usam DSP Airwindows (MIT, Chris Johnson).
+O arquivo traz os plugins em VST3 (x86_64). Todos usam DSP Airwindows
+(MIT, Chris Johnson).
 
 VST3
 ----
@@ -11,15 +11,6 @@ VST3
       ~/.vst3/
    (para todos os usuarios: /usr/local/lib/vst3/)
 3. Abra a DAW e refaca o escaneamento de plugins.
-
-
-STANDALONE
-----------
-Os executaveis em Standalone/ abrem o mesmo processamento fora do DAW.
-Se necessario, de permissao de execucao:
-   chmod +x Standalone/*
-
-Em sistemas sem X11 disponivel, rode o Standalone dentro da sessao grafica.
 
 
 FUNDAMENTOS, LATENCIA E BYPASS

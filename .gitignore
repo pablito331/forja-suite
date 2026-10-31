@@ -1,7 +1,7 @@
 # Build trees (CMake/Visual Studio/Xcode)
 build/
 build-*/
-Brasa/build/
+**/build/
 **/_artefacts/
 **/CMakeFiles/
 CMakeCache.txt

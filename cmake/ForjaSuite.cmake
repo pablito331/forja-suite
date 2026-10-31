@@ -1,6 +1,9 @@
 # LTO acelera o áudio e é o padrão local. A CI desliga para caber no tempo do runner.
 option(FORJA_LTO "Enable link-time optimization for plugin targets" ON)
 
+# Os Standalone são úteis no desenvolvimento local, mas não vão nos pacotes de release.
+option(FORJA_STANDALONE "Build standalone plugin targets" ON)
+
 function(forja_add_plugin target_name product_name plugin_code bundle_id source_dir)
     set(categories "Fx")
     if(ARGC GREATER 5 AND NOT "${ARGV5}" STREQUAL "")
@@ -12,6 +15,11 @@ function(forja_add_plugin target_name product_name plugin_code bundle_id source_
     set(company "Forja")
     if(ARGC GREATER 6 AND NOT "${ARGV6}" STREQUAL "")
         set(company "${ARGV6}")
+    endif()
+
+    set(formats VST3)
+    if(FORJA_STANDALONE)
+        list(APPEND formats Standalone)
     endif()
 
     juce_add_plugin(${target_name}
@@ -26,7 +34,7 @@ function(forja_add_plugin target_name product_name plugin_code bundle_id source_
         PLUGIN_MANUFACTURER_CODE Forj
         PLUGIN_CODE ${plugin_code}
         PRODUCT_NAME "${product_name}"
-        FORMATS VST3 Standalone
+        FORMATS ${formats}
         VST3_CATEGORIES ${categories}
     )
 

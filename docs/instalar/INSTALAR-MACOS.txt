@@ -1,8 +1,8 @@
 FORJA - INSTALACAO NO MACOS
 ===========================
 
-O arquivo traz os plugins em VST3 (universal, Apple Silicon + Intel) e os
-aplicativos Standalone. Todos usam DSP Airwindows (MIT, Chris Johnson).
+O arquivo traz os plugins em VST3 (universal, Apple Silicon + Intel).
+Todos usam DSP Airwindows (MIT, Chris Johnson).
 
 VST3
 ----
@@ -14,13 +14,6 @@ VST3
 
 Se o macOS bloquear o plugin por falta de assinatura, libere uma vez:
    xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Cinzel.vst3
-
-
-STANDALONE
-----------
-Os aplicativos em Standalone/ abrem o mesmo processamento fora do DAW.
-Na primeira execucao use clique com o botao direito > Abrir. Depois de
-liberado, o app abre normalmente.
 
 
 FUNDAMENTOS, LATENCIA E BYPASS

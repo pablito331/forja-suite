@@ -22,6 +22,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 TEMPLATES = ROOT / "tools" / "templates" / "plugin"
+AIRWINDOWS = ROOT / "Airwindows"
 
 PLACEHOLDER = re.compile(r"@@([A-Z_]+)@@")
 
@@ -34,7 +35,7 @@ def ident(value: str, label: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Create a Forja plugin scaffold.")
-    parser.add_argument("--family", required=True, help="family folder, e.g. Eq, Tape, OneKnob")
+    parser.add_argument("--family", required=True, help="family folder under Airwindows/, e.g. Eq, Tape, OneKnob")
     parser.add_argument("--product", required=True, help="product name as shown in the DAW")
     parser.add_argument("--code", required=True, help="4-character VST3 plugin code")
     parser.add_argument("--slug", default="", help="lowercase id used in bundles/files")
@@ -60,8 +61,8 @@ def main() -> int:
     if not re.fullmatch(r"[A-Za-z0-9]{4}", code):
         sys.exit("--code must have exactly 4 letters/digits (VST3 plugin code)")
 
-    family = args.family.strip()
-    family_dir = ROOT / family
+    family = ident(args.family.strip(), "--family")
+    family_dir = AIRWINDOWS / family
     if not family_dir.is_dir():
         sys.exit(f"family folder not found: {family_dir}")
 
@@ -140,17 +141,17 @@ def main() -> int:
         else:
             print(f"kept {family_cmake.relative_to(ROOT)} (already lists {product})")
 
-        root_cmake = ROOT / "CMakeLists.txt"
-        root_text = root_cmake.read_text(encoding="utf-8")
+        group_cmake = AIRWINDOWS / "CMakeLists.txt"
+        group_text = group_cmake.read_text(encoding="utf-8")
         family_line = f"add_subdirectory({family})"
-        if family_line not in root_text:
-            if "add_subdirectory(Tests)" in root_text:
-                root_text = root_text.replace("add_subdirectory(Tests)",
-                                              family_line + "\nadd_subdirectory(Tests)")
-            else:
-                root_text = root_text.rstrip("\n") + "\n" + family_line + "\n"
-            root_cmake.write_text(root_text, encoding="utf-8", newline="\n")
-            print(f"write {root_cmake.relative_to(ROOT)} (+ {family_line})")
+        if family_line not in group_text.splitlines():
+            if group_text and not group_text.endswith("\n"):
+                group_text += "\n"
+            group_text += family_line + "\n"
+            group_cmake.write_text(group_text, encoding="utf-8", newline="\n")
+            print(f"write {group_cmake.relative_to(ROOT)} (+ {family_line})")
+        else:
+            print(f"kept {group_cmake.relative_to(ROOT)} (already lists {family})")
 
     print()
     print("Next steps (docs/NOVO-PLUGIN.md):")

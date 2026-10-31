@@ -1,9 +1,8 @@
 FORJA - INSTALACAO NO WINDOWS
 =============================
 
-Esta pasta contem os plugins da suite Forja em VST3 e os executaveis
-Standalone. Todos usam DSP Airwindows (MIT, Chris Johnson) com
-interface Forja.
+Esta pasta contem os plugins da suite Forja em VST3. Todos usam DSP
+Airwindows (MIT, Chris Johnson) com interface Forja.
 
 1. Feche o seu DAW.
 2. Copie as pastas .vst3 INTEIRAS de VST3\ para:
@@ -18,14 +17,6 @@ A DAW mostra o nome do plugin seguido da familia, por exemplo:
    Torno (Forja - EQ)
    Laminador (Forja - Fita)
    Deluxe (Forja - Amp)
-
-
-STANDALONE
-----------
-Cada plugin tem um "<Nome>-standalone.exe" na pasta Standalone que abre o
-mesmo processamento fora do DAW, sem instalacao. No Standalone o audio de
-entrada pode vir silenciado para evitar realimentacao; o processamento e
-o mesmo do VST3.
 
 
 FUNDAMENTOS

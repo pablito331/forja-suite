@@ -40,6 +40,7 @@ if (-not (Test-Path (Join-Path $Root "Forja"))) {
     $Root = (Get-Location).Path
 }
 $Templates = Join-Path $Root "tools/templates/plugin"
+$AirwindowsDir = Join-Path $Root "Airwindows"
 
 function Exit-With([string]$Message) {
     Write-Error $Message
@@ -72,7 +73,10 @@ if ($Code -notmatch '^[A-Za-z0-9]{4}$') {
     Exit-With "-Code must have exactly 4 letters/digits (VST3 plugin code)"
 }
 
-$FamilyDir = Join-Path $Root $Family
+if ($Family -notmatch '^[A-Za-z][A-Za-z0-9]*$') {
+    Exit-With "-Family must be an ASCII identifier: '$Family'"
+}
+$FamilyDir = Join-Path $AirwindowsDir $Family
 if (-not (Test-Path $FamilyDir -PathType Container)) {
     Exit-With "family folder not found: $FamilyDir"
 }
@@ -157,17 +161,15 @@ if (-not $DryRun) {
         Write-Output "kept family CMakeLists.txt (already lists $Product)"
     }
 
-    $RootCmake = Join-Path $Root "CMakeLists.txt"
+    $GroupCmake = Join-Path $AirwindowsDir "CMakeLists.txt"
     $FamilyLine = "add_subdirectory($Family)"
-    $RootText = Get-Content -LiteralPath $RootCmake -Raw -Encoding UTF8
-    if ($RootText -notmatch [regex]::Escape($FamilyLine)) {
-        if ($RootText -match [regex]::Escape("add_subdirectory(Tests)")) {
-            $RootText = $RootText.Replace("add_subdirectory(Tests)", "$FamilyLine`nadd_subdirectory(Tests)")
-        } else {
-            $RootText = $RootText.TrimEnd("`n") + "`n" + $FamilyLine + "`n"
-        }
-        Write-Utf8 $RootCmake $RootText
-        Write-Output "write CMakeLists.txt (+ $FamilyLine)"
+    $GroupText = Get-Content -LiteralPath $GroupCmake -Raw -Encoding UTF8
+    if ($GroupText -notmatch ("(?m)^" + [regex]::Escape($FamilyLine) + "$")) {
+        if ($GroupText -and -not $GroupText.EndsWith("`n")) { $GroupText += "`n" }
+        Write-Utf8 $GroupCmake ($GroupText + $FamilyLine + "`n")
+        Write-Output "write Airwindows/CMakeLists.txt (+ $FamilyLine)"
+    } else {
+        Write-Output "kept Airwindows/CMakeLists.txt (already lists $Family)"
     }
 }
 
@@ -176,7 +178,7 @@ Write-Output ""
 Write-Output "Next steps (docs/NOVO-PLUGIN.md):"
 Write-Output "  1. Vendorize Airwindows $Airwindows into Forja/Source/forja/vendor/airwindows/$Model/"
 Write-Output "  2. Port processDoubleReplacing into $AdapterRelative"
-Write-Output "  3. Replace the parameter/UI placeholders in $Family/$Product/Source"
+Write-Output "  3. Replace the parameter/UI placeholders in Airwindows/$Family/$Product/Source"
 Write-Output "  4. Add Tests/Source/parity_$Slug.cpp and wire it in Tests/CMakeLists.txt"
 Write-Output "  5. Add the adapter to Tests/Source/alloc_guard.cpp"
 Write-Output "  6. cmake configure + build ${Product}_VST3 ${Product}_Standalone and run the tests"

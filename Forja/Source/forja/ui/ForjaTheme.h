@@ -3,6 +3,8 @@
 #include <juce_graphics/juce_graphics.h>
 
 #include <cmath>
+#include <utility>
+#include <vector>
 
 namespace forja::ui
 {
@@ -34,19 +36,33 @@ inline const juce::Colour graphGrid { 0xff2a313b };
 inline const juce::Colour graphAxis { 0xff3b4451 };
 } // namespace colour
 
+inline juce::FontOptions withPlatformFallbacks (const char* family, float height, int style,
+                                               std::vector<juce::String> fallbacks)
+{
+    return juce::FontOptions (family, height, style)
+        .withFallbacks (std::move (fallbacks))
+        .withFallbackEnabled (true);
+}
+
 inline juce::Font uiFont (float height, int style = juce::Font::plain)
 {
-    return juce::Font (juce::FontOptions ("Segoe UI", height, style));
+    return juce::Font (withPlatformFallbacks ("Segoe UI", height, style,
+                                             { "Arial", "Helvetica Neue", "DejaVu Sans",
+                                               "Liberation Sans", "Noto Sans" }));
 }
 
 inline juce::Font displayFont (float height)
 {
-    return juce::Font (juce::FontOptions ("Georgia", height, juce::Font::plain));
+    return juce::Font (withPlatformFallbacks ("Georgia", height, juce::Font::plain,
+                                             { "Times New Roman", "DejaVu Serif",
+                                               "Liberation Serif", "Noto Serif" }));
 }
 
 inline juce::Font monoFont (float height)
 {
-    return juce::Font (juce::FontOptions ("Consolas", height, juce::Font::plain));
+    return juce::Font (withPlatformFallbacks ("Consolas", height, juce::Font::plain,
+                                             { "Menlo", "DejaVu Sans Mono", "Liberation Mono",
+                                               "Noto Sans Mono" }));
 }
 
 inline juce::Font tracked (juce::Font font, float em)

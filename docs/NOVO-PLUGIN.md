@@ -7,8 +7,9 @@ arquitetura está em `docs/ARQUITETURA.md`.
 
 - O modelo existe na Airwindows e é **MIT**? Se não, não entra.
 - Confira o commit fixado do vendor: `b110fac3991fff7c4655cc2d25d6a3e221f9799c`.
-- Escolha família (`Eq`, `Dynamics`, `Strips`, `Tape`, `Space`, `Lofi`, `OneKnob`, `Amps`
-  ou uma pasta nova), nome do produto, código VST3 de 4 caracteres e slug.
+- Escolha família dentro de `Airwindows/` (`Saturation`, `Eq`, `Dynamics`, `Strips`,
+  `Tape`, `Space`, `Lofi`, `OneKnob`, `Amps` ou uma pasta nova), nome do produto, código
+  VST3 de 4 caracteres e slug.
 - Regra: nenhum controle inventado. Só entram parâmetros do original ou camadas Forja
   aprovadas e documentadas.
 
@@ -47,17 +48,18 @@ Ambos aceitam `--dry-run` / `-DryRun` para listar os arquivos sem escrever.
 
 O gerador cria:
 
-- `OneKnob/Areia/` com `CMakeLists.txt`, `Source/PluginProcessor.*`,
+- `Airwindows/OneKnob/Areia/` com `CMakeLists.txt`, `Source/PluginProcessor.*`,
   `Source/PluginEditor.*`, `Source/ForjaInfoText.h` e `README.md`;
 - `Forja/Source/forja/dsp/ForjaAreia.h` (adapter de passagem, com TODO);
-- a linha `add_subdirectory(Areia)` em `OneKnob/CMakeLists.txt`;
-- `add_subdirectory(OneKnob)` na raiz, se a família ainda não existir.
+- a linha `add_subdirectory(Areia)` em `Airwindows/OneKnob/CMakeLists.txt`;
+- `add_subdirectory(OneKnob)` em `Airwindows/CMakeLists.txt`, se a família ainda não
+  estiver listada.
 
 O código gerado **compila**, mas o DSP é pass-through até o passo 3. Não publique assim.
 
-`--company` é o `COMPANY_NAME` do VST3 e aparece na DAW junto do produto. Para famílias
-acentuadas use escapes hexadecimais UTF-8, como nos plugins existentes:
-`"Forja \\xC2\\xB7 Mix"` (o CMake no Windows converte para a página de código local).
+`--company` é o `COMPANY_NAME` do VST3 e aparece na DAW junto do produto. Use ASCII para
+evitar problemas de decodificação no host: `"Forja - Mix"`. Acentos ficam na UI, via
+`utf8()`.
 
 ## 2. Vendorizar o original
 
@@ -125,7 +127,7 @@ No `PluginProcessor.cpp` gerado:
   original, passo 0,01, mais `bypass` (bool, padrão `false`).
 - Preencha `Parameters` em `processBlock` a partir do APVTS.
 - Se o plugin tiver sync de tempo, leia o BPM do playhead por bloco e caia no controle
-  manual quando não houver host — veja `Space/Repique/Source/PluginProcessor.cpp`.
+  manual quando não houver host — veja `Airwindows/Space/Repique/Source/PluginProcessor.cpp`.
 - `setLatencySamples (dsp.latencySamples())` em `prepareToPlay`.
 - Não aloque em `processBlock` (mono scratch já é alocado em `prepareToPlay`).
 
@@ -233,6 +235,45 @@ ctest --test-dir build -C Release --output-on-failure
 - **Curva de EQ**: use `ForjaEqCurve` (FFT da resposta do adapter) e nós arrastáveis com
   callback; nunca duplique a matemática do filtro.
 - **One-knob**: o controle único precisa ser musical nos extremos; sem makeup inventado.
+
+## Como adicionar uma base não-Airwindows
+
+Uma **base** é uma pasta irmã na raiz que agrupa produtos com a mesma origem de DSP. Hoje
+existem duas: `Airwindows/` (adaptações MIT, com paridade contra o original) e
+`drumforge/` (DSP original Forja, em concepção). `Forja/` continua sendo a biblioteca
+compartilhada de UI e adaptadores para as duas.
+
+Passo a passo:
+
+1. Crie `Foo/CMakeLists.txt` listando as famílias da base, exatamente como
+   `Airwindows/CMakeLists.txt` faz.
+2. No `CMakeLists.txt` da raiz, adicione `add_subdirectory(Foo)` **depois** de
+   `add_subdirectory(Airwindows)` e **antes** de `add_subdirectory(Tests)`.
+3. Cada plugin continua sendo um target criado por
+   `forja_add_plugin(target, product, code, bundle, source_dir, categories, company)`,
+   com `source_dir` apontando para `Foo/<Família>/<Plugin>`.
+4. Reuse `forja_ui`, `ForjaEditorBase`, `ForjaCanvas` e os componentes do tema. A UI é
+   independente da origem do DSP.
+5. **Testes**: a regra de paridade vale só para `Airwindows/`. DSP original é validado por
+   testes funcionais (comportamento esperado, estado, round-trip) e pela guarda de
+   alocação — sem vendor nem `parity_<slug>.cpp`.
+6. Documente a base na arquitetura e no catálogo, deixando claro que ela não pertence ao
+   catálogo `DSP-0xx` de adaptações.
+
+O gerador `tools/new_plugin.ps1`/`.py` é específico de Airwindows (vendor, adapter e
+paridade). Uma base nova escreve o próprio scaffold, ou começa copiando os templates e
+removendo a etapa de vendor.
+
+**Instrumentos e multi-out:** `forja_add_plugin` hoje fixa `IS_SYNTH FALSE`,
+`NEEDS_MIDI_INPUT FALSE` e `NEEDS_MIDI_OUTPUT FALSE`, e não expõe barramentos múltiplos.
+Uma base de instrumento (como o Drumforge) precisa dessas opções no helper antes do
+primeiro target.
+
+O Drumforge é o exemplo vivo: o conceito em `drumforge/ideia para o plugin.md` é amplo,
+mas o protótipo de UI (`drumforge/Drum Forge_ protótipo de UI.html`) já o simplificou
+para três abas — Kits, Mixer e Loops MIDI — com TRIM/PAN, HPF/LO/MID/HI, THR/RATIO, M/S,
+fader/medidor, limiter no master e grade de 16 passos com BPM/sync/drag. Sends, racks de
+FX, Settings e editor de mapas ficam para depois.
 
 ## Backlog conhecido (não fazer sem aprovação)
 

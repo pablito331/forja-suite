@@ -53,8 +53,19 @@ dentro de `process()`.
 
 ```
 suite de plugins/
-├── CMakeLists.txt                  único FetchContent do JUCE + 29 plugins + Tests
+├── CMakeLists.txt                  FetchContent do JUCE + bases + Tests
 ├── cmake/ForjaSuite.cmake          helper forja_add_plugin
+├── Airwindows/                     base 1: adaptações MIT da Airwindows (31 plugins)
+│   ├── CMakeLists.txt
+│   ├── Dynamics/  Saturation/  Eq/  Strips/  Tape/  Space/  Lofi/  OneKnob/  Amps/
+│   │   └── <Plugin>/
+│   │       ├── CMakeLists.txt
+│   │       ├── README.md
+│   │       └── Source/
+│   │           └── PluginProcessor.* · PluginEditor.* · ForjaInfoText.h
+├── drumforge/                      base 2 em concepção: sampler de bateria, DSP Forja
+│   ├── ideia para o plugin.md
+│   └── Drum Forge_ protótipo de UI.html
 ├── Forja/
 │   ├── CMakeLists.txt              add_library(forja_ui STATIC …)
 │   └── Source/forja/
@@ -65,23 +76,20 @@ suite de plugins/
 │           └── airwindows/
 │               ├── LICENSE
 │               ├── README.md       URL, commit, data, o que adaptamos
-│               └── Tube2/ · ButterComp2/ · Pressure5/ · Pop2/ · Parametric/ ·
+│               └── ButterComp2/ · Pressure5/ · Pop2/ · Parametric/ ·
 │                   Baxandall3/ · SmoothEQ2/ · DeBess/ · CStrip2/ · X2Buss/ ·
 │                   ToTape9/ · IronOxide5/ · TapeDelay2/ · Echojam/ · kRockstar2/ ·
 │                   kStation/ · DeRez5/ · PurestDrive/ · Sweeten/ · PurestWarm3/ ·
 │                   Mojo/ · Dyno/ · Slew3/ · Cabs2/ · PointyGuitar/ ·
-│                   ChimeyGuitar2/ · CrickBass/ · Wolfbot/ · ChimeyDeluxe/
-├── Brasa/  Tempera/  Prensa/  Malho/
-├── Eq/  Dynamics/  Strips/  Tape/  Space/  Lofi/  OneKnob/  Amps/
-│   └── <Plugin>/
-│       ├── CMakeLists.txt
-│       └── Source/
-│           ├── PluginProcessor.* · PluginEditor.* · ForjaInfoText.h
-│           └── README.md
+│                   ChimeyGuitar2/ · CrickBass/ · Wolfbot/ · ChimeyDeluxe/ ·
+│                   ADClip9/ · FinalClip/
 └── Tests/
     ├── Source/parity_<modelo>.cpp · parity_common.h · scenarios.h · alloc_guard.cpp
     └── third_party/vst2_shim/
 ```
+
+O `Tube2` usado pelo BRASA é a exceção: fica no vendor privado do plugin, em
+`Airwindows/Saturation/Brasa/Source/forja/vendor/airwindows/Tube2/`.
 
 **Regra do `vendor/`:** nada lá dentro é editado. O adaptador que liga o algoritmo ao contrato
 `forja::dsp` mora em `dsp/`, nunca no arquivo original. MIT e BSD entram assim; GPL não entra
@@ -137,6 +145,8 @@ IDs estáveis. Um bloco não muda de ID depois de publicado, mesmo que a impleme
 | `DSP-040` | Baixo de dois captadores | seis biquads, skew e saturação em cascata | Airwindows **CrickBass** (`forja::dsp::Crick`) | MIT · Chris Johnson | parcial: DSP, paridade 26/26, latência 1/3/5; host pendente | CRICK |
 | `DSP-041` | DI de transformador | dois preditores Kalman em série, bandpass e corpo | Airwindows **Wolfbot** (`forja::dsp::Lobo`) | MIT · Chris Johnson | parcial: DSP, paridade 16/16 e UI compacta; host pendente | LOBO |
 | `DSP-042` | DI comprimido | dez bandas fixas, 16 cascatas e seguidores Bèzier | Airwindows **ChimeyDeluxe** (`forja::dsp::Deluxe`) | MIT · Chris Johnson | parcial: DSP, paridade 46/46 e UI; host pendente | DELUXE |
+| `DSP-043` | Limitador adaptativo | clip adaptativo com Boost/Match, ceiling dinâmico e ClipOnly3 | Airwindows **ADClip9** (`forja::dsp::Muralha`) | MIT · Chris Johnson | parcial: DSP, paridade 41/41, latência 1; host pendente | MURALHA |
+| `DSP-044` | Clipe de pico extremo | pré-clipe ±4, slew áureo e ClipOnly2; atua só acima de +4,18 dBFS | Airwindows **FinalClip** (`forja::dsp::Dique`) | MIT · Chris Johnson | parcial: DSP, paridade 17/17, latência 1; host pendente | DIQUE |
 
 **Estados possíveis:** `existe` · `parcial` · `planejado` · `descartado`.
 Nunca escreva `existe` sem ter rodado no host.
@@ -279,7 +289,7 @@ muda no catálogo e todos ganham.
 
 ## 9. Proveniência de DSP de terceiros
 
-Mesma disciplina do [CREDITS.md do Drumforge](./Drumforge/CREDITS.md):
+Mesma disciplina prevista para o Drumforge (`drumforge/`):
 
 | Origem | Licença | Entra em `vendor/`? | Como |
 |---|---|---|---|
@@ -297,37 +307,48 @@ Mesma disciplina do [CREDITS.md do Drumforge](./Drumforge/CREDITS.md):
 como biblioteca estática `forja_ui` (tema, card, knob, medidores, topo, status, painel
 Fundamentos, curva de EQ por FFT e chip REDES oculto enquanto não há link).
 
-A suíte tem **29 plugins** em oito famílias, todos com DSP, paridade, UI e FUNDAMENTOS:
+A base **Airwindows** tem **31 plugins** em nove famílias, todos com DSP, paridade, UI e
+FUNDAMENTOS:
 
 | Família | Plugins |
 | --- | --- |
-| Raiz | BRASA (Tube2), TÊMPERA (ButterComp2), PRENSA (Pressure5), MALHO (Pop2) |
-| `Eq/` | CINZÉL (Parametric + dinâmica Forja), TORNO (Baxandall3), LIMA (SmoothEQ2) |
-| `Dynamics/` | ESCÓRIA (DeBess) |
-| `Strips/` | BIGORNA (CStrip2), CADINHO (X2Buss) |
-| `Tape/` | LAMINADOR (ToTape9), ÓXIDO (IronOxide5) |
-| `Space/` | REPIQUE (TapeDelay2), ECO (Echojam), SALÃO (kRockstar2), FÔLEGO (kStation) |
-| `Lofi/` | GRANALHA (DeRez5) |
-| `OneKnob/` | LIXA (PurestDrive), MEL (Sweeten), CERA (PurestWarm3), CORPO (Mojo), ÍMPETO (Dyno), REBARBA (Slew3) |
-| `Amps/` | GABINETE (Cabs2), PONTA (PointyGuitar), CHIME (ChimeyGuitar2), CRICK (CrickBass), LOBO (Wolfbot), DELUXE (ChimeyDeluxe) |
+| `Airwindows/Saturation/` | BRASA (Tube2) |
+| `Airwindows/Eq/` | CINZÉL (Parametric + dinâmica Forja), TORNO (Baxandall3), LIMA (SmoothEQ2) |
+| `Airwindows/Dynamics/` | TÊMPERA (ButterComp2), PRENSA (Pressure5), MALHO (Pop2), ESCÓRIA (DeBess), MURALHA (ADClip9), DIQUE (FinalClip) |
+| `Airwindows/Strips/` | BIGORNA (CStrip2), CADINHO (X2Buss) |
+| `Airwindows/Tape/` | LAMINADOR (ToTape9), ÓXIDO (IronOxide5) |
+| `Airwindows/Space/` | REPIQUE (TapeDelay2), ECO (Echojam), SALÃO (kRockstar2), FÔLEGO (kStation) |
+| `Airwindows/Lofi/` | GRANALHA (DeRez5) |
+| `Airwindows/OneKnob/` | LIXA (PurestDrive), MEL (Sweeten), CERA (PurestWarm3), CORPO (Mojo), ÍMPETO (Dyno), REBARBA (Slew3) |
+| `Airwindows/Amps/` | GABINETE (Cabs2), PONTA (PointyGuitar), CHIME (ChimeyGuitar2), CRICK (CrickBass), LOBO (Wolfbot), DELUXE (ChimeyDeluxe) |
 
-Os 25 novos adaptadores rodam com paridade amostra a amostra contra o código Airwindows
+Os adaptadores rodam com paridade amostra a amostra contra o código Airwindows
 original e passam pela guarda de alocação. Latências medidas: 0 na maioria; 1 amostra em
-PRENSA, MALHO, CADINHO e LAMINADOR; 1/3/5 em CRICK conforme a taxa; delays e reverbs não
-usam PDC (o atraso interno é musical). CINZÉL é o único DSP híbrido: em `dyn = 0` é
-bit-exato ao Parametric e acima disso é comportamento Forja documentado como desvio.
-Delays e reverbs internos são testados com factory por caso; a tabela de paridade mede a
-latência por impulso em vez de presumi-la.
+PRENSA, MALHO, CADINHO, LAMINADOR, MURALHA e DIQUE; 1/3/5 em CRICK conforme a taxa; delays
+e reverbs não usam PDC (o atraso interno é musical). CINZÉL é o único DSP híbrido: em
+`dyn = 0` é bit-exato ao Parametric e acima disso é comportamento Forja documentado como
+desvio. Delays e reverbs internos são testados com factory por caso; a tabela de paridade
+mede a latência por impulso em vez de presumi-la.
+
+**Fora do catálogo DSP-0xx:** o **Drumforge** (`drumforge/`) é a primeira base de DSP
+original Forja — sampler de bateria com kits, mixer, groove browser e multi-out. Não é
+adaptação da Airwindows, então não tem paridade com vendor: os testes dele serão
+funcionais (sampler, mapeamento MIDI, estado, multi-out, round-robin/velocity) e de
+RT-safety. Ele está em concepção; o protótipo de UI simplificou o conceito para três abas
+(Kits, Mixer e Loops MIDI), com TRIM/PAN, HPF/LO/MID/HI, THR/RATIO, M/S, fader/medidor,
+limiter no master e uma grade de 16 passos com BPM/sync/drag. Sends, racks de FX, tela de
+Settings e editor de mapas ficam para depois. Os adaptadores existentes entram como blocos
+de canal, sem mudar o catálogo.
 
 **Pendências, em ordem:**
 
-- [ ] Rodar os 29 plugins no host: bypass da DAW, automação, mono, SR 96 kHz.
+- [ ] Rodar os 31 plugins no host: bypass da DAW, automação, mono, SR 96 kHz.
 - [ ] Preencher `forja::ui::kSocialUrl` quando o link agregador das redes existir (o chip
       REDES aparece sozinho).
 - [ ] Implementar `MIX-003` (MARCA) e `MIX-004` (solo) no `ValueTreeState`.
 - [ ] Sincronizar REPIQUE/ECO ao BPM do host (`DSP-011`).
 - [ ] Validar o catálogo no PianoForge: se um bloco não serve lá, o contrato está errado.
-- [ ] Backlog fora do build: consoles (ConsoleX3), filtros XYZ, VerbSevens, ADClip9 e a
+- [ ] Backlog fora do build: consoles (ConsoleX3), filtros XYZ, VerbSevens e a
       família Bass completa.
 
 ---

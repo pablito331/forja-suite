@@ -1,25 +1,32 @@
 # Forja — suíte de plugins
 
-29 plugins VST3 + Standalone para JUCE 9, com DSP adaptado do **Airwindows** (MIT, Chris
-Johnson), interface nativa do padrão Forja (sem WebView), painel FUNDAMENTOS em português
-e validação de paridade amostra a amostra contra o código original.
+31 plugins VST3 em JUCE 9, com DSP adaptado do **Airwindows** (MIT, Chris Johnson),
+interface nativa do padrão Forja (sem WebView), painel FUNDAMENTOS em português e
+validação de paridade amostra a amostra contra o código original. O build local também
+gera Standalone opcionais para desenvolvimento.
 
 A suíte cobre EQ, dinâmica, channel strips, fita, espaço, lo-fi, uma linha de one-knobs de
 mixagem e amps/gabinetes para guitarra, baixo e DI. Cada plugin tem README próprio com
 parâmetros, DSP, latência medida, desvios do adaptador e créditos. Os editores são
 redimensionáveis com aspecto fixo (70% a 200% do tamanho de projeto).
 
+O repositório é organizado por **bases de DSP**: `Airwindows/` reúne as 31 adaptações
+MIT; `drumforge/` é a nova empreitada de DSP original (sampler de bateria), ainda em
+concepção e fora dos pacotes desta suíte.
+
 ![CINZÉL](docs/images/cinzel.png)
 
 ## Download
 
-Cada release publica três pacotes com VST3 + Standalone e um guia de instalação:
+Cada release publica três pacotes com os VST3 e um guia de instalação:
 
 | Plataforma | Arquivo | Conteúdo |
 | --- | --- | --- |
-| Windows | `Forja-<versão>-windows-x64.zip` | plugins x64, `.exe` standalone e `LEIA-ME.txt` |
-| macOS | `Forja-<versão>-macos-universal.zip` | VST3 e `.app` universais (Apple Silicon + Intel) |
-| Linux | `Forja-<versão>-linux-x64.zip` | VST3 e executáveis standalone x64 |
+| Windows | `Forja-<versão>-windows-x64.zip` | VST3 x64 e `LEIA-ME.txt` |
+| macOS | `Forja-<versão>-macos-universal.zip` | VST3 universais (Apple Silicon + Intel) |
+| Linux | `Forja-<versão>-linux-x64.zip` | VST3 x64 e `LEIA-ME.txt` |
+
+Os pacotes não incluem Standalone; eles continuam disponíveis no build local.
 
 Os binários também ficam em `C:\Users\pablo\Documents\prototipos` neste ambiente de
 desenvolvimento.
@@ -28,15 +35,15 @@ desenvolvimento.
 
 | Item | Estado |
 | --- | --- |
-| Targets Release (`<Nome>_VST3`, `<Nome>_Standalone`) | 29 plugins · 58 binários |
+| Targets locais (`<Nome>_VST3`, `<Nome>_Standalone`) | 31 plugins · 62 binários |
 | Paridade com os originais Airwindows | Verde em todos os executáveis |
-| Guarda de alocação em `process()` | PASS (28 adaptadores; BRASA usa DSP próprio) |
+| Guarda de alocação em `process()` | PASS (30 adaptadores; BRASA usa DSP próprio) |
 | Latência por impulso | Medida em todos os modelos |
 | Interface e FUNDAMENTOS | Conferidos por captura DPI-aware |
-| UIs redimensionáveis | 29 editores com aspecto fixo, conferidos em 100% e 150% |
+| UIs redimensionáveis | 31 editores com aspecto fixo, conferidos em 100% e 150% |
 | Builds Windows/macOS/Linux | GitHub Actions em tags `v*` |
-| Artefatos em `Documents/prototipos` | 29 `.vst3` + 29 Standalone |
-| Capturas da interface | 30 imagens em `docs/images/` |
+| Artefatos em `Documents/prototipos` | 31 `.vst3` + 31 Standalone (local) |
+| Capturas da interface | 32 imagens em `docs/images/` |
 | Gerador de plugins | `new_plugin.ps1` gera plugin que compila de imediato |
 | Validação em host (DAW) | Pendente · não há DAW no ambiente |
 
@@ -44,24 +51,26 @@ desenvolvimento.
 
 | Família | Pasta | Plugins | Papel |
 | --- | --- | --- | --- |
-| Raiz | `Brasa/` … `Malho/` | BRASA, TÊMPERA, PRENSA, MALHO | válvula, comp de cola, vari-mu e impacto |
-| EQ | `Eq/` | CINZÉL, TORNO, LIMA | paramétrico dinâmico, tom e bus/master |
-| Dinâmica | `Dynamics/` | ESCÓRIA | de-esser de agudos |
-| Channel Strip | `Strips/` | BIGORNA, CADINHO | strip completo e strip de bus |
-| Fita | `Tape/` | LAMINADOR, ÓXIDO | 2 pistas/master e cassete/lo-fi |
-| Espaço | `Space/` | REPIQUE, ECO, SALÃO, FÔLEGO | delays de fita/multi-espaço e reverbs |
-| Lo-Fi | `Lofi/` | GRANALHA | bitcrusher com undersampling |
-| Mix | `OneKnob/` | LIXA, MEL, CERA, CORPO, ÍMPETO, REBARBA | um controle, mixagem rápida |
-| Amp | `Amps/` | GABINETE, PONTA, CHIME, CRICK, LOBO, DELUXE | amps, baixo e DI |
+| Saturação | `Airwindows/Saturation/` | BRASA | válvula e calor de tubo |
+| EQ | `Airwindows/Eq/` | CINZÉL, TORNO, LIMA | paramétrico dinâmico, tom e bus/master |
+| Dinâmica | `Airwindows/Dynamics/` | TÊMPERA, PRENSA, MALHO, ESCÓRIA, MURALHA, DIQUE | compressores, vari-mu, impacto, de-esser, limitador e clipe de pico |
+| Channel Strip | `Airwindows/Strips/` | BIGORNA, CADINHO | strip completo e strip de bus |
+| Fita | `Airwindows/Tape/` | LAMINADOR, ÓXIDO | 2 pistas/master e cassete/lo-fi |
+| Espaço | `Airwindows/Space/` | REPIQUE, ECO, SALÃO, FÔLEGO | delays de fita/multi-espaço e reverbs |
+| Lo-Fi | `Airwindows/Lofi/` | GRANALHA | bitcrusher com undersampling |
+| Mix | `Airwindows/OneKnob/` | LIXA, MEL, CERA, CORPO, ÍMPETO, REBARBA | um controle, mixagem rápida |
+| Amp | `Airwindows/Amps/` | GABINETE, PONTA, CHIME, CRICK, LOBO, DELUXE | amps, baixo e DI |
 
 ## Plugins
 
 | Plugin | Família | Modelo Airwindows | Controles | Latência |
 | --- | --- | --- | --- | --- |
-| BRASA | Raiz | Tube2 | 3 | 0 |
-| TÊMPERA | Raiz | ButterComp2 | 3 | 0 |
-| PRENSA | Raiz | Pressure5 | 6 | 1 |
-| MALHO | Raiz | Pop2 | 5 | 1 |
+| BRASA | Saturação | Tube2 | 3 | 0 |
+| TÊMPERA | Dinâmica | ButterComp2 | 3 | 0 |
+| PRENSA | Dinâmica | Pressure5 | 6 | 1 |
+| MALHO | Dinâmica | Pop2 | 5 | 1 |
+| MURALHA | Dinâmica | ADClip9 | 5 | 1 |
+| DIQUE | Dinâmica | FinalClip | 0 | 1 |
 | CINZÉL | EQ | Parametric + dinâmica Forja | 11 | 0 |
 | TORNO | EQ | Baxandall3 | 3 | 0 |
 | LIMA | EQ | SmoothEQ2 | 8 | 0 |
@@ -92,10 +101,12 @@ Contagens não incluem o bypass Forja, presente em todos e exposto por
 `getBypassParameter()`. Em REPIQUE, ECO, SALÃO e FÔLEGO o atraso interno é musical e não
 compensação: o PDC é 0. A latência do CRICK varia com a taxa (1 em 44,1/48 kHz, 3 em
 88,2/96 kHz, 5 em 192 kHz). Todas as demais são medidas por impulso no harness.
+O DIQUE (FinalClip) é um clipe de pico extremo: só atua acima de +4,18 dBFS e é
+transparente em material que já está em 0 dBFS. Para limitar em 0 dBFS use o MURALHA.
 
 ## Interface
 
-- Janela completa de 1000 × 540 px ou compacta de 560 × 260 px (LOBO).
+- Janela completa de 1000 × 540 px ou compacta de 560 × 260 px (LOBO e DIQUE).
 - Redimensionável com aspecto fixo: o layout é desenhado no canvas de projeto e escalado
   de 70% a 200% por `ForjaCanvas.h`, sem reflow nem perda de nitidez.
 - Topo com produto, família, chip da fonte Airwindows, chip MIT, chip REDES e FUNDAMENTOS.
@@ -121,7 +132,7 @@ compensação: o PDC é 0. A latência do CRICK varia com a taxa (1 em 44,1/48 k
 | One-knob compacto (PurestDrive) | Painel FUNDAMENTOS nativo |
 
 <details>
-<summary><strong>Galeria completa (29 plugins)</strong></summary>
+<summary><strong>Galeria completa (31 plugins)</strong></summary>
 
 | | | |
 | --- | --- | --- |
@@ -134,7 +145,8 @@ compensação: o PDC é 0. A latência do CRICK varia com a taxa (1 em 44,1/48 k
 | ![MEL](docs/images/mel.png) | ![CERA](docs/images/cera.png) | ![CORPO](docs/images/corpo.png) |
 | ![ÍMPETO](docs/images/impeto.png) | ![REBARBA](docs/images/rebarba.png) | ![GABINETE](docs/images/gabinete.png) |
 | ![PONTA](docs/images/ponta.png) | ![CHIME](docs/images/chime.png) | ![CRICK](docs/images/crick.png) |
-| ![LOBO](docs/images/lobo.png) | ![DELUXE](docs/images/deluxe.png) | |
+| ![LOBO](docs/images/lobo.png) | ![DELUXE](docs/images/deluxe.png) | ![MURALHA](docs/images/muralha.png) |
+| ![DIQUE](docs/images/dique.png) | | |
 
 </details>
 
@@ -175,7 +187,7 @@ Cada plugin também compila sozinho, por exemplo:
 cmake --build build --config Release --target Cinzel_VST3 Cinzel_Standalone
 ```
 
-Os alvos ficam em `build/<Família>/<Plugin>/<Plugin>_artefacts/Release/`. Os testes ficam
+Os alvos ficam em `build/Airwindows/<Família>/<Plugin>/<Plugin>_artefacts/Release/`. Os testes ficam
 em `build/Tests/Release/` (`forja_parity_<modelo>.exe` e `forja_alloc_guard.exe`).
 
 LTO é o padrão local (`-DFORJA_LTO=OFF` desliga). A CI usa `FORJA_LTO=OFF` para os três
@@ -191,16 +203,16 @@ SOs caberem no tempo do runner; o código e os testes são os mesmos.
 - CINZÉL: paridade bit-exata com `dyn = 0` e teste comportamental em `dyn = 0,5`.
 - ECO: as 17 posições de espaço são testadas uma a uma.
 - Delays e reverbs usam factory por caso para comparar estados equivalentes.
-- `ctest` executa os 26 executáveis de paridade (TÊMPERA/PRENSA/MALHO juntos + 25 modelos
-  novos) e o `forja_alloc_guard` nos três SOs.
-- Última execução local (Windows, Release): build dos 29 targets e `ctest` com 27/27
-  testes verdes; 29 `.vst3` e 29 Standalone regravados após as mudanças de UI.
+- `ctest` executa os 28 executáveis de paridade (TÊMPERA/PRENSA/MALHO juntos + 27 modelos
+  individuais) e o `forja_alloc_guard` nos três SOs.
+- Última execução local (Windows, Release): `ctest` com 29/29 testes verdes; MURALHA e
+  DIQUE compilados como VST3 e Standalone e conferidos por captura DPI-aware.
 
 ## Instalação
 
-Cada release do GitHub traz um pacote por plataforma com VST3, Standalone e `LEIA-ME.txt`
-com o caminho de instalação. Neste ambiente, os binários prontos e os instaladores por
-família ficam em `C:\Users\pablo\Documents\prototipos`:
+Cada release do GitHub traz um pacote por plataforma com os VST3 e `LEIA-ME.txt` com o
+caminho de instalação. Neste ambiente, os binários prontos e os instaladores por família
+ficam em `C:\Users\pablo\Documents\prototipos`:
 
 - `INSTALAR-FORJA.txt` — guia mestre (copiar as pastas `.vst3` inteiras para
   `C:\Program Files\Common Files\VST3\`).
@@ -210,7 +222,9 @@ família ficam em `C:\Users\pablo\Documents\prototipos`:
 - `INSTALAR-BRASA.txt`, `INSTALAR-TEMPERA.txt`, `INSTALAR-PRENSA.txt`,
   `INSTALAR-MALHO.txt` — os quatro individuais originais.
 
-Cada Standalone (`<Nome>-standalone.exe`) abre o plugin sem instalar.
+Para gerar Standalone localmente, configure sem `-DFORJA_STANDALONE=OFF`; cada
+`<Nome>_Standalone` abre o plugin sem instalar. A CI desliga esses targets para não
+publicá-los.
 
 ## Repositório e novos plugins
 
@@ -229,7 +243,7 @@ Cada Standalone (`<Nome>-standalone.exe`) abre o plugin sem instalar.
 ```bash
 git init -b main
 git add .
-git commit -m "Forja: suíte de 29 plugins com DSP Airwindows"
+git commit -m "Forja: suíte de 31 plugins com DSP Airwindows"
 git remote add origin git@github.com:<usuario>/forja-suite.git
 git push -u origin main
 ```

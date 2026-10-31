@@ -1,4 +1,5 @@
 #include "forja/dsp/ForjaMalho.h"
+#include "forja/dsp/ForjaMuralha.h"
 #include "forja/dsp/ForjaPrensa.h"
 #include "forja/dsp/ForjaTempera.h"
 
@@ -168,6 +169,18 @@ int main()
         {
             forja::dsp::MalhoDSP::Parameters p;
             p.compress = 1.0f;
+            d.setParameters (p);
+        }) && ok;
+    }
+
+    {
+        forja::dsp::MuralhaDSP dsp;
+        ok = checkLatency ("Muralha", impulseLatency (dsp, 44100.0), 1) && ok;
+        ok = checkHighRate ("Muralha", dsp) && ok;
+        ok = checkMetersAndSilence ("Muralha", dsp, [] (forja::dsp::MuralhaDSP& d)
+        {
+            forja::dsp::MuralhaDSP::Parameters p;
+            p.boost = 1.0f;
             d.setParameters (p);
         }) && ok;
     }

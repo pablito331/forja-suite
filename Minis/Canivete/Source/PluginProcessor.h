@@ -54,6 +54,11 @@ public:
     // re-varredura (a lista do choice e congelada na abertura do plugin).
     void selectBankByName (const juce::String& name);
 
+    // ---- instrumento (preset do canal melodic 0) ----
+    // Escolhido pelo INDICE na lista do bank. Manda para o engine (atomic) e o
+    // audio aplica no proximo bloco. Program change do host ainda vence.
+    void setPresetIndex (int index);
+
     const juce::Array<juce::File>& getBankFiles() const { return bankFiles; }
 
     juce::String getBankName() const { return engine.getBankName(); }
@@ -61,6 +66,8 @@ public:
     bool isLoadingBank() const { return engine.isLoading(); }
     bool hasBank() const { return engine.hasBank(); }
     int getNumPresets() const { return engine.getNumPresets(); }
+    juce::String getPresetName (int index) const { return engine.getPresetName (index); }
+    int getSelectedPresetIndex() const { return engine.getSelectedPresetIndex(); }
     juce::String getSelectedPresetName() const { return engine.getSelectedPresetName(); }
 
     // Sobe a cada carga concluida (sucesso ou falha); a UI compara com o ultimo
@@ -85,6 +92,7 @@ private:
 
     juce::Array<juce::File> bankFiles;   // so thread de mensagens toca aqui
     juce::String lastLoadedPath;         // caminho do bank em uso (para o estado)
+    juce::String pendingPresetName;      // instrumento a restaurar apos a carga do bank
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CaniveteAudioProcessor)
 };

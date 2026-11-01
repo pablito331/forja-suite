@@ -80,6 +80,15 @@ public:
     int getSelectedPresetIndex() const;
     juce::String getSelectedPresetName() const;
 
+    // Instrumento do canal melodic 0 pedido pela UI/estado, pelo INDICE na
+    // lista do bank (0..getNumPresets()-1). Guardado em atomic e aplicado pelo
+    // processBlock no proximo bloco via tsf_channel_set_presetindex: nada de
+    // tocar no handle do tsf fora da thread de audio, e nenhuma alocaao.
+    void requestPreset (int presetIndex) noexcept
+    {
+        desiredPreset.store (presetIndex, std::memory_order_relaxed);
+    }
+
     juce::String getBankName() const;
     juce::String getStatus() const { return status; }
 
@@ -169,6 +178,8 @@ private:
     double sampleRate = 48000.0;
     std::atomic<float> volume { 0.5f };   // 0,5 = 0 dB na curva do rack
     std::atomic<int> selectedPreset { -1 };  // preset do canal 0, espelhado pelo audio
+    std::atomic<int> desiredPreset { 0 };    // indice de preset do canal 0 pedido pela UI
+    int appliedPreset = -1;                  // audio-only: ultimo indice ja aplicado no canal 0
     std::atomic<bool> cancelRequested { false };
     std::atomic<bool> loading { false };
     juce::String status { "Nenhum bank carregado" };

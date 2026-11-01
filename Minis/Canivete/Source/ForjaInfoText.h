@@ -24,7 +24,8 @@ inline ui::ForjaInfo makeForjaInfo()
                "como instrumento multi-timbral: cada canal MIDI carrega um preset "
                "pr\u00f3prio, o programa 10 (canal 9) \u00e9 tratado como bateria do "
                "GM, e program change, bank select MSB/LSB, CC e pitch bend seguem a "
-               "norma. O knob BANK escolhe o arquivo; o VOLUME manda no trim do "
+               "norma. O knob BANK escolhe o arquivo, o seletor INSTRUMENTO escolhe "
+               "o preset do canal mel\u00f3dico 1 e o VOLUME manda no trim do "
                "master."),
             u ("\u00c9 o caminho r\u00e1pido para tocar curadorias em SoundFont "
                "(arquivos de Polyphone, sf2edit ou bancos GM da vida) sem DAW de "
@@ -56,15 +57,22 @@ inline ui::ForjaInfo makeForjaInfo()
         {
             u ("Deposite os .sf2/.sf3 em Documentos/Forja/Canivete, toque ATUALIZAR "
                "e escolha o bank. A carga roda em segundo plano; o status mostra o "
-               "resultado. Toque MIDI no canal 1 para o preset principal \u2014 "
-               "program change troca o instrumento e o nome do preset aparece no "
-               "cart\u00e3o. BYPASS silencia com rampa de 10 ms sem parar as vozes.")
+               "resultado. No banco carregado, o seletor INSTRUMENTO lista os presets "
+               "e escolhe o do canal 1 \u2014 um program change da DAW assume o canal "
+               "e o seletor acompanha. BYPASS silencia com rampa de 10 ms sem parar "
+               "as vozes.")
         }
     });
 
     info.controls.push_back ({ "Bank", u ("lista da biblioteca \u00b7 padr\u00e3o none"),
                                u ("Arquivo .sf2/.sf3 tocado, lido de "
                                   "Documents/Forja/Canivete.") });
+    info.controls.push_back ({ u ("Instrumento"),
+                               u ("preset do banco \u00b7 padr\u00e3o o primeiro"),
+                               u ("Escolhe o preset tocado no canal mel\u00f3dico 1. "
+                                  "Um program change da DAW assume o canal e o "
+                                  "seletor passa a mostr\u00e1-lo. Os demais canais "
+                                  "seguem o MIDI recebido.") });
     info.controls.push_back ({ u ("Volume"), u ("-24 a +24 dB \u00b7 padr\u00e3o 0 dB"),
                                u ("Trim do master sobre a sa\u00edda do sintetizador.") });
     info.controls.push_back ({ "Bypass", u ("ligado/desligado \u00b7 padr\u00e3o desligado"),

@@ -405,18 +405,29 @@ SlotComponent::SlotComponent (juce::AudioProcessorValueTreeState& state, int slo
 
     categorySelector.onChange = [this]
     {
+        const auto chosen = static_cast<forjarack::ModuleCategory> (
+            juce::jmax (1, categorySelector.getSelectedId ()) - 1);
+
         populateModuleChoices();
 
-        // Se a categoria filtrada nao contem o modulo atual, troca para o
-        // primeiro da lista (comportamento esperado de um filtro).
-        const auto& current = forjarack::ModuleCatalog::specByIndex (currentTypeIndex());
+        // O modulo ja pertence a categoria escolhida: o filtro so redesenha a
+        // lista de modulos, nao se toca na gaveta.
+        if (forjarack::ModuleCatalog::specByIndex (currentTypeIndex ()).category == chosen)
+            return;
 
-        if (current.category != static_cast<forjarack::ModuleCategory> (
-                categorySelector.getSelectedId() - 1)
-            && selector.getNumItems() > 0)
+        // Vai para o primeiro modulo REAL da categoria escolhida. O VAZIO
+        // (indice 0, familia cor) e apenas a casa do slot cego no filtro: se ele
+        // for a escolha automatica, o syncCategoryChoice do refresh realinha o
+        // filtro para "cor" e a troca de categoria parece nao acontecer (a caixa
+        // volta sozinha). Por isso se salta o indice 0 e se procura pela familia.
+        for (int i = 1; i < forjarack::ModuleCatalog::count (); ++i)
         {
-            selectCatalogIndex (selector.getItemId (0) - 1);
-            refresh();
+            if (forjarack::ModuleCatalog::specByIndex (i).category == chosen)
+            {
+                selectCatalogIndex (i);
+                refresh ();
+                return;
+            }
         }
     };
     addAndMakeVisible (categorySelector);

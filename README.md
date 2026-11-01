@@ -67,7 +67,7 @@ desenvolvimento.
 | FORJARACK (rack) | Oito gavetas em série, bypass/solo, master e barra de redução de ganho |
 | MINIDRUM (mini) | Leitor de kits do Drumforge: puxar kit, foto e volume |
 | MINISAT (mini) | Saturador de um knob: drive sobre o adaptador do BRASA, gaveta no rack |
-| CANIVETE (mini) | Player SoundFont SF2/SF3 multi-timbral: pasta de banks, knob de banco e volume |
+| CANIVETE (mini) | Player SoundFont SF2/SF3 multi-timbral: pasta de banks, seletor de instrumento e volume |
 | Validação em host (DAW) | Pendente · não há DAW no ambiente |
 
 ## Famílias
@@ -126,7 +126,7 @@ desenvolvimento.
 | FORJARACK | Rack | 22 adaptadores MIT como módulos | gavetas + master | 0 (PDC) |
 | MINIDRUM | Minis | engine DRUMFORGE (bloco próprio) | volume + kit | 0 |
 | MINISAT | Minis | BRASA (Tube2) como bloco | 1 (drive) | 0 |
-| CANIVETE | Minis | TinySoundFont (MIT, player SF2/SF3) | volume + banco | 0 |
+| CANIVETE | Minis | TinySoundFont (MIT, player SF2/SF3) | volume + banco + instrumento | 0 |
 
 Contagens não incluem o bypass Forja, presente em todos e exposto por
 `getBypassParameter()`. Em REPIQUE, ECO, SALÃO e FÔLEGO o atraso interno é musical e não
@@ -208,8 +208,11 @@ wrapper em tempo real (`SoundFontEngine`): carga assíncrona do bank, adoção p
 no áudio, reap do bank substituído, medidor por bloco e a camada de bypass de 10 ms. Sem teste de
 paridade (o timbre vem do original); o teste próprio (`forja_canivete`) gera um SF2 mínimo válido
 no harness e cobre silêncio sem bank, carga/adoção, trim de volume, latência 0, velocidade,
-bypass, medidor, troca com reap, bank inválido, CC/program change multi-timbral, ausência de
-alocação e a gaveta `canivete` no FORJARACK. O SF3 (amostras Ogg) acende automaticamente quando
+bypass, medidor, troca com reap, bank inválido, CC/program change multi-timbral, escolha de
+instrumento pelo canal 0, ausência de
+alocação e a gaveta `canivete` no FORJARACK. Como camada Forja, o banco de instrumentos do
+bank aparece no seletor INSTRUMENTO (canal melódico 0); program change do host continua
+mandando no canal. O SF3 (amostras Ogg) acende automaticamente quando
 `stb_vorbis.c` está na pasta de vendor (hoje presente: o build lê `.sf3` de fábrica).
 
 ## Interface

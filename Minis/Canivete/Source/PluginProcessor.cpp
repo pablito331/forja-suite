@@ -136,6 +136,11 @@ void CaniveteAudioProcessor::loadBankFile (const juce::File& file)
     });
 }
 
+void CaniveteAudioProcessor::setPresetIndex (int index)
+{
+    engine.requestPreset (index);   // atomic; o audio aplica no proximo bloco
+}
+
 void CaniveteAudioProcessor::loadBankByIndex (int index)
 {
     if (! juce::isPositiveAndBelow (index, bankFiles.size()))
@@ -186,6 +191,12 @@ void CaniveteAudioProcessor::parameterChanged (const juce::String& parameterID, 
     if (index < 0)
         return;
 
+    // Troca de bank feito pelo usuario: o instrumento volta ao primeiro do novo
+    // banco (a lista de presets e outra) e se descarta qualquer restauracao de
+    // estado pendente, para nao reescrever um preset de um banco anterior.
+    pendingPresetName.clear();
+    engine.requestPreset (0);
+
     loadBankByIndex (index);
 }
 
@@ -193,6 +204,20 @@ void CaniveteAudioProcessor::timerCallback()
 {
     engine.pollLoadResult();
     engine.reapRetiredBanks();
+
+    // Instrumento pedido pelo estado: resolvido pelo nome quando o bank ja esta
+    // tocavel (a carga e assincrona) e entregue ao audio pelo indice na lista.
+    if (pendingPresetName.isNotEmpty() && engine.hasBank() && ! engine.isLoading())
+    {
+        for (int i = 0; i < engine.getNumPresets(); ++i)
+            if (engine.getPresetName (i) == pendingPresetName)
+            {
+                engine.requestPreset (i);
+                break;
+            }
+
+        pendingPresetName.clear();
+    }
 }
 
 void CaniveteAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
@@ -204,6 +229,13 @@ void CaniveteAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
         state.setProperty ("bankPath", lastLoadedPath, nullptr);
         state.setProperty ("bankName", engine.getBankName(), nullptr);
     }
+
+    // Instrumento em uso no canal melodic 0: guarda pelo NOME (o indice nao e
+    // estavel entre bancos diferentes).
+    const auto presetName = engine.getSelectedPresetName();
+
+    if (presetName.isNotEmpty())
+        state.setProperty ("presetName", presetName, nullptr);
 
     if (auto xml = state.createXml())
         copyXmlToBinary (*xml, destData);
@@ -222,6 +254,9 @@ void CaniveteAudioProcessor::setStateInformation (const void* data, int sizeInBy
     }
 
     refreshLibrary();
+
+    // Instrumento a restaurar: resolvido pelo timer quando o bank ficar pronto.
+    pendingPresetName = apvts.state.getProperty ("presetName").toString();
 
     // Reabre de onde estava: primeiro pelo caminho gravado; se o arquivo saiu
     // da pasta, tenta pelo nome na biblioteca atual.

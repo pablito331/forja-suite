@@ -25,6 +25,7 @@ private:
     void refreshBankViews();
     void refreshBadge (bool clipped, bool bypassed, bool hasBank);
     void rebuildBankChoice();
+    void rebuildPresetChoice();
 
     CaniveteAudioProcessor& processor;
 
@@ -32,9 +33,9 @@ private:
     forja::ui::ForjaCard outCard;
 
     forja::ui::ForjaChoice bankChoice;
+    forja::ui::ForjaChoice instrumentChoice;
     juce::TextButton refreshButton;
     juce::Label statusLabel;
-    juce::Label presetLabel;
 
     forja::ui::ForjaKnob volumeKnob;
     forja::ui::ForjaMeter outputMeter;
@@ -45,6 +46,7 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> bypassAttachment;
 
     int lastBankRevision = -1;
+    int lastPresetCount = -1;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CaniveteAudioProcessorEditor)
 };

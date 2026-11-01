@@ -37,6 +37,7 @@ CaniveteAudioProcessorEditor::CaniveteAudioProcessorEditor (CaniveteAudioProcess
       bankCard (1, u ("Bank"), true),
       outCard (2, u ("Sa\u00edda"), true),
       bankChoice (u ("BANK"), {}),
+      instrumentChoice (u ("Instrumento"), {}),
       refreshButton (u ("ATUALIZAR")),
       volumeKnob ("VOLUME",
                   u ("trim do master"),
@@ -47,9 +48,9 @@ CaniveteAudioProcessorEditor::CaniveteAudioProcessorEditor (CaniveteAudioProcess
 {
     addAndMakeVisible (bankCard);
     bankCard.addAndMakeVisible (bankChoice);
+    bankCard.addAndMakeVisible (instrumentChoice);
     bankCard.addAndMakeVisible (refreshButton);
     bankCard.addAndMakeVisible (statusLabel);
-    bankCard.addAndMakeVisible (presetLabel);
 
     addAndMakeVisible (outCard);
     outCard.addAndMakeVisible (volumeKnob);
@@ -57,6 +58,17 @@ CaniveteAudioProcessorEditor::CaniveteAudioProcessorEditor (CaniveteAudioProcess
     outCard.addAndMakeVisible (bypassButton);
 
     rebuildBankChoice();
+    rebuildPresetChoice();
+
+    // Instrumento do canal melodic 0 pela lista do bank. O choice nao e um
+    // parametro APVTS (a lista muda com cada bank e AudioParameterChoice congela
+    // as choices na construcao): dirige direto o engine, como o filtro de
+    // categoria do ForjaRack. Program change do host ainda assume o canal.
+    instrumentChoice.getComboBox().onChange = [this]
+    {
+        if (const int id = instrumentChoice.getComboBox().getSelectedId(); id > 0)
+            processor.setPresetIndex (id - 1);
+    };
 
     refreshButton.setTooltip (u ("Re-varrer Documents/Forja/Canivete e atualizar a "
                                  "lista de banks sem reabrir o plugin"));
@@ -71,11 +83,6 @@ CaniveteAudioProcessorEditor::CaniveteAudioProcessorEditor (CaniveteAudioProcess
     statusLabel.setFont (forja::ui::uiFont (8.5f));
     statusLabel.setColour (juce::Label::textColourId, juce::Colour (0xff8a97a5));
     statusLabel.setInterceptsMouseClicks (false, false);
-
-    presetLabel.setJustificationType (juce::Justification::centredLeft);
-    presetLabel.setFont (forja::ui::uiFont (8.5f, juce::Font::bold));
-    presetLabel.setColour (juce::Label::textColourId, juce::Colour (0xffc8d2dd));
-    presetLabel.setInterceptsMouseClicks (false, false);
 
     volumeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
         processor.apvts, "volume", volumeKnob.getSlider());
@@ -134,6 +141,35 @@ void CaniveteAudioProcessorEditor::rebuildBankChoice()
         processor.apvts, "bank", combo);
 }
 
+void CaniveteAudioProcessorEditor::rebuildPresetChoice()
+{
+    // Lista o preset do bank atual. O combo so recebe itens com
+    // dontSendNotification, entao o onChange (instalado no construtor) nao
+    // dispara durante a reconstrucao.
+    auto& combo = instrumentChoice.getComboBox();
+    combo.clear (juce::dontSendNotification);
+
+    const int count = processor.getNumPresets();
+
+    for (int index = 0; index < count; ++index)
+    {
+        auto name = processor.getPresetName (index);
+        if (name.isEmpty())
+            name = "Preset " + juce::String (index + 1);
+        combo.addItem (name, index + 1);
+    }
+
+    const int selected = processor.getSelectedPresetIndex();
+
+    if (selected >= 0 && selected < count)
+        combo.setSelectedId (selected + 1, juce::dontSendNotification);
+    else if (count > 0)
+        combo.setSelectedId (1, juce::dontSendNotification);
+
+    instrumentChoice.setVisible (count > 0);
+    lastPresetCount = count;
+}
+
 void CaniveteAudioProcessorEditor::layoutContent (juce::Rectangle<int> content)
 {
     const auto banks = content.withWidth (content.getWidth() * 54 / 100);
@@ -146,12 +182,12 @@ void CaniveteAudioProcessorEditor::layoutContent (juce::Rectangle<int> content)
 
     bankChoice.setBounds (bankArea.getX() + 2, bankArea.getY() - 2,
                           bankArea.getWidth() - 4, 32);
-    refreshButton.setBounds (bankArea.getX() + 2, bankChoice.getBottom() + 4,
-                             bankArea.getWidth() * 2 / 5, 24);
-    statusLabel.setBounds (refreshButton.getRight() + 6, bankChoice.getBottom() + 4,
-                           bankArea.getRight() - refreshButton.getRight() - 8, 24);
-    presetLabel.setBounds (bankArea.getX() + 2, statusLabel.getBottom() + 2,
-                           bankArea.getWidth() - 4, 18);
+    refreshButton.setBounds (bankArea.getX() + 2, bankChoice.getBottom() + 3,
+                             bankArea.getWidth() * 2 / 5, 22);
+    statusLabel.setBounds (refreshButton.getRight() + 6, bankChoice.getBottom() + 3,
+                           bankArea.getRight() - refreshButton.getRight() - 8, 22);
+    instrumentChoice.setBounds (bankArea.getX() + 2, statusLabel.getBottom() + 3,
+                                bankArea.getWidth() - 4, 30);
 
     const auto outArea = outCard.getContentBounds();
 
@@ -164,10 +200,6 @@ void CaniveteAudioProcessorEditor::layoutContent (juce::Rectangle<int> content)
 void CaniveteAudioProcessorEditor::refreshBankViews()
 {
     statusLabel.setText (processor.getBankStatus(), juce::dontSendNotification);
-
-    const auto preset = processor.getSelectedPresetName();
-    presetLabel.setText (preset.isNotEmpty() ? "PRESET: " + preset : juce::String(),
-                         juce::dontSendNotification);
 }
 
 void CaniveteAudioProcessorEditor::updateTelemetry()
@@ -183,6 +215,7 @@ void CaniveteAudioProcessorEditor::updateTelemetry()
     {
         lastBankRevision = revision;
         refreshBankViews();
+        rebuildPresetChoice();
     }
     else if (processor.isLoadingBank())
     {
@@ -190,11 +223,17 @@ void CaniveteAudioProcessorEditor::updateTelemetry()
     }
     else if (processor.hasBank())
     {
-        // Preset muda com program change; atualiza sem esperar carga nova.
-        const auto preset = processor.getSelectedPresetName();
+        // Bank novo sem subida de revisao (lista mudou por fora) ou program
+        // change do host trocando o preset do canal 0: realinha o choice.
+        if (processor.getNumPresets() != lastPresetCount)
+            rebuildPresetChoice();
 
-        if (preset.isNotEmpty() && presetLabel.getText() != "PRESET: " + preset)
-            presetLabel.setText ("PRESET: " + preset, juce::dontSendNotification);
+        auto& combo = instrumentChoice.getComboBox();
+        const int selected = processor.getSelectedPresetIndex();
+
+        if (selected >= 0 && selected < processor.getNumPresets()
+            && combo.getSelectedId() != selected + 1)
+            combo.setSelectedId (selected + 1, juce::dontSendNotification);
     }
 
     refreshBadge (meter.clip, processor.isBypassed(), processor.hasBank());
@@ -230,7 +269,8 @@ void CaniveteAudioProcessorEditor::refreshBadge (bool clipped, bool bypassed, bo
     }
     else
     {
-        detail = u ("Tocando \u00b7 16 canais GM; o preset do canal 1 aparece no cart\u00e3o.");
+        detail = u ("Tocando \u00b7 16 canais GM; INSTRUMENTO escolhe o preset do "
+                    "canal 1.");
     }
 
     setBadge (kind, text, detail);

@@ -371,6 +371,7 @@ void SoundFontEngine::process (juce::MidiBuffer& midi,
         }
 
         selectedPreset.store (-1, std::memory_order_relaxed);
+        appliedPreset = -1;   // bank novo: o preset pedido pela UI e reaplicado
     }
 
     // Sai silencio se nao ha bank (mas nao reseta estado nenhum).
@@ -382,6 +383,22 @@ void SoundFontEngine::process (juce::MidiBuffer& midi,
     }
 
     Bank& bank = *currentBank;
+
+    // Instrumento pedido pela UI (canal melodic 0). Aplicado antes da colheita
+    // de MIDI para que um program change do host no MESMO bloco tenha a ultima
+    // palavra. tsf_channel_set_presetindex so escreve o presetIndex do canal:
+    // nenhuma alocaao. appliedPreset marca mesmo um indice invalido para nao
+    // retentar a cada bloco.
+    const int want = desiredPreset.load (std::memory_order_relaxed);
+
+    if (want >= 0 && want != appliedPreset && bank.presetCount > 0)
+    {
+        const int idx = juce::jmin (want, bank.presetCount - 1);
+        appliedPreset = idx;
+
+        if (tsf_channel_set_presetindex (bank.handle, 0, idx) != 0)
+            selectedPreset.store (idx, std::memory_order_relaxed);
+    }
 
     for (const auto event : midi)
     {

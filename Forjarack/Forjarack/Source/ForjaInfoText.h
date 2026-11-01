@@ -88,7 +88,13 @@ inline forja::ui::ForjaInfo makeForjaInfo()
             u ("O bot\u00e3o ARQUIVO abre um kit/bank fora da biblioteca, direto do "
                "disco (FileChooser nativo). Enquanto o arquivo externo toca, o "
                "knob de indice fica mudo; a escolha pela lista devolve o comando "
-               "a ele. Some o arquivo, a gaveta volta ao knob em silencio.")
+               "a ele. Some o arquivo, a gaveta volta ao knob em silencio."),
+            u ("A gaveta CANIVETE ganha uma segunda fileira, INSTRUMENTO, quando "
+               "o bank assenta: a lista de presets do soundfont carregado, como "
+               "no plugin solto. A escolha \u00e9 gravada no preset do rack pelo nome "
+               "(o indice nao \u00e9 est\u00e1vel entre banks) e volta ao primeiro preset "
+               "quando o bank muda. Durante a carga em segundo plano a fileira "
+               "some; ela reaparece sozinha quando o bank fica toc\u00e1vel.")
         }
     });
 
@@ -149,6 +155,9 @@ inline forja::ui::ForjaInfo makeForjaInfo()
     info.controls.push_back ({ u ("Arquivo da gaveta"), u ("kit / soundfont listado"),
                                u ("Escolhe o material tocado na gaveta de instrumento "
                                   "com biblioteca (MINIDRUM, CANIVETE).") });
+    info.controls.push_back ({ u ("Instrumento"), u ("preset do bank"),
+                               u ("Escolhe o preset (instrumento) do soundfont carregado "
+                                  "na gaveta CANIVETE; some enquanto o bank carrega.") });
     info.controls.push_back ({ u ("BUSCAR"), u ("bot\u00e3o"),
                                u ("Revarre a pasta Documentos/Forja/Rack (gaveta "
                                   "HOSPEDADO).") });

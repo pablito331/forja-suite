@@ -530,9 +530,29 @@ SlotComponent::SlotComponent (juce::AudioProcessorValueTreeState& state, int slo
             hosted->browseFile (slot);   // ARQUIVO: FileChooser do kit/bank
     };
     addChildComponent (editarButton);
+
+    // Segunda fileira da gaveta CANIVETE: preset do bank carregado. A lista e
+    // do modulo vivo (so vem cheia depois que a carga assenta); a escolha e
+    // pelo NOME porque o indice nao e estavel entre banks.
+    instrumentSelector.setWantsKeyboardFocus (false);
+    instrumentSelector.setTooltip (forja::ui::utf8 ("Instrumento (preset) do bank carregado"));
+    instrumentSelector.onChange = [this]
+    {
+        if (hosted == nullptr || instrumentSelector.getSelectedId() <= 0)
+            return;
+
+        hosted->chooseInstrument (slot, instrumentSelector.getText());
+        refresh();
+    };
+    addChildComponent (instrumentSelector);
 }
 
 SlotComponent::~SlotComponent() = default;
+
+bool SlotComponent::instrumentRowVisible() const noexcept
+{
+    return instrumentSelector.isVisible();
+}
 
 int SlotComponent::currentTypeIndex() const
 {
@@ -633,6 +653,31 @@ void SlotComponent::refresh()
             }
 
             fileSelector.setSelectedId (selectedId, juce::dontSendNotification);
+
+            // Instrumento: segunda fileira so quando o modulo vivo tem lista
+            // (bank pronto). Durante a carga em background a lista some e o
+            // seletor esconde; a telemetria do editor re-idrata ao assentar.
+            const bool hasInstruments = ! isHost && hosted->isDrawerWithInstruments (slot)
+                                            && hosted->drawerInstrumentNames (slot).size() > 0;
+            instrumentSelector.setVisible (hasInstruments);
+            instrumentSelector.clear (juce::dontSendNotification);
+
+            if (hasInstruments)
+            {
+                const auto instruments = hosted->drawerInstrumentNames (slot);
+                const auto currentInstrument = hosted->currentInstrument (slot);
+                int instrumentId = 1;
+
+                for (int i = 0; i < instruments.size(); ++i)
+                {
+                    instrumentSelector.addItem (instruments[i], i + 1);
+
+                    if (instruments[i] == currentInstrument)
+                        instrumentId = i + 1;
+                }
+
+                instrumentSelector.setSelectedId (instrumentId, juce::dontSendNotification);
+            }
         }
 
         if (isHost)
@@ -821,13 +866,22 @@ void SlotComponent::resized()
     const bool isBand = hosted != nullptr && (isHost || hosted->isDrawer (slot));
 
     // Banda de arquivos: seletor + fileira de botoes ocupam a faixa que nos
-    // modulos fixos seria dos knobs; os knobs comecam mais abaixo.
+    // modulos fixos seria dos knobs; os knobs comecam mais abaixo. Na gaveta
+    // CANIVETE com bank pronto entra a fileira de INSTRUMENTO no meio.
+    const bool instrumentRow = isBand && ! isHost && instrumentRowVisible();
+    const int instrOffset = instrumentRow ? (hostedFileH + hostedGap) : 0;
+
     if (isBand)
     {
         auto hostArea = getLocalBounds().withY (knobsTop).reduced (6, 0);
         fileSelector.setBounds (hostArea.withHeight (hostedFileH));
 
-        auto btnRow = hostArea.withY (knobsTop + hostedFileH + hostedGap).withHeight (hostedBtnH);
+        if (instrumentRow)
+            instrumentSelector.setBounds (hostArea.withY (knobsTop + hostedFileH + hostedGap)
+                                              .withHeight (hostedFileH));
+
+        auto btnRow = hostArea.withY (knobsTop + hostedFileH + hostedGap + instrOffset)
+                              .withHeight (hostedBtnH);
 
         if (isHost)
         {
@@ -846,7 +900,7 @@ void SlotComponent::resized()
         }
     }
 
-    const int knobTop = isBand ? hostedKnobsTop : knobsTop;
+    const int knobTop = isBand ? hostedKnobsTop + instrOffset : knobsTop;
 
     // A coluna de knobs usa o tanto de knobs que o modulo tem (no hospedado,
     // quantos params o plugin vivo expoe): um de um knob nao espreme oito

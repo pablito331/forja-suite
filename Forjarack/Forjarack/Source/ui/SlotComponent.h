@@ -60,6 +60,9 @@ private:
     void syncCategoryChoice();
     // Escreve o indice do catalogo no parametro 'type' (fonte de verdade).
     void selectCatalogIndex (int index);
+    // True quando a fileira de INSTRUMENTO ocupa espaco (seletor visivel com
+    // bank pronto); resized() usa isto para empurrar botoes e knobs.
+    bool instrumentRowVisible() const noexcept;
 
     juce::AudioProcessorValueTreeState& apvts;
     int slot = 0;
@@ -82,6 +85,11 @@ private:
     juce::ComboBox fileSelector;
     juce::TextButton procurarButton;
     juce::TextButton editarButton;
+
+    // Segunda fileira da gaveta de instrumento (CANIVETE): presets do bank
+    // carregado. So aparece quando o modulo vivo expoe lista nao vazia (a
+    // carga em background deixa a lista vazia; a telemetria re-idrata depois).
+    juce::ComboBox instrumentSelector;
 
     std::array<std::unique_ptr<RackKnob>, forjarack::kMaxModuleParams> knobs {};
     std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>,

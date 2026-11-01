@@ -55,6 +55,13 @@ public:
     bool drawerSelectFile (const std::string& name) override;
     void drawerLoadExternalFile (const std::string& path) override;
 
+    // Instrumento (preset do canal melodico) dentro do bank carregado. A lista
+    // so aparece depois que a carga assenta; a escolha e resolvida no idle().
+    bool supportsDrawerInstruments() const noexcept override { return true; }
+    std::vector<std::string> drawerInstrumentNames() const override;
+    std::string drawerCurrentInstrument() const override;
+    void drawerSelectInstrument (const std::string& name) override;
+
     // Unica janela de teste para o estado interno do wrapper (o rack nunca usa).
     float getVolumeForTest() const noexcept { return engine.getVolume(); }
 
@@ -84,10 +91,18 @@ private:
     std::string externalPath;                 // carga externa pendente (esvazia ao colher)
     std::string loadedExternalName;           // nome exibido do bank externo carregado
 
+    // Instrumento (preset) pedido pela gaveta. Guardado pelo NOME: o indice nao
+    // e estavel entre banks diferentes. Resolvido no idle() quando o bank fica
+    // tocavel; limpo na troca de bank (o preset volta ao primeiro do novo bank).
+    std::string selectedInstrument;
+
     void refreshLibrary();
     // Resolve selectedPath contra banks[] depois de um escaneamento: indice da
     // lista (knob manda) ou externo (knob fica mudo ate a proxima escolha).
     void reselectAfterRefresh();
+    // Aplica selectedInstrument ao bank pronto (idempotente); no-op se ainda
+    // carregando ou se o nome ja e o preset em uso.
+    void applyPendingInstrument();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CaniveteModule)
 };

@@ -398,7 +398,11 @@ MINIDRUM e o CANIVETE registram-se como gaveta `instrument` sem alterar o rack. 
 gavetas de instrumento com biblioteca própria mostram banda de arquivos: um seletor com o
 conteúdo da pasta da biblioteca (sincronizando o knob de índice ao escolher) e um botão
 ARQUIVO que abre kit/soundfont fora da biblioteca via FileChooser — enquanto o externo
-toca, o knob fica mudo; a escolha pela lista devolve o comando a ele. Desde a gaveta
+toca, o knob fica mudo; a escolha pela lista devolve o comando a ele. A gaveta CANIVETE
+mostra ainda a fileira INSTRUMENTO — os presets do bank carregado, como no plugin solto,
+resolvidos pelo nome (`drawerInst_slotN`) porque o índice não é estável entre banks; a
+fileira some durante a carga em segundo plano e volta quando o bank fica tocável. Desde
+a gaveta
 **HOSPEDADO**, o registro também aceita hosting dinâmico: qualquer `.vst3` (AU no macOS)
 solto em `Documentos/Forja/Rack` vira gaveta em tempo de execução, com knobs vindos do
 próprio plugin, editor nativo em janela separada (travando os knobs do rack enquanto
@@ -408,7 +412,8 @@ Manual: `docs/MANUAL-GAVETA.md`. Testes próprios: `forja_forjarack_engine` (cat
 encadeamento, bypass/solo e zero alocação) e `forja_forjarack_hosted` (stub de
 `AudioPluginInstance`: adoção efeito/instrumento, params dinâmicos, trava da UI nativa,
 MIDI nativo e latência) no `ctest`. A banda de arquivos das gavetas de instrumento é
-coberta por `testDrawerFiles()` dentro de `forja_minidrum` e `forja_canivete`.
+coberta por `testDrawerFiles()` dentro de `forja_minidrum` e `forja_canivete`; a banda de
+instrumento do CANIVETE, por `testDrawerInstruments()`.
 
 **Pendências, em ordem:**
 
@@ -420,7 +425,10 @@ coberta por `testDrawerFiles()` dentro de `forja_minidrum` e `forja_canivete`.
 - [ ] Validar no host a banda de arquivos das gavetas MINIDRUM/CANIVETE: escolher pela
       lista, abrir kit/soundfont fora da biblioteca via ARQUIVO e conferir o knob mudo
       enquanto o externo toca — o contrato já tem teste (`testDrawerFiles()`), mas o
-      FileChooser depende de sessão gráfica.
+      FileChooser depende de sessão gráfica. Na gaveta CANIVETE, conferir também a
+      fileira INSTRUMENTO (`testDrawerInstruments()`) e lembrar que o FORJARACK tem bus
+      de áudio na entrada: com teclado MIDI ao vivo a faixa precisa de monitoramento de
+      entrada armado (record-arm) — os minis soltos são só saída e recebem MIDI direto.
 - [ ] Implementar o DRUMFORGE no host: automação dos 249 parâmetros, multi-out em DAW,
       bypass, preview sincronizado e arrasto de loop para a timeline; aqui não há DAW,
       então segue pendente como nos demais.

@@ -144,6 +144,11 @@ void CaniveteModule::idle()
     engine.pollLoadResult();
     engine.reapRetiredBanks();
 
+    // Assentou o preset pedido pela gaveta? Roda no topo para valer em todos
+    // os estados ociosos (bank pronto, sem nova carga): no-op enquanto o bank
+    // ainda esta carregando ou o nome ja esta em uso.
+    applyPendingInstrument();
+
     // Carga externa pedida pela gaveta (FileChooser) ou re-colheita depois de
     // um re-prepare: a leitura vai ao background do SoundFontEngine, segura na
     // thread de mensagens com audio ativo.
@@ -157,6 +162,7 @@ void CaniveteModule::idle()
         {
             loadedExternalName = file.getFileName().toStdString();
             loadedBank = -1;
+            selectedInstrument.clear();   // bank novo: preset volta ao primeiro
             engine.loadBankFile (file);
         }
         else
@@ -191,7 +197,30 @@ void CaniveteModule::idle()
         return;
 
     loadedBank = wanted;
+    selectedInstrument.clear();   // bank novo: preset volta ao primeiro
     engine.loadBankFile (banks[static_cast<size_t> (wanted)]);
+}
+
+void CaniveteModule::applyPendingInstrument()
+{
+    // So faz algo com um bank tocavel e um nome pedido. Idempotente: se o
+    // preset em uso ja e o pedido, nao re-toca no audio.
+    if (selectedInstrument.empty() || ! engine.hasBank() || engine.isLoading())
+        return;
+
+    if (engine.getSelectedPresetName().toStdString() == selectedInstrument)
+        return;
+
+    const int count = engine.getNumPresets();
+
+    for (int i = 0; i < count; ++i)
+    {
+        if (engine.getPresetName (i).toStdString() == selectedInstrument)
+        {
+            engine.requestPreset (i);
+            return;
+        }
+    }
 }
 
 void registerCaniveteModule()
@@ -267,6 +296,37 @@ void CaniveteModule::drawerLoadExternalFile (const std::string& path)
     externalActive.store (true, std::memory_order_relaxed);
     loadedExternalName.clear();
     externalPath = path;
+}
+
+// ---- instrumento (preset do bank carregado) --------------------------------
+
+std::vector<std::string> CaniveteModule::drawerInstrumentNames() const
+{
+    // A lista so faz sentido com um bank tocavel; durante a carga em background
+    // (ou sem bank) devolve vazio e a gaveta esconde o seletor.
+    std::vector<std::string> names;
+
+    if (! engine.hasBank() || engine.isLoading())
+        return names;
+
+    const int count = engine.getNumPresets();
+    names.reserve (static_cast<size_t> (count));
+
+    for (int i = 0; i < count; ++i)
+        names.push_back (engine.getPresetName (i).toStdString());
+
+    return names;
+}
+
+std::string CaniveteModule::drawerCurrentInstrument() const
+{
+    return engine.getSelectedPresetName().toStdString();
+}
+
+void CaniveteModule::drawerSelectInstrument (const std::string& name)
+{
+    selectedInstrument = name;
+    applyPendingInstrument();   // se o bank ja esta pronto, aplica ja
 }
 
 } // namespace forja::canivete

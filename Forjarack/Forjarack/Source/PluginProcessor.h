@@ -60,6 +60,10 @@ public:
     // processor faz (thread de mensagens).
     bool isHosted (int slot) const override;
     bool isDrawer (int slot) const override;
+    bool isDrawerWithInstruments (int slot) const override;
+    juce::StringArray drawerInstrumentNames (int slot) const override;
+    juce::String currentInstrument (int slot) const override;
+    void chooseInstrument (int slot, const juce::String& name) override;
     juce::StringArray fileList() const override;
     juce::StringArray drawerFileNames (int slot) const override;
     juce::String fileName (int slot) const override;
@@ -108,12 +112,19 @@ private:
     ModuleBase* drawerModuleAt (int slot) const noexcept;
     void applyDrawerChoice (int slot, const juce::String& path);
     void syncDrawerKnob (int slot, int index, int count);
+    void applyDrawerInstrument (int slot, const juce::String& name);
     void startDrawerBrowse (int slot, const juce::File& startDir, const juce::String& filter,
                             bool foldersAllowed, bool directoriesToo);
     static juce::String drawerStateKey (int slot);
+    static juce::String drawerInstrumentStateKey (int slot);
 
     std::array<juce::String, kNumSlots> drawerFile {};   // escolha persistida ("" = knob manda)
     std::array<bool, kNumSlots> drawerApplied {};        // escolha ja entregue ao modulo vivo
+    // Instrumento (preset) pedido na gaveta do CANIVETE: persistido pelo NOME
+    // porque a lista so existe com o bank carregado (a escolha antes disso
+    // espera o timer; depois de assentada o modulo resolve sozinho no idle).
+    std::array<juce::String, kNumSlots> drawerInstrument {};
+    std::array<bool, kNumSlots> drawerInstrumentApplied {};
     std::shared_ptr<juce::FileChooser> drawerChooser;    // mantem viva a janela async
     int browseSlot = -1;   // slot dono do FileChooser aberto (callback async)
 

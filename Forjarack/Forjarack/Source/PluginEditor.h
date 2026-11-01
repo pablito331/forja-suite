@@ -38,6 +38,9 @@ private:
     // Banda de arquivos: o material vivo de uma gaveta de instrumento muda
     // async (carga do kit/bank); quando o nome muda, reloidamos o seletor.
     std::array<juce::String, forjarack::kNumSlots> lastBandFile {};
+    // Instrumento (CANIVETE): o preset em uso so existe com o bank assentado;
+    // mudar (ou nascer) e sinal para re-idratar a segunda fileira da gaveta.
+    std::array<juce::String, forjarack::kNumSlots> lastInstrument {};
     double clipHoldUntilMs = 0.0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ForjarackAudioProcessorEditor)

@@ -246,6 +246,19 @@ void ForjarackAudioProcessorEditor::updateTelemetry()
             }
         }
 
+        // Fileira de INSTRUMENTO: nasce quando o bank assenta (o preset em uso
+        // passa de vazio a um nome) e acompanha troca vinda do proprio seletor.
+        if (processor.isDrawerWithInstruments (slot))
+        {
+            const auto instrument = processor.currentInstrument (slot);
+
+            if (instrument != lastInstrument[(size_t) slot])
+            {
+                lastInstrument[(size_t) slot] = instrument;
+                target.refresh();
+            }
+        }
+
         target.setOutputPeak (engine.readSlotPeak (slot));
         target.setGainReductionDb (engine.readSlotGainReductionDb (slot));
 

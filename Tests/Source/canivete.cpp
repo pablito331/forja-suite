@@ -5,7 +5,8 @@
 // bank, carga/adocao, volume no trim, latencia zero, bypass, medidor por bloco
 // (o do canivete NAO e self-clearing: e republicado a cada bloco), troca com
 // reap, bank invalido mantendo o anterior, CC/program change multi-timbral,
-// ausencia de alocacao no caminho de audio e a gaveta do ForjaRack.
+// ausencia de alocacao no caminho de audio e a gaveta do ForjaRack (arquivos e
+// instrumento).
 #include <juce_events/juce_events.h>
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -861,6 +862,98 @@ void testDrawerFiles()
     file.deleteFile();
 }
 
+void testDrawerInstruments()
+{
+    std::printf ("\n[gaveta de instrumento do rack]\n");
+
+    // O SF2 de teste tem dois presets: "Gaveta Instrumento" (prog 0) e
+    // "Test Strings" (prog 1). A banda so pode ser exercida pelo contrato
+    // publico da gaveta; o engine e privado do wrapper de proposito.
+    const auto file = writeTestSf2 ("forja-canivete-instr", "Gaveta Instrumento");
+    const auto other = writeTestSf2 ("forja-canivete-instr-b", "Segundo Gaveta");
+
+    CaniveteModule module;
+    module.prepare (testSampleRate);
+
+    check (module.supportsDrawerInstruments(), "gaveta CANIVETE expoe a banda de instrumento");
+
+    // Sem bank assentado: lista vazia (a UI esconde a fileira nessa fase).
+    check (module.drawerInstrumentNames().empty(), "sem bank nao ha lista de instrumento");
+
+    module.drawerLoadExternalFile (file.getFullPathName().toStdString());
+
+    std::vector<float> left (static_cast<size_t> (testBlockSize), 0.0f);
+    std::vector<float> right (static_cast<size_t> (testBlockSize), 0.0f);
+
+    // Deixa a carga assentar: o idle colhe, o process adota o bank. Pedir um
+    // preset ANTES de assentar e legal mas significa outra coisa (o modulo
+    // limpa o pedido na colheita: bank novo volta ao primeiro preset).
+    for (int pass = 0; pass < 120 && module.drawerInstrumentNames().empty(); ++pass)
+    {
+        module.idle();
+        module.process (left.data(), right.data(), testBlockSize);
+        pumpMessages (20);
+    }
+
+    const auto names = module.drawerInstrumentNames();
+    check (names.size() == 2, "bank assentado expoe os dois presets", juce::String (names.size()));
+
+    // Pedido com o bank ainda carregando de verdade (segunda carga): o nome
+    // fica pendente no modulo e o applyPendingInstrument do idle resolve.
+    module.drawerSelectInstrument ("Test Strings");
+
+    for (int pass = 0; pass < 120; ++pass)
+    {
+        module.idle();
+        module.process (left.data(), right.data(), testBlockSize);
+        pumpMessages (20);
+
+        if (juce::String (module.drawerCurrentInstrument()) == "Test Strings")
+            break;
+    }
+
+    check (juce::String (module.drawerCurrentInstrument()) == "Test Strings",
+           "pedido por nome resolve via idle", juce::String (module.drawerCurrentInstrument()));
+
+    // Troca direta com bank pronto: aplica no mesmo requestPreset que o
+    // process seguinte espelha (leitura da UI sempre um bloco atras do audio).
+    module.drawerSelectInstrument ("Gaveta Instrumento");
+    module.process (left.data(), right.data(), testBlockSize);
+    check (juce::String (module.drawerCurrentInstrument()) == "Gaveta Instrumento",
+           "escolha com bank pronto aplica no proximo bloco");
+
+    // Nome que nao existe no bank: ignora, mantem o preset em uso.
+    module.drawerSelectInstrument ("Piano Que Nao Existe");
+    module.idle();
+    module.process (left.data(), right.data(), testBlockSize);
+    check (juce::String (module.drawerCurrentInstrument()) == "Gaveta Instrumento",
+           "nome inexistente mantem o preset atual");
+
+    // Bank novo limpa o pedido: o preset do bank velho nao e re-aplicado por
+    // acaso no bank novo (indice nao e estavel entre banks); a colheita volta
+    // ao primeiro preset. "Gaveta Instrumento" nem existe no bank novo.
+    module.drawerSelectInstrument ("Gaveta Instrumento");
+    module.drawerLoadExternalFile (other.getFullPathName().toStdString());
+
+    for (int pass = 0; pass < 120; ++pass)
+    {
+        module.idle();
+        module.process (left.data(), right.data(), testBlockSize);
+        pumpMessages (20);
+
+        if (! module.drawerInstrumentNames().empty()
+            && juce::String (module.drawerCurrentInstrument()) == "Segundo Gaveta")
+            break;
+    }
+
+    check (juce::String (module.drawerCurrentInstrument()) == "Segundo Gaveta",
+           "bank novo limpa o pedido e volta ao primeiro preset",
+           juce::String (module.drawerCurrentInstrument()));
+
+    file.deleteFile();
+    other.deleteFile();
+}
+
 void testRegistration()
 {
     std::printf ("\n[registro no catalogo]\n");
@@ -971,6 +1064,7 @@ int main()
     testNoAllocations();
     testRackModule();
     testDrawerFiles();
+    testDrawerInstruments();
     testRegistration();
 
     if (failures == 0)

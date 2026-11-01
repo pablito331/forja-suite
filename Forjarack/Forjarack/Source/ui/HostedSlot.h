@@ -62,6 +62,18 @@ public:
     // Biblioteca do modulo como caminhos completos (identificadores da lista;
     // a UI mostra o nome). O rotulo do que esta carregado vem de fileName().
     virtual juce::StringArray drawerFileNames (int slot) const = 0;
+
+    // ---- instrumento interno (CANIVETE: presets do bank carregado) ---------
+    // Segunda fileira na gaveta, so para modulos cujo bank tem lista de
+    // presets. A lista e viva: fica vazia enquanto o bank carrega em background.
+    virtual bool isDrawerWithInstruments (int slot) const { (void) slot; return false; }
+    virtual juce::StringArray drawerInstrumentNames (int slot) const
+        { (void) slot; return {}; }
+    virtual juce::String currentInstrument (int slot) const { (void) slot; return {}; }
+    // Escolhe o preset pelo NOME (o indice nao e estavel entre banks); o modulo
+    // resolve quando o bank assentar. Nome vazio = seguir o preset default.
+    virtual void chooseInstrument (int slot, const juce::String& name)
+        { (void) slot; (void) name; }
 };
 
 } // namespace forjarackui

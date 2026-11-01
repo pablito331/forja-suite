@@ -236,13 +236,22 @@ da banda da gaveta HOSPEDADO:
 - A escolha vive no preset do rack como propriedade de estado (`drawer_slotN`),
   pois a lista é dinâmica demais para um `AudioParameterChoice` — mesmo
   mecanismo da escolha hospedada.
+- A gaveta **CANIVETE** ganha uma segunda fileira, **INSTRUMENTO**, quando o
+  bank assenta: a lista de presets do soundfont carregado, como no plugin
+  solto. Some durante a carga em segundo plano (o seletor reaparece pela
+  telemetria quando o bank fica tocável). A escolha é gravada pelo **nome**
+  (`drawerInst_slotN`) — o índice de preset não é estável entre banks — e
+  volta ao primeiro preset quando o bank muda.
 
 Validação: `testDrawerFiles()` em `forja_minidrum` e `forja_canivete` cobre o
 contrato no nível do módulo (banda exposta, rejeição de nome fora da lista,
 colheita do externo pelo `idle()`, knob mudo enquanto o externo manda e
-reversão graciosa quando o arquivo não existe). O `FileChooser` em si é UI
-nativa e depende de sessão gráfica; fica registrado como pendência de
-validação manual em host, como o resto da banda HOSPEDADO.
+reversão graciosa quando o arquivo não existe). `testDrawerInstruments()` em
+`forja_canivete` cobre a banda de instrumento (lista vazia sem bank, pedido
+pendente resolvido no `idle()`, troca por nome, nome inexistente ignorado e
+limpeza na troca de bank). O `FileChooser` em si é UI nativa e depende de
+sessão gráfica; fica registrado como pendência de validação manual em host,
+como o resto da banda HOSPEDADO.
 
 ## Licença
 

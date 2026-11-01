@@ -88,6 +88,19 @@ public:
     // Arquivo escolhido fora da biblioteca (caminho absoluto). O modulo carrega
     // e deixa de obedecer ao knob de indice ate a proxima escolha pela lista.
     virtual void drawerLoadExternalFile (const std::string& path) { (void) path; }
+
+    // ---- instrumento interno (bank com lista de presets) -------------------
+    // CANIVETE tem uma segunda camada de escolha: o preset (instrumento) do
+    // canal melodico 1 dentro do bank carregado. A lista so existe depois que a
+    // carga em background assenta, entao e dinamica ate dentro de uma sessao;
+    // vive como seletor proprio da gaveta (nao como knob). Tudo na thread de
+    // mensagens; o modulo aplica no proximo idle() quando o bank estiver pronto.
+    virtual bool supportsDrawerInstruments() const noexcept { return false; }
+    virtual std::vector<std::string> drawerInstrumentNames() const { return {}; }
+    virtual std::string drawerCurrentInstrument() const { return {}; }
+    // Nome do preset (instrumento) desejado; o modulo resolve pelo indice na
+    // lista do bank quando ele estiver tocavel e aplica no audio.
+    virtual void drawerSelectInstrument (const std::string& name) { (void) name; }
 };
 
 template <typename Dsp>

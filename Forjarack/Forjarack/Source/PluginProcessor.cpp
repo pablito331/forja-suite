@@ -318,6 +318,7 @@ void ForjarackAudioProcessor::syncGraphFromParams (bool applyDefaults)
         cachedTypes[(size_t) slot] = raw;
         drawerApplied[(size_t) slot] = false;   // modulo novo: a escolha (se houver)
                                                 // espera este slot ficar vivo
+        drawerInstrumentApplied[(size_t) slot] = false;   // idem para o preset
 
         const int index = juce::jlimit (0, ModuleCatalog::count() - 1, raw);
 
@@ -365,9 +366,18 @@ void ForjarackAudioProcessor::timerCallback()
     // Escolha de gaveta esperando modulo vivo (estado carregado antes do
     // primeiro prepareToPlay): tenta de novo a cada tick ate assentar.
     for (int slot = 0; slot < kNumSlots; ++slot)
+    {
         if (! drawerApplied[(size_t) slot] && isDrawer (slot)
             && ! drawerFile[(size_t) slot].isEmpty())
             applyDrawerChoice (slot, drawerFile[(size_t) slot]);
+
+        // Preset pedido pode chegar antes de o bank carregar em background; a
+        // entrega e barata (o modulo so aplica com bank pronto) e o flag gruda
+        // na primeira vez que o modulo vivo aceita o nome.
+        if (! drawerInstrumentApplied[(size_t) slot] && isDrawerWithInstruments (slot)
+            && ! drawerInstrument[(size_t) slot].isEmpty())
+            applyDrawerInstrument (slot, drawerInstrument[(size_t) slot]);
+    }
 }
 
 bool ForjarackAudioProcessor::isBypassed() const
@@ -403,6 +413,8 @@ void ForjarackAudioProcessor::setStateInformation (const void* data, int sizeInB
             {
                 hostedFile[(size_t) slot] = apvts.state.getProperty (hostedStateKey (slot)).toString();
                 drawerFile[(size_t) slot] = apvts.state.getProperty (drawerStateKey (slot)).toString();
+                drawerInstrument[(size_t) slot]
+                    = apvts.state.getProperty (drawerInstrumentStateKey (slot)).toString();
             }
 
             syncGraphFromParams (false);
@@ -410,8 +422,13 @@ void ForjarackAudioProcessor::setStateInformation (const void* data, int sizeInB
             // Reaplica as escolhas de gaveta depois de reconstruir o grafo; o
             // timer cuida das que esperam o primeiro prepareToPlay.
             for (int slot = 0; slot < kNumSlots; ++slot)
+            {
                 if (! drawerFile[(size_t) slot].isEmpty())
                     applyDrawerChoice (slot, drawerFile[(size_t) slot]);
+
+                if (! drawerInstrument[(size_t) slot].isEmpty())
+                    applyDrawerInstrument (slot, drawerInstrument[(size_t) slot]);
+            }
         }
     }
 }
@@ -680,6 +697,75 @@ juce::StringArray ForjarackAudioProcessor::drawerFileNames (int slot) const
     return paths;
 }
 
+// ---------------------------------------------------------------------------
+// Instrumento interno da gaveta (CANIVETE): segunda fileira, presets do bank
+// carregado. A lista e viva (vazia enquanto o bank load em background), entao
+// a escolha vive em propriedade do estado igual ao arquivo. Resolve por NOME:
+// o indice de preset nao e estavel entre banks diferentes.
+
+juce::String ForjarackAudioProcessor::drawerInstrumentStateKey (int slot)
+{
+    return "drawerInst_slot" + juce::String (slot + 1);
+}
+
+bool ForjarackAudioProcessor::isDrawerWithInstruments (int slot) const
+{
+    if (slot < 0 || slot >= kNumSlots)
+        return false;
+
+    auto* module = const_cast<ModuleBase*> (engine.moduleAt (slot));
+    return module != nullptr && module->supportsDrawerInstruments();
+}
+
+juce::StringArray ForjarackAudioProcessor::drawerInstrumentNames (int slot) const
+{
+    juce::StringArray names;
+
+    if (isDrawerWithInstruments (slot))
+    {
+        auto* module = const_cast<ModuleBase*> (engine.moduleAt (slot));
+
+        for (const auto& name : module->drawerInstrumentNames())
+            names.add (juce::String (name));
+    }
+
+    return names;
+}
+
+juce::String ForjarackAudioProcessor::currentInstrument (int slot) const
+{
+    // Mesma porta da lista (bank pronto e assentado): vazio durante a carga em
+    // background, para a telemetria so "nascer" quando a fileira deve aparecer.
+    const auto names = drawerInstrumentNames (slot);
+    return names.size() > 0 ? juce::String (const_cast<ModuleBase*> (engine.moduleAt (slot))
+                                                   ->drawerCurrentInstrument())
+                             : juce::String();
+}
+
+void ForjarackAudioProcessor::applyDrawerInstrument (int slot, const juce::String& name)
+{
+    if (slot < 0 || slot >= kNumSlots)
+        return;
+
+    drawerInstrument[(size_t) slot] = name;
+    apvts.state.setProperty (drawerInstrumentStateKey (slot), name, nullptr);
+
+    if (! isDrawerWithInstruments (slot))
+        return;   // audio ainda nao montou o modulo; o timer tenta de novo
+
+    auto* module = const_cast<ModuleBase*> (engine.moduleAt (slot));
+    module->drawerSelectInstrument (name.toStdString());
+
+    // Nome entregue ao modulo vivo: a resolucao (preset existir ou nao no bank)
+    // passa a ser do modulo; nao precisa re-tentar todo tick.
+    drawerInstrumentApplied[(size_t) slot] = true;
+}
+
+void ForjarackAudioProcessor::chooseInstrument (int slot, const juce::String& name)
+{
+    applyDrawerInstrument (slot, name.trim());
+}
+
 void ForjarackAudioProcessor::syncDrawerKnob (int slot, int index, int count)
 {
     // O engine realimenta setParam(1, knob) todo bloco: sem esta sementeira o
@@ -695,6 +781,15 @@ void ForjarackAudioProcessor::applyDrawerChoice (int slot, const juce::String& p
 {
     if (slot < 0 || slot >= kNumSlots)
         return;
+
+    // Bank novo (lista ou ARQUIVO): o preset pedido anterior pertence ao bank
+    // velho; o modulo limpa a selecao e a gaveta recomeca no primeiro preset.
+    if (drawerFile[(size_t) slot] != path)
+    {
+        drawerInstrument[(size_t) slot] = {};
+        drawerInstrumentApplied[(size_t) slot] = false;
+        apvts.state.setProperty (drawerInstrumentStateKey (slot), {}, nullptr);
+    }
 
     drawerFile[(size_t) slot] = path;
     apvts.state.setProperty (drawerStateKey (slot), path, nullptr);

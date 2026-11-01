@@ -260,9 +260,11 @@ MidiEventSpan ForjarackAudioProcessor::collectMidi (
         event.frame = metadata.samplePosition;
         event.channel = static_cast<std::uint8_t> (message.getChannel());
         event.note = static_cast<std::uint8_t> (message.getNoteNumber());
-        // getVelocity() devolve 0..1; o contrato do MidiEvent e 0..127.
-        event.velocity = static_cast<std::uint8_t> (
-            juce::roundToInt (message.getVelocity() * 127.0));
+        // getVelocity() ja devolve o byte cru 0..127 (quem devolve 0..1 e
+        // getFloatVelocity). O contrato do MidiEvent e o mesmo do MIDI, entao
+        // NAO se reescala aqui: multiplicar de novo por 127 estourava o uint8 e
+        // entregava velocidade mod 256 (nota tocada de leve virava blast).
+        event.velocity = static_cast<std::uint8_t> (message.getVelocity());
         event.noteOn = message.isNoteOn();
         ++count;
 
@@ -299,6 +301,12 @@ void ForjarackAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 
     std::array<MidiEvent, kMaxRackMidiEvents> midiStorage {};
     const auto midiSpan = collectMidi (midiMessages, midiStorage);
+
+    // O span POD so carrega notas; a trilha nativa (CC, pitch bend, program de
+    // um hospedado) tambem e atividade. O led MIDI do master distingue "MIDI nao
+    // chega" de "chega e nao ha voz" -- o medidor de entrada nao mostra MIDI.
+    if (midiMessages.getNumEvents() > 0)
+        engine.noteMidiActivity();
 
     engine.process (buildSnapshot(), left, right, numSamples, midiSpan);
 
@@ -852,7 +860,13 @@ void ForjarackAudioProcessor::browseFile (int slot)
     if (module == nullptr)
         return;   // no HOSPEDADO a busca e sempre a pasta-fixa do BUSCAR
 
-    const bool kits = ModuleCatalog::specByIndex (engine.slotModuleIndex (slot)).id == "minidrum";
+    // Duas gavetas de arquivo, dois navegadores: MINIDRUM abre kit (e aceita
+    // pasta), CANIVETE abre soundfont. O id da ficha e o contrato estavel do
+    // registro, mas e um const char*: comparar com == testa endereco de literal,
+    // nunca casa, e a gaveta de kit abria o filtro de .sf2. Compara-se pelo
+    // indice do registro, que resolve o id por strcmp.
+    const bool kits = engine.slotModuleIndex (slot)
+                          == ModuleCatalog::indexOf ("minidrum");
 
     auto start = kits ? forja::minidrum::libraryDirectory()
                       : forja::canivete::libraryDirectory();

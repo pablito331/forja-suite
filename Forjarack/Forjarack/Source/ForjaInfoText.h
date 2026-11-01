@@ -68,7 +68,13 @@ inline forja::ui::ForjaInfo makeForjaInfo()
             u ("\u00c9 assim que o teclado ao vivo toca o instrumento dentro do rack, "
                "como toca no plugin solto: coloque o ForjaRack numa faixa de "
                "instrumento e escolha o modulo na gaveta. Mantenha a entrada "
-               "ligada apenas quando quiser encadear efeitos sobre audio.")
+               "ligada apenas quando quiser encadear efeitos sobre audio."),
+            u ("O led MIDI na secao MASTER acende quando um bloco chega com MIDI "
+               "(nota, CC ou pitch bend) para qualquer gaveta. Ele existe porque o "
+               "medidor de ENTRADA so mostra audio: numa faixa de instrumento a "
+               "entrada e silencio, entao o led e a unica forma de ver se o teclado "
+               "esta de fato chegando ao plug-in. Led aceso e gaveta muda = problema "
+               "de som do modulo; led apagado = o MIDI nao esta entrando na faixa.")
         }
     });
 
@@ -188,6 +194,10 @@ inline forja::ui::ForjaInfo makeForjaInfo()
                                u ("Trim de +-24 dB do barramento.") });
     info.controls.push_back ({ u ("Inverter fase \u00d8 R"), u ("ligado/desligado"),
                                u ("Inverte o canal direito na saida do rack.") });
+    info.controls.push_back ({ "MIDI", u ("led"),
+                               u ("Acende quando um bloco chega com MIDI da faixa para "
+                                  "qualquer gaveta. O medidor de ENTRADA so mostra audio, "
+                                  "entao ele e a pista de que o teclado esta entrando.") });
     info.controls.push_back ({ "Bypass", u ("ligado/desligado \u00b7 padr\u00e3o desligado"),
                                u ("Compara\u00e7\u00e3o A/B com rampa de 10 ms.") });
 

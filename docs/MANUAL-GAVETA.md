@@ -214,6 +214,7 @@ compilado é sempre o preferido (menos overhead, mesma licença MIT).
 | EDITAR abre janela cinza minúscula | plugin com editor dependente de OpenGL/Vulkan exótico | use os knobs da gaveta; registre o caso — UI genérica continua funcionando |
 | Latência somando com outra gaveta | comportamento esperado: o rack reporta o máximo | é o PDC correto em cadeia série |
 | Parâmetros "brigar" com a UI do plugin | só acontece com o editor nativo aberto, e o lock trata | feche a janela do editor para o rack voltar a mandar |
+| Gaveta de instrumento muda, bank carregado, mas nada soa ao tocar o teclado | o binário novo não foi recarregado (no Windows o host mantém a imagem antiga do `.dll`; reabrir o projeto **não** basta), ou o MIDI não está entrando na faixa | feche o host por completo e reabra; insira o ForjaRack numa **nova** faixa de instrumento; toque olhando o **led MIDI** do MASTER: aceso = o MIDI chega (o problema é de som/roteamento da faixa), apagado = o teclado não chega à faixa |
 
 ---
 

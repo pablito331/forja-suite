@@ -414,11 +414,22 @@ encadeamento, bypass/solo e zero alocação) e `forja_forjarack_hosted` (stub de
 MIDI nativo e latência) no `ctest`. A banda de arquivos das gavetas de instrumento é
 coberta por `testDrawerFiles()` dentro de `forja_minidrum` e `forja_canivete`; a banda de
 instrumento do CANIVETE, por `testDrawerInstruments()`; e o áudio real saindo pela trilha
-do span (`processMidi`+`process` com bank carregado), por `testDrawerAudio()`. O rack
+do span (`processMidi`+`process` com bank carregado), por `testDrawerAudio()`. Falta a
+costura do plugin, coberta por `forja_forjarack_processor`
+(`Tests/Source/forjarack_processor.cpp`): o **processador real** dirigido pela API do
+`AudioProcessor` como uma DAW faz — layout de instrumento aceito, tecla entregando
+canal/nota/velocidade certos ao módulo, voz saindo audível, MIDI do host consumido,
+medidor master reportando MIDI e, quando há bank na pasta do usuário, o CANIVETE de
+verdade soando pelo rack (a seção se declara SKIP sem soundfont). Foi esse teste que
+pegou o bug de velocidade: o coletor tratava `getVelocity()` (que já vem 0..127) como
+0..1 e remultiplicava por 127, estourando o `uint8`. O rack
 aceita saída estéreo com entrada **estéreo ou desabilitada**: com entrada ligada roda como
 FX em cadeia; numa faixa de instrumento (entrada desabilitada) o processador trata a
 entrada como silêncio e a saída é a voz dos slots-instrumento — o mesmo caminho dos minis
-soltos, para o teclado ao vivo tocar sem exigir fonte de áudio na faixa.
+soltos, para o teclado ao vivo tocar sem exigir fonte de áudio na faixa. Um **led MIDI**
+na seção MASTER acende em todo bloco que chega com MIDI (nota, CC ou pitch bend) para
+qualquer gaveta — o medidor de ENTRADA só mostra áudio, então sem esse led não havia
+como separar "o teclado não chega à faixa" de "chega e o módulo não gera voz".
 
 **Pendências, em ordem:**
 
@@ -432,11 +443,13 @@ soltos, para o teclado ao vivo tocar sem exigir fonte de áudio na faixa.
       enquanto o externo toca — o contrato já tem teste (`testDrawerFiles()`), mas o
       FileChooser depende de sessão gráfica. Na gaveta CANIVETE, conferir também a
       fileira INSTRUMENTO (`testDrawerInstruments()`) e o toque do banco pela trilha
-      do span (`testDrawerAudio()`, verde no CI). Para o teclado ao vivo tocar dentro
-      do rack, coloque o ForjaRack numa faixa de **instrumento** (sem entrada de áudio):
-      o layout aceita a entrada desabilitada e o processador trata-a como silêncio — o
-      caminho era o motivo do silêncio antes, quando o rack só aceitava entrada estéreo
-      e os hosts o tratavam como FX puro.
+      do span (`testDrawerAudio()`, verde no CI). O teclado ao vivo dentro do rack já é
+      verde **em código** de ponta a ponta (`forja_forjarack_processor`: processador real,
+      MIDI do host, voz audível e CANIVETE com o bank do usuário); falta a conferência no
+      host, que exige recarregar o binário — no Windows, fechar o projeto não descarrega
+      o `.vst3`, é preciso fechar o programa inteiro e reinserir o plugin numa faixa nova.
+      O led MIDI do MASTER diz de que lado está o problema: aceso = o MIDI chega (culpa de
+      roteamento/monitoramento da faixa), apagado = a faixa não está recebendo o teclado.
 - [ ] Implementar o DRUMFORGE no host: automação dos 249 parâmetros, multi-out em DAW,
       bypass, preview sincronizado e arrasto de loop para a timeline; aqui não há DAW,
       então segue pendente como nos demais.

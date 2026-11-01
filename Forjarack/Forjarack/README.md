@@ -180,6 +180,27 @@ Suporte a instrumentos já instalado:
   áudio), o processador trata a entrada como silêncio e a saída é a voz dos
   slots-instrumento — assim o teclado ao vivo toca o MINIDRUM/CANIVETE dentro do
   rack, como toca no plugin solto, sem exigir uma fonte de áudio na faixa.
+- **Led MIDI no master**: um led na seção MASTER acende quando um bloco chega
+  com MIDI (nota, CC ou pitch bend) para qualquer gaveta. O medidor de ENTRADA
+  só mede áudio — numa faixa de instrumento ele fica parado mesmo com o teclado
+  tocando — então o led é o que separa "o MIDI não está entrando na faixa" de
+  "entra e o módulo não gera voz".
+- **Velocidade no contrato do núcleo**: o coletor grava o byte cru 0..127
+  (`MidiMessage::getVelocity()` já devolve 0..127; quem devolve 0..1 é
+  `getFloatVelocity()`). Reescalar isso por mais 127 estoura o `uint8` e
+  devolve velocidade trocada (nota tocada de leve saía estourada).
+
+Validação ponta a ponta: `Tests/Source/forjarack_processor.cpp`
+(`ctest: forjarack_processor`) compila o **processador real** do rack e o
+dirige pela API do `AudioProcessor`, como faz a DAW: layout de instrumento
+(entrada desabilitada) aceito, entrada estéreo mantida e saída mono rejeitada;
+uma tecla entregue ao módulo com canal/nota/velocidade certos, com a voz saindo
+audível do plugin, o `MidiBuffer` do host consumido e o medidor master
+reportando atividade MIDI; nota solta devolvendo silêncio; e, com áudio na
+faixa, a cadeia continuando a passar. A última seção usa o **CANIVETE de verdade**
+com o bank do usuário quando existe um `.sf2`/`.sf3` em
+`Documentos/Forja/Canivete` (sem bank a seção se declara SKIP, para o teste
+continuar verde em máquina limpa e na CI).
 
 Candidatos conscientes dessa porta (por enquanto, apenas intenção registrada):
 
@@ -239,6 +260,12 @@ da banda da gaveta HOSPEDADO:
   externo toca, o knob de índice fica mudo; a próxima escolha pela lista
   devolve o comando ao knob. Se o arquivo sumir, a gaveta volta ao knob em
   silêncio, sem crash.
+- Qual navegador o **ARQUIVO** abre (kits × soundfonts) é decidido pelo
+  **índice de registro** do módulo na gaveta. A comparação pelo `id` da ficha
+  não pode ser feita com `==`: `id` é `const char*`, então o `==` testa o
+  endereço do literal e nunca casa — a gaveta de kit abria o filtro `.sf2`.
+  Quem precisa reconhecer um módulo pelo identificador usa
+  `ModuleCatalog::indexOf()` (que resolve por `strcmp`).
 - A escolha vive no preset do rack como propriedade de estado (`drawer_slotN`),
   pois a lista é dinâmica demais para um `AudioParameterChoice` — mesmo
   mecanismo da escolha hospedada.

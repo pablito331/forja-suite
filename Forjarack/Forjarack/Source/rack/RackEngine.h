@@ -27,6 +27,10 @@ public:
         float outPeakL = 0.0f;
         float outPeakR = 0.0f;
         bool clip = false;
+        // Chegou MIDI desde a ultima leitura. O medidor de entrada so mostra
+        // audio; sem este sinal nao ha como distinguir "teclado nao chega ao
+        // rack" de "chega mas o instrumento nao gera voz".
+        bool midi = false;
     };
 
     void prepare (double sampleRate, int maxBlockSamples);
@@ -66,6 +70,11 @@ public:
     // exchange): o valor e o estado do ultimo bloco, nao um evento a consumir.
     float readSlotGainReductionDb (int slot) const;
     MasterMeters readMasterMeters();
+
+    // Marca atividade MIDI (thread de audio, sem alocar). O processador chama
+    // para a trilha nativa do host (CC/pitch bend entram pelo buffer cru); o
+    // proprio process sinaliza as notas do span POD.
+    void noteMidiActivity() noexcept { midiArrived.store (true, std::memory_order_relaxed); }
     void resetClip() noexcept { clipResetRequested.store (true, std::memory_order_release); }
 
     // Thread de mensagens. Da a cada modulo vivo a chance de liberar material
@@ -94,6 +103,7 @@ private:
     std::atomic<float> outPeakL { 0.0f };
     std::atomic<float> outPeakR { 0.0f };
     std::atomic<bool> clipFlag { false };
+    std::atomic<bool> midiArrived { false };
     std::atomic<bool> clipResetRequested { false };
 };
 

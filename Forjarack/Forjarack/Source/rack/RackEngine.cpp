@@ -136,6 +136,11 @@ void RackEngine::process (const RackSnapshot& snapshot, float* left, float* righ
     if (clipResetRequested.exchange (false, std::memory_order_acquire))
         clipFlag.store (false, std::memory_order_relaxed);
 
+    // Nota no bloco: o led MIDI do master precisa acender mesmo em faixa de
+    // instrumento, onde o medidor de entrada ve apenas silencio.
+    if (midi.numEvents > 0)
+        midiArrived.store (true, std::memory_order_relaxed);
+
     // Trim de entrada + pico medido depois do trim (referencia do led IN).
     const float gainIn = trimGain (snapshot.inputTrim);
     float peakInL = 0.0f;
@@ -268,6 +273,8 @@ RackEngine::MasterMeters RackEngine::readMasterMeters()
     meters.outPeakL = outPeakL.exchange (0.0f, std::memory_order_relaxed);
     meters.outPeakR = outPeakR.exchange (0.0f, std::memory_order_relaxed);
     meters.clip = clipFlag.load (std::memory_order_relaxed);
+    // Consumo: o led fica aceso por um tempo na UI, mas o sinal e de evento.
+    meters.midi = midiArrived.exchange (false, std::memory_order_relaxed);
     return meters;
 }
 

@@ -356,6 +356,14 @@ int main()
             const float instrPeak = box.readSlotPeak (0);   // exchange: le uma vez
             check (std::isfinite (instrPeak) && instrPeak > 0.0f,
                    "instrument slot publishes an output peak");
+
+            // O led MIDI do master e a unica pista de que o MIDI da faixa entrou
+            // no rack: em modo instrumento a entrada e silencio, entao o pico de
+            // entrada nao prova nada. Consumo unico (exchange) como o clip.
+            check (box.readMasterMeters().midi,
+                   "midi in the block raises the master midi flag");
+            check (! box.readMasterMeters().midi,
+                   "reading the master midi flag consumes it");
         }
 
         // Nota off no bloco seguinte: voz cessa; cadeia volta a passar.

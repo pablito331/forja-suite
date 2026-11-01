@@ -48,12 +48,18 @@ public:
             state, "phase_invert", phaseButton);
     }
 
-    void setLevels (float inL, float inR, float outL, float outR)
+    void setLevels (float inL, float inR, float outL, float outR, bool midiArrived)
     {
         peakInL = std::max (inL, peakInL * 0.85f);
         peakInR = std::max (inR, peakInR * 0.85f);
         peakOutL = std::max (outL, peakOutL * 0.85f);
         peakOutR = std::max (outR, peakOutR * 0.85f);
+
+        // O evento chega em blocos curtos; a leitura e por polling. Segurar o
+        // led por um instante faz nota picada e trilha densa aparecerem iguais.
+        if (midiArrived)
+            midiLitUntilMs = static_cast<double> (juce::Time::getMillisecondCounterHiRes ()) + 220.0;
+
         repaint();
     }
 
@@ -72,6 +78,7 @@ public:
                     juce::Justification::centred, false);
 
         drawStereoMeter (g, bounds.withY (bounds.getHeight() - 118).withHeight (108));
+        drawMidiLed (g);
     }
 
     void resized() override
@@ -84,10 +91,32 @@ public:
         outKnob->setBounds (top.withX (knobW).withWidth (knobW).withY (44).withHeight (60));
 
         auto mid = bounds.withY (120).withHeight (30).reduced (16, 0);
-        phaseButton.setBounds (mid);
+        const int ledW = 62;
+        midiLedArea = mid.withWidth (ledW);
+        phaseButton.setBounds (mid.withX (mid.getX() + ledW + 10).withWidth (mid.getWidth() - ledW - 10));
     }
 
 private:
+    // Led de atividade MIDI da fileira central: a unica pista de que o MIDI da
+    // faixa entrou no rack (o medidor ENTRADA so mostra o audio do barramento).
+    void drawMidiLed (juce::Graphics& g)
+    {
+        if (midiLedArea.isEmpty())
+            return;
+
+        const bool lit = static_cast<double> (juce::Time::getMillisecondCounterHiRes ()) < midiLitUntilMs;
+
+        g.setColour (lit ? forja::ui::colour::ember : forja::ui::colour::iron3);
+        g.fillRoundedRectangle (midiLedArea.toFloat().reduced (1.0f), 4.0f);
+        g.setColour (lit ? forja::ui::colour::emberPale.withAlpha (0.85f)
+                         : forja::ui::colour::ember.withAlpha (0.45f));
+        g.drawRoundedRectangle (midiLedArea.toFloat().reduced (1.0f), 4.0f, 1.0f);
+
+        g.setFont (forja::ui::tracked (forja::ui::uiFont (9.0f, juce::Font::bold), 0.12f));
+        g.setColour (lit ? forja::ui::colour::emberPale : forja::ui::colour::dim);
+        g.drawText ("MIDI", midiLedArea, juce::Justification::centred, false);
+    }
+
     void drawStereoMeter (juce::Graphics& g, juce::Rectangle<int> area)
     {
         auto track = area.reduced (16, 0).toFloat();
@@ -148,6 +177,9 @@ private:
     float peakInR = 0.0f;
     float peakOutL = 0.0f;
     float peakOutR = 0.0f;
+
+    juce::Rectangle<int> midiLedArea;
+    double midiLitUntilMs = 0.0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MasterSection)
 };
@@ -267,7 +299,7 @@ void ForjarackAudioProcessorEditor::updateTelemetry()
     }
 
     const auto meters = engine.readMasterMeters();
-    master->setLevels (meters.inPeakL, meters.inPeakR, meters.outPeakL, meters.outPeakR);
+    master->setLevels (meters.inPeakL, meters.inPeakR, meters.outPeakL, meters.outPeakR, meters.midi);
 
     const double now = juce::Time::getMillisecondCounterHiRes();
 

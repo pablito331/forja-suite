@@ -227,6 +227,59 @@ target_link_libraries(forja_forjarack_hosted PRIVATE
 
 add_test(NAME forjarack_hosted COMMAND forja_forjarack_hosted)
 
+# Ponta a ponta do rack no papel de instrumento: compilamos o PROCESSOR real (e
+# o editor que ele referencia) num executavel de teste e dirigimos MIDI pela
+# API do AudioProcessor, como faz a DAW. O teste do engine cobre o nucleo e o
+# do CANIVETE cobre o player; este cobre a costura (layout de buses, APVTS ->
+# grafo, coleta de MIDI, soma da voz, bypass, medidor MIDI). Um instrumento de
+# sonda registrado em runtime remove qualquer dependencia de disco.
+add_executable(forja_forjarack_processor
+    Source/forjarack_processor.cpp
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source/PluginProcessor.cpp
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source/PluginEditor.cpp
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source/rack/RackEngine.cpp
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source/rack/ModuleCatalog.cpp
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source/rack/HostedModule.cpp
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source/rack/HostedLibrary.cpp
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source/ui/SlotComponent.cpp
+    ${CMAKE_SOURCE_DIR}/Minis/Minidrum/Source/minidrum/MiniDrumRackModule.cpp
+    ${CMAKE_SOURCE_DIR}/Minis/Minidrum/Source/minidrum/MiniDrum.cpp
+    ${CMAKE_SOURCE_DIR}/Minis/Minisat/Source/minisat/MiniSatRackModule.cpp
+    ${CMAKE_SOURCE_DIR}/Minis/Minisat/Source/minisat/MiniSat.cpp
+    ${CMAKE_SOURCE_DIR}/Minis/Canivete/Source/canivete/CaniveteRackModule.cpp
+    ${CMAKE_SOURCE_DIR}/Minis/Canivete/Source/canivete/SoundFontEngine.cpp
+    ${CMAKE_SOURCE_DIR}/drumforge/Drumforge/Source/engine/DrumEngine.cpp
+    ${CMAKE_SOURCE_DIR}/drumforge/Drumforge/Source/engine/SampleStore.cpp)
+
+target_include_directories(forja_forjarack_processor PRIVATE
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source
+    ${CMAKE_SOURCE_DIR}/Forja/Source
+    ${CMAKE_SOURCE_DIR}/Minis/Minidrum/Source
+    ${CMAKE_SOURCE_DIR}/Minis/Minisat/Source
+    ${CMAKE_SOURCE_DIR}/Minis/Canivete/Source
+    ${CMAKE_SOURCE_DIR}/drumforge/Drumforge/Source)
+
+forja_link_soundfont_vendor(forja_forjarack_processor)
+
+target_compile_definitions(forja_forjarack_processor PRIVATE
+    _USE_MATH_DEFINES
+    JUCE_MODAL_LOOPS_PERMITTED=1
+    JUCE_PLUGINHOST_VST3=1)
+target_compile_options(forja_forjarack_processor PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+target_compile_features(forja_forjarack_processor PRIVATE cxx_std_20)
+
+target_link_libraries(forja_forjarack_processor PRIVATE
+    forja_ui
+    juce::juce_audio_processors
+    juce::juce_audio_basics
+    juce::juce_events
+    juce::juce_graphics
+    juce::juce_gui_basics
+    juce::juce_dsp
+    juce::juce_recommended_config_flags)
+
+add_test(NAME forjarack_processor COMMAND forja_forjarack_processor)
+
 # MiniDrum: o wrapper que toca o engine do Drumforge em formato mini (pequeno
 # VST e gaveta do ForjaRack). Sem paridade (DSP proprio herdado, ja coberto
 # pelo teste do engine); cobre carga adocao, volume, premix do kit, latencia,

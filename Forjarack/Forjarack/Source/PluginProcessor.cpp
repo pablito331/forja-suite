@@ -174,6 +174,11 @@ void ForjarackAudioProcessor::cacheParameterPointers()
 
 void ForjarackAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    // Com a entrada desabilitada (trilha de instrumento) o buffer de entrada
+    // traz lixo; o processo trata como silencio para so sair a voz dos
+    // slots-instrumento. Detecta uma vez aqui (o layout ja esta definido) e reusa.
+    hasAudioInput = getTotalNumInputChannels() > 0;
+
     engine.prepare (sampleRate, samplesPerBlock);
 
     dryBuffer.setSize (2, juce::jmax (1, samplesPerBlock), false, false, true);
@@ -195,7 +200,16 @@ void ForjarackAudioProcessor::releaseResources()
 
 bool ForjarackAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-    return layouts.getMainInputChannelSet() == juce::AudioChannelSet::stereo()
+    // Saida sempre estereo (a corrente do rack e stereo). A entrada pode ser
+    // estereo (chaining de FX: o sinal passa pela cadeia) OU desabilitada
+    // (trilha de instrumento: so os slots-instrumento somam voz, como nos minis
+    // soltos). Exigir entrada obrigatoria fazia o host tratar o rack como FX e
+    // nao mandar o MIDI do teclado ao instrumento; aceitar a entrada desabilitada
+    // deixa o rack funcionar como instrumento sem perder o modo FX.
+    const auto& mainInput = layouts.getMainInputChannelSet();
+
+    return (mainInput == juce::AudioChannelSet::stereo()
+            || mainInput == juce::AudioChannelSet::disabled())
         && layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo();
 }
 
@@ -273,6 +287,11 @@ void ForjarackAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 
     float* left = buffer.getWritePointer (0);
     float* right = buffer.getWritePointer (1);
+
+    // Sem entrada de audio (modo instrumento): o par de entrada comeca em
+    // silencio; o dryBuffer capta zero e so a voz dos slots-instrumento sai.
+    if (! hasAudioInput)
+        buffer.clear();
 
     // Guarda o dry antes de qualquer processamento para o crossfade de bypass.
     dryBuffer.copyFrom (0, 0, left, numSamples);

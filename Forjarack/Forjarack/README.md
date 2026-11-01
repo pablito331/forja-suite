@@ -174,6 +174,12 @@ Suporte a instrumentos já instalado:
   o engine zera um scratch pré-alocado em `prepare`, o módulo escreve ali e o
   engine soma. Gavetas de instrumento exibem a chapa `INSTR` no cabeçalho.
 - Nada de alocação no caminho de áudio em nenhum dos dois papéis.
+- **Layout de buses flexível**: o rack aceita saída estéreo com a entrada
+  **estéreo OU desabilitada**. Numa faixa com áudio, funciona como FX em cadeia
+  (o sinal passa pelos slots). Numa **faixa de instrumento** (sem entrada de
+  áudio), o processador trata a entrada como silêncio e a saída é a voz dos
+  slots-instrumento — assim o teclado ao vivo toca o MINIDRUM/CANIVETE dentro do
+  rack, como toca no plugin solto, sem exigir uma fonte de áudio na faixa.
 
 Candidatos conscientes dessa porta (por enquanto, apenas intenção registrada):
 

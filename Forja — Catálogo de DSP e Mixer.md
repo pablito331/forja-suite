@@ -413,7 +413,12 @@ encadeamento, bypass/solo e zero alocação) e `forja_forjarack_hosted` (stub de
 `AudioPluginInstance`: adoção efeito/instrumento, params dinâmicos, trava da UI nativa,
 MIDI nativo e latência) no `ctest`. A banda de arquivos das gavetas de instrumento é
 coberta por `testDrawerFiles()` dentro de `forja_minidrum` e `forja_canivete`; a banda de
-instrumento do CANIVETE, por `testDrawerInstruments()`.
+instrumento do CANIVETE, por `testDrawerInstruments()`; e o áudio real saindo pela trilha
+do span (`processMidi`+`process` com bank carregado), por `testDrawerAudio()`. O rack
+aceita saída estéreo com entrada **estéreo ou desabilitada**: com entrada ligada roda como
+FX em cadeia; numa faixa de instrumento (entrada desabilitada) o processador trata a
+entrada como silêncio e a saída é a voz dos slots-instrumento — o mesmo caminho dos minis
+soltos, para o teclado ao vivo tocar sem exigir fonte de áudio na faixa.
 
 **Pendências, em ordem:**
 
@@ -426,9 +431,12 @@ instrumento do CANIVETE, por `testDrawerInstruments()`.
       lista, abrir kit/soundfont fora da biblioteca via ARQUIVO e conferir o knob mudo
       enquanto o externo toca — o contrato já tem teste (`testDrawerFiles()`), mas o
       FileChooser depende de sessão gráfica. Na gaveta CANIVETE, conferir também a
-      fileira INSTRUMENTO (`testDrawerInstruments()`) e lembrar que o FORJARACK tem bus
-      de áudio na entrada: com teclado MIDI ao vivo a faixa precisa de monitoramento de
-      entrada armado (record-arm) — os minis soltos são só saída e recebem MIDI direto.
+      fileira INSTRUMENTO (`testDrawerInstruments()`) e o toque do banco pela trilha
+      do span (`testDrawerAudio()`, verde no CI). Para o teclado ao vivo tocar dentro
+      do rack, coloque o ForjaRack numa faixa de **instrumento** (sem entrada de áudio):
+      o layout aceita a entrada desabilitada e o processador trata-a como silêncio — o
+      caminho era o motivo do silêncio antes, quando o rack só aceitava entrada estéreo
+      e os hosts o tratavam como FX puro.
 - [ ] Implementar o DRUMFORGE no host: automação dos 249 parâmetros, multi-out em DAW,
       bypass, preview sincronizado e arrasto de loop para a timeline; aqui não há DAW,
       então segue pendente como nos demais.

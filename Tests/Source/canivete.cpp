@@ -954,6 +954,56 @@ void testDrawerInstruments()
     other.deleteFile();
 }
 
+void testDrawerAudio()
+{
+    std::printf ("\n[audio pela gaveta do rack]\n");
+
+    // Prova o caminho real do rack com um bank de verdade: nota entra pelo span
+    // POD (processMidi), o wrapper a materializa no MidiBuffer e o process (com
+    // o bank ja adotado) precisa gerar audio. testDrawerFiles e
+    // testDrawerInstruments mexem no contrato e nos nomes, mas nunca exigiram
+    // pico audivel pela trilha do span: e aqui que o silencio de host apareceria.
+    const auto file = writeTestSf2 ("forja-canivete-audio", "Audio Piano");
+
+    CaniveteModule module;
+    module.prepare (testSampleRate);
+    module.setParam (0, 0.5f);   // volume nominal (o rack reenvia todo bloco)
+
+    module.drawerLoadExternalFile (file.getFullPathName().toStdString());
+
+    std::vector<float> left (static_cast<size_t> (testBlockSize), 0.0f);
+    std::vector<float> right (static_cast<size_t> (testBlockSize), 0.0f);
+
+    // Deixa a carga assentar: o idle colhe e o process adota o bank.
+    for (int pass = 0; pass < 120 && module.drawerInstrumentNames().empty(); ++pass)
+    {
+        module.idle();
+        module.process (left.data(), right.data(), testBlockSize);
+        pumpMessages (20);
+    }
+
+    check (! module.drawerInstrumentNames().empty(), "bank carregado pela gaveta");
+
+    std::array<forjarack::MidiEvent, 1> events {
+        forjarack::MidiEvent { 0, 1, 60, 100, true } };
+    const forjarack::MidiEventSpan span { events.data(), 1 };
+
+    module.processMidi (span);   // nota sustentada: so note-on
+
+    float peak = 0.0f;
+    for (int block = 0; block < 8; ++block)
+    {
+        std::fill (left.begin(), left.end(), 0.0f);
+        std::fill (right.begin(), right.end(), 0.0f);
+        module.process (left.data(), right.data(), testBlockSize);
+        peak = std::max (peak, module.readOutputPeak());
+    }
+
+    check (peak > 0.05f, "nota pelo span gera audio audivel na gaveta", juce::String (peak));
+
+    file.deleteFile();
+}
+
 void testRegistration()
 {
     std::printf ("\n[registro no catalogo]\n");
@@ -1065,6 +1115,7 @@ int main()
     testRackModule();
     testDrawerFiles();
     testDrawerInstruments();
+    testDrawerAudio();
     testRegistration();
 
     if (failures == 0)

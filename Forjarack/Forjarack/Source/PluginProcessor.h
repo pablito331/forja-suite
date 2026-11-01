@@ -93,6 +93,11 @@ private:
 
     RackEngine engine;
 
+    // False quando o host abre o rack com a entrada de audio desabilitada
+    // (trilha de instrumento): o processo zera a entrada para so sair a voz
+    // dos slots-instrumento. True com entrada estereo ativa (modo FX).
+    bool hasAudioInput = true;
+
     // Gaveta hospedada: biblioteca de scan + estado por slot. O plugin vivo de
     // um slot e um HostedModule adotado no engine (moduleAt); aqui guardamos
     // apenas o nome do arquivo escolhido e a janela do editor nativo aberta.

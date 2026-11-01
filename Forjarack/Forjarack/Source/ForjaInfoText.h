@@ -56,6 +56,23 @@ inline forja::ui::ForjaInfo makeForjaInfo()
     });
 
     info.sections.push_back ({
+        u ("FX em cadeia ou instrumento"),
+        {
+            u ("O rack aceita os dois usos pela mesma instancia. Numa faixa com "
+               "audio (entrada esterio ativa), a cadeia processa o sinal que "
+               "entra e sai efeitos em serie. Numa faixa de instrumento (sem "
+               "entrada de audio), o barramento de entrada e tratado como "
+               "sil\u00eancio e a saida passa a ser a voz dos slots-instrumento "
+               "(MINIDRUM, CANIVETE e plugins hospedados), que recebem o MIDI da "
+               "faixa e somam em cima."),
+            u ("\u00c9 assim que o teclado ao vivo toca o instrumento dentro do rack, "
+               "como toca no plugin solto: coloque o ForjaRack numa faixa de "
+               "instrumento e escolha o modulo na gaveta. Mantenha a entrada "
+               "ligada apenas quando quiser encadear efeitos sobre audio.")
+        }
+    });
+
+    info.sections.push_back ({
         u ("Gaveta HOSPEDADA"),
         {
             u ("A ficha HOSPEDADO no seletor abre a gaveta din\u00e2mica: qualquer "

@@ -92,7 +92,11 @@ inline ui::ForjaInfo makeForjaInfo()
                "compressor \u2192 EQ de tr\u00eas bandas \u2192 pan \u2192 fader. O compressor "
                "\u00e9 est\u00e9reo-linkado, com joelho suave de 6 dB; o EQ usa um shelf de "
                "80 Hz, um sino em 1,2 kHz e um shelf de 8 kHz, todos fixos, cada um com "
-               "ganho de \u221215 a +15 dB. Os envios s\u00e3o p\u00f3s-fader, como em uma mesa."),
+               "ganho de \u221215 a +15 dB. Os envios s\u00e3o p\u00f3s-fader, como em uma mesa; "
+               "como o SAL\u00c3O devolve 100% molhado, o SEND 1 dosa com curva quadrada "
+               "e teto de \u221212 dB \u2014 um dedo no bot\u00e3o mal injeta sala, a sala cresce "
+               "conforme o giro. O SEND 2 (satura\u00e7\u00e3o) segue linear porque ali o n\u00edvel "
+               "\u00e9 drive, n\u00e3o dose de retorno."),
             u ("O master soma os envios, aplica o trim, o compressor ButterComp (bloco "
                "T\u00caMPERA, adaptado do Airwindows) e o limitador. O limitador \u00e9 camada "
                "Forja: teto de \u22120,3 dBFS, ataque instant\u00e2neo e retorno de 80 ms, sem "
@@ -112,11 +116,20 @@ inline ui::ForjaInfo makeForjaInfo()
             u ("No canal: TRIM move a entrada de \u221224 a +24 dB; HPF abre um passa-altos "
                "de 20 a 400 Hz (em 0 fica desligado); LO, MID e HI s\u00e3o os tr\u00eas ganhos do "
                "EQ; THR e RATIO definem o compressor (threshold de \u221240 a 0 dB, raz\u00e3o de "
-               "1:1 a 20:1); SEND 1 e SEND 2 dosam os envios; M, S e \u00d8 s\u00e3o mute, solo e "
+               "1:1 a 20:1); SEND 1 dosa o ambiente com curva quadrada (topo em \u221212 dB) "
+               "e SEND 2 dosa a satura\u00e7\u00e3o; M, S e \u00d8 s\u00e3o mute, solo e "
                "fase; e o chip de sa\u00edda alterna entre MAIN e AUX 1 a 4."),
             u ("No master: TRIM, COMP (ButterComp, desligado em 0), LIMITER, FX 1 REGEN e "
                "FX 1 POS (tamanho e posi\u00e7\u00e3o do espa\u00e7o) e FX 2 DRIVE (satura\u00e7\u00e3o). "
-               "O medidor est\u00e9reo mostra o pico de sa\u00edda e a redu\u00e7\u00e3o de ganho."),
+               "O medidor est\u00e9reo mostra o pico de sa\u00edda; ao lado dele, dois rails "
+               "verticais separam a atua\u00e7\u00e3o: C \u00e9 a redu\u00e7\u00e3o do compressor e L, a do "
+               "limitador (cada um de 0 a \u221224 dB), com o total em dB abaixo."),
+            u ("Os knobs da mesa t\u00eam cor por fun\u00e7\u00e3o, sempre dentro da paleta: "
+               "ganho e din\u00e2mica em brasa, HPF em \u00e2mbar, o EQ em gradiente por faixa "
+               "(graves verdes, medios cinza, agudos laranja do medidor), envios em "
+               "branco e, no master, FX 1 em \u00e2mbar e FX 2 em laranja. Ao lado de cada "
+               "fader, um rail vertical mostra a redu\u00e7\u00e3o de ganho do compressor do "
+               "canal (0 a \u221224 dB)."),
             u ("Na aba KITS ficam a biblioteca, a importa\u00e7\u00e3o e o mapa dos 16 pads: "
                "clicar em um pad dispara o sample com velocity conforme a posi\u00e7\u00e3o "
                "vertical do clique. A aba MIXER mostra os 16 canais com medidor e "
@@ -162,8 +175,13 @@ inline ui::ForjaInfo makeForjaInfo()
                "Ao reabrir a sess\u00e3o, o estado que a DAW salvou vence a mix do arquivo, "
                "para n\u00e3o brigar com o preset e a automa\u00e7\u00e3o do projeto. O bot\u00e3o SALVAR "
                "KIT fecha o ciclo: com qualquer kit aberto, inclusive um vindo do "
-               "drumlabooh ou de uma pasta de samples, ele captura a mix atual do mixer "
-               "e salva como .dfkit premixado atrav\u00e9s de Salvar como."),
+               "drumlabooh ou de uma pasta de samples, ele captura a mix atual do mixer e "
+               "cria um pacote port\u00e1vel \u2014 uma pasta com o nome do kit levando o .dfkit "
+               "premixado, a subpasta samples/ com uma c\u00f3pia de cada \u00e1udio (sem "
+               "duplicar quem se repete entre pads) e a foto normalizada como image.png ou "
+               "image.jpg. Os caminhos ficam relativos \u00e0 pr\u00f3pria pasta, ent\u00e3o o pacote "
+               "\u00e9 aut\u00f4nomo: pode ser movido ou enviado para outra m\u00e1quina que o kit abre "
+               "sozinho, sem depender dos WAVs originais."),
             u ("Para o multi-out, habilite as sa\u00eddas AUX no canal do plugin na DAW e "
                "escolha o barramento no chip de sa\u00edda de cada pad. Duplo clique em "
                "qualquer controle devolve o padr\u00e3o; o bypass do host usa rampa de 10 ms "

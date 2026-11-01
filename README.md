@@ -1,9 +1,10 @@
 # Forja — suíte de plugins
 
-31 plugins VST3 em JUCE 9, com DSP adaptado do **Airwindows** (MIT, Chris Johnson),
-interface nativa do padrão Forja (sem WebView), painel FUNDAMENTOS em português e
-validação de paridade amostra a amostra contra o código original. O build local também
-gera Standalone opcionais para desenvolvimento.
+34 plugins VST3 em JUCE 9: 31 com DSP adaptado do **Airwindows** (MIT, Chris Johnson) e
+três entregas originais da Forja — o sampler **DRUMFORGE**, o rack **FORJARACK** e o mini
+**MINIDRUM** — com interface nativa do padrão Forja (sem WebView), painel FUNDAMENTOS em
+português e validação de paridade amostra a amostra contra o código original nas adaptações
+Airwindows. O build local também gera Standalone opcionais para desenvolvimento.
 
 A suíte cobre EQ, dinâmica, channel strips, fita, espaço, lo-fi, uma linha de one-knobs de
 mixagem e amps/gabinetes para guitarra, baixo e DI. Cada plugin tem README próprio com
@@ -12,7 +13,16 @@ redimensionáveis com aspecto fixo (70% a 200% do tamanho de projeto).
 
 O repositório é organizado por **bases de DSP**: `Airwindows/` reúne as 31 adaptações
 MIT; `drumforge/` é a segunda base, com DSP original da Forja — o **DRUMFORGE**, sampler
-de bateria com engine própria, mesa de 16 canais e multi-out, já compilado junto da suíte.
+de bateria com engine própria, mesa de 16 canais e multi-out, já compilado junto da suíte;
+`Forjarack/` é a base do **FORJARACK**, um rack em cadeia estilo Série 500 que empilha oito
+gavetas com os adaptadores MIT já validados; `Minis/` é a base dos minis originais da Forja,
+começando pelo **MINIDRUM** — leitor de kits do Drumforge em formato compacto, que reutiliza
+o engine do DRUMFORGE como bloco próprio.
+
+Fora dessas bases convive no mesmo working tree o **`pianoforge/`**: um projeto irmão
+**autônomo e non-JUCE** (SDK VST3 cru + backend de janela próprio, engine de soundfont),
+com repo, build e guia próprios. Ele **não** faz parte do build nem dos pacotes da Forja e
+segue as regras do seu próprio repositório, não as deste README.
 
 ![CINZÉL](docs/images/cinzel.png)
 
@@ -35,18 +45,20 @@ desenvolvimento.
 
 | Item | Estado |
 | --- | --- |
-| Targets locais (`<Nome>_VST3`, `<Nome>_Standalone`) | 32 plugins · 64 binários |
+| Targets locais (`<Nome>_VST3`, `<Nome>_Standalone`) | 34 plugins · 68 binários |
 | Paridade com os originais Airwindows | Verde em todos os executáveis |
-| Guarda de alocação em `process()` | PASS (30 adaptadores; BRASA e DRUMFORGE usam DSP próprio) |
+| Guarda de alocação em `process()` | PASS (adaptadores; DRUMFORGE, FORJARACK e MINIDRUM cobertos por testes de engine próprios) |
 | Latência por impulso | Medida em todos os modelos |
 | Interface e FUNDAMENTOS | Conferidos por captura DPI-aware |
-| UIs redimensionáveis | 32 editores com aspecto fixo, conferidos em 100% e 150% |
+| UIs redimensionáveis | 34 editores com aspecto fixo, conferidos em 100% e 150% |
 | Builds Windows/macOS/Linux | GitHub Actions em tags `v*` |
-| Artefatos em `Documents/prototipos` | 32 `.vst3` + 32 Standalone (local) |
+| Artefatos em `Documents/prototipos` | 34 `.vst3` + 34 Standalone (local) |
 | Capturas da interface | 35 imagens em `docs/images/` |
 | Gerador de plugins | `new_plugin.ps1` gera plugin que compila de imediato |
 | DRUMFORGE (sampler) | Engine, mesa, multi-out e abas KITS/MIXER/LOOPS prontos |
 | Loops MIDI do DRUMFORGE | Biblioteca, grade de passos, preview no BPM do host e arrasto prontos |
+| FORJARACK (rack) | Oito gavetas em série, bypass/solo, master e barra de redução de ganho |
+| MINIDRUM (mini) | Leitor de kits do Drumforge: puxar kit, foto e volume |
 | Validação em host (DAW) | Pendente · não há DAW no ambiente |
 
 ## Famílias
@@ -63,6 +75,8 @@ desenvolvimento.
 | Mix | `Airwindows/OneKnob/` | LIXA, MEL, CERA, CORPO, ÍMPETO, REBARBA | um controle, mixagem rápida |
 | Amp | `Airwindows/Amps/` | GABINETE, PONTA, CHIME, CRICK, LOBO, DELUXE | amps, baixo e DI |
 | Bateria | `drumforge/Drumforge/` | DRUMFORGE | sampler de bateria com mesa e multi-out |
+| Rack | `Forjarack/Forjarack/` | FORJARACK | rack em cadeia com módulos Airwindows MIT |
+| Minis | `Minis/Minidrum/` | MINIDRUM | mini leitor de kits do Drumforge |
 
 ## Plugins
 
@@ -100,6 +114,8 @@ desenvolvimento.
 | LOBO | Amp | Wolfbot | 0 | 0 |
 | DELUXE | Amp | ChimeyDeluxe | 10 | 0 |
 | DRUMFORGE | Bateria | engine Forja (FX: SALÃO, LIXA) | 249 | 0 |
+| FORJARACK | Rack | 22 adaptadores MIT como módulos | gavetas + master | 0 (PDC) |
+| MINIDRUM | Minis | engine DRUMFORGE (bloco próprio) | volume + kit | 0 |
 
 Contagens não incluem o bypass Forja, presente em todos e exposto por
 `getBypassParameter()`. Em REPIQUE, ECO, SALÃO e FÔLEGO o atraso interno é musical e não
@@ -136,6 +152,28 @@ master reutilizam adaptadores já validados da suíte — SALÃO (kRockstar2) no
 - Arrasto do `.mid` selecionado para a DAW pela alça ARRASTAR MIDI.
 - 249 parâmetros de automação (15 por pad, 6 do master, 2 do preview de loops e o bypass).
 
+### FORJARACK
+
+O **FORJARACK** (base `Forjarack/`) é um rack em cadeia estilo Série 500: oito gavetas em
+série, cada uma hospedando um adaptador **Airwindows** já validado por paridade na suíte —
+sem DSP novo, apenas empilhado. Não tem teste de paridade do rack em si (cada módulo já é
+parity-testado isoladamente); o teste do engine cobre a cadeia em série, o pass-through, o
+bypass/mute/solo por gaveta, a fase e o isolamento por instância. A UI sai um pouco do padrão
+(menu duplo categoria/módulo por gaveta, cor de fachada por família e barra de redução de
+ganho nos compressores), mas mantém a paleta, os knobs e o painel FUNDAMENTOS da casa. Os
+créditos MIT a Chris Johnson aparecem por módulo.
+
+### MINIDRUM
+
+O **MINIDRUM** (base `Minis/`) é o primeiro mini Forja: um instrumento compacto que toca um
+kit do Drumforge sem abrir o sampler completo. Ele **reutiliza o engine do DRUMFORGE como
+bloco** (nada de DSP forkado) e expõe apenas um botão para puxar um kit da biblioteca
+compartilhada (`Documentos/Forja/Drumforge/Kits`), a foto do kit e um knob de volume — o kit
+já carrega a própria mix. Também funciona como gaveta instrument dentro do FORJARACK. Sem
+paridade com vendor (DSP herdado, já coberto pelo teste do engine); o teste próprio cobre
+carga/adoção de kit, volume, premix, latência 0, bypass, medidor, troca com reap e ausência
+de alocação no áudio.
+
 ## Interface
 
 - Janela completa de 1000 × 540 px ou compacta de 560 × 260 px (LOBO e DIQUE).
@@ -156,6 +194,11 @@ master reutilizam adaptadores já validados da suíte — SALÃO (kRockstar2) no
   arrasto do `.mid` para a DAW. Os knobs da mesa são compactos (`MiniKnob`) para caber um
   canal inteiro em 92 px de largura.
 - Todo texto acentuado passa por `forja::ui::utf8()`.
+- FORJARACK empilha oito gavetas em série; cada uma tem dois menus suspensos (categoria e
+  módulo, um sobre o outro), chave on/off e de escuta (bypass/solo), e os compressores exibem
+  barra de redução de ganho; o master traz trim e fase.
+- MINIDRUM é compacto: um botão para puxar o kit da biblioteca do Drumforge, a foto do kit e
+  um knob de volume, sobre o chrome Forja de sempre.
 
 ## Capturas
 
@@ -173,7 +216,7 @@ master reutilizam adaptadores já validados da suíte — SALÃO (kRockstar2) no
 | Sampler: biblioteca de loops MIDI, grade e preview | |
 
 <details>
-<summary><strong>Galeria completa (31 plugins)</strong></summary>
+<summary><strong>Galeria completa (31 adaptações Airwindows)</strong></summary>
 
 | | | |
 | --- | --- | --- |
@@ -229,9 +272,11 @@ cmake --build build --config Release --target Cinzel_VST3 Cinzel_Standalone
 ```
 
 Os alvos ficam em `build/Airwindows/<Família>/<Plugin>/<Plugin>_artefacts/Release/`. O
-DRUMFORGE fica fora dessa árvore, em `build/drumforge/Drumforge/Drumforge_artefacts/Release/`.
+DRUMFORGE fica fora dessa árvore, em `build/drumforge/Drumforge/Drumforge_artefacts/Release/`;
+o FORJARACK e o MINIDRUM seguem o mesmo esquema sob `build/Forjarack/` e `build/Minis/`.
 Os testes ficam em `build/Tests/Release/` (`forja_parity_<modelo>.exe`,
-`forja_alloc_guard.exe` e `forja_drumforge_engine.exe`).
+`forja_alloc_guard.exe`, `forja_drumforge_engine.exe`, `forja_forjarack_engine.exe` e
+`forja_minidrum.exe`).
 
 LTO é o padrão local (`-DFORJA_LTO=OFF` desliga). A CI usa `FORJA_LTO=OFF` para os três
 SOs caberem no tempo do runner; o código e os testes são os mesmos.
@@ -247,7 +292,8 @@ SOs caberem no tempo do runner; o código e os testes são os mesmos.
 - ECO: as 17 posições de espaço são testadas uma a uma.
 - Delays e reverbs usam factory por caso para comparar estados equivalentes.
 - `ctest` executa os 28 executáveis de paridade (TÊMPERA/PRENSA/MALHO juntos + 27 modelos
-  individuais), o `forja_alloc_guard` e o `forja_drumforge_engine` nos três SOs.
+  individuais), o `forja_alloc_guard` e os testes de engine do DRUMFORGE, FORJARACK e
+  MINIDRUM nos três SOs.
 - DRUMFORGE não tem paridade (o DSP é Forja): o teste do engine monta um kit sintético e
   cobre troca de kit sem alocar no áudio, camadas de velocity, round-robin, choke,
   roubo de voz, isolamento dos 5 barramentos, mute/solo, mapa General MIDI, latência
@@ -255,7 +301,13 @@ SOs caberem no tempo do runner; o código e os testes são os mesmos.
   importação de pasta (WAV, classificação, `.dfkit` ida e volta). O mesmo executável grava
   MIDI na hora e valida a biblioteca de loops, o fechamento em compasso inteiro, a
   importação e o preview disparando no frame medido, com o cursor voltando ao início.
-- Última execução local (Windows, Release): `ctest` com 30/30 testes verdes.
+- FORJARACK não tem paridade do rack (cada módulo já é parity-testado isolado): o teste do
+  engine cobre cadeia em série, pass-through, bypass/mute/solo por gaveta, fase e
+  isolamento por instância.
+- MINIDRUM não tem paridade (DSP herdado do engine do DRUMFORGE): o teste cobre carga e
+  adoção de kit, volume, premix do kit, latência 0, bypass, medidor, troca com reap,
+  ausência de alocação no áudio e o registro da gaveta instrument.
+- Última execução local (Windows, Release): `ctest` com 32/32 testes verdes.
 
 ## Instalação
 
@@ -322,3 +374,7 @@ de efeito do master usam os mesmos adaptadores Airwindows MIT já validados na s
 (ButterComp2, kRockstar2 e PurestDrive), e o crédito a Chris Johnson aparece no README,
 no FUNDAMENTOS e no `PROVENANCE.md` de cada modelo. Nenhum sample ou biblioteca de
 bateria acompanha o plugin.
+
+O FORJARACK não cria DSP: ele empacota os adaptadores Airwindows já validados, então cada
+módulo carrega a licença MIT e a proveniência do seu modelo. O MINIDRUM reutiliza o engine
+do DRUMFORGE como bloco — mesmo DSP próprio da Forja, sem fork e sem vendor.

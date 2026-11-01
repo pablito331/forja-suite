@@ -5,11 +5,14 @@ Ele explica de onde vem o DSP, qual padrão a suíte segue e o que **não** pode
 
 ## O que é a Forja
 
-Forja é uma suíte de 32 plugins VST3 + Standalone em JUCE 9 (C++20) para Windows,
+Forja é uma suíte de 34 plugins VST3 + Standalone em JUCE 9 (C++20) para Windows,
 macOS e Linux, organizada em bases de DSP. A base `Airwindows/` adapta plugins da
 [Airwindows](https://www.airwindows.com/vsts/) de **Chris Johnson**, licenciado em MIT.
 A base `drumforge/` é a de DSP original: o **DRUMFORGE**, sampler de bateria com engine
-própria, mesa e multi-out. A Forja acrescenta interface nativa (sem WebView), painel
+própria, mesa e multi-out. A base `Forjarack/` entrega o **FORJARACK**, um rack em cadeia
+estilo Série 500 que hospeda adaptadores Airwindows já validados. A base `Minis/` entrega
+os minis Forja de propósito único, começando pelo **MINIDRUM** (leitor de kits do Drumforge
+com um knob de volume). A Forja acrescenta interface nativa (sem WebView), painel
 FUNDAMENTOS em português, bypass suavizado, medição, presets/estado via APVTS e validação
 de paridade amostra a amostra contra o código original nas adaptações Airwindows.
 
@@ -32,6 +35,10 @@ drumforge/                         base 2: sampler de bateria, DSP Forja
   Drumforge/Source/engine/         Kit, SampleStore, VoicePool, DrumEngine, mixer
   Drumforge/Source/loops/          LoopLibrary (MIDI em beats) e LoopPlayer (preview)
   Drumforge/Source/ui/             abas Kits, Mixer e Loops, MiniKnob
+Forjarack/                         base 3: FORJARACK, rack Série 500 de módulos Airwindows
+  Forjarack/Source/rack/           ModuleCatalog (registro append-only), módulos
+Minis/                             base 4: minis Forja de propósito único (MINIDRUM)
+  Minidrum/Source/minidrum/        wrapper do engine Drumforge como plugin autônomo
 Forja/                             biblioteca compartilhada forja_ui + DSP + vendor
   Source/forja/dsp/                adapters header-only (Forja<Modelo>.h)
   Source/forja/ui/                 chrome nativo (topBar, statusBar, cards, knobs, painel)
@@ -50,6 +57,27 @@ tools/                             gerador de scaffold de plugin
   vendor Airwindows por padrão e **não** tem teste de paridade; os testes cobrem sampler,
   MIDI, biblioteca/preview de loops, estado, multi-out e ausência de alocação no áudio.
   Pode reutilizar adaptadores Airwindows como blocos de canal.
+- `Forjarack/` — produto Forja original (o **FORJARACK**, rack em cadeia estilo Série 500).
+  Cada gaveta hospeda um adaptador Airwindows já validado; o DSP de cada módulo é o
+  original MIT, reusado como bloco de canal. Não tem vendor novo nem teste de paridade
+  próprio (a paridade é herdada dos módulos); o teste do engine cobre o catalogo
+  append-only, o encadeamento das gavetas, bypass/solo por gaveta e ausência de alocação.
+- `Minis/` — base dos minis originais Forja: plugins compactos de propósito único,
+  começando pelo **MINIDRUM** (leitor de kits do Drumforge com um knob de volume). Não usa
+  vendor Airwindows nem tem paridade (o DSP é o engine do Drumforge); os testes cobrem
+  carga/adoção de kit, volume, premix, latência, bypass, medidor e o registro no catálogo
+  do ForjaRack. A família **MINIS** no catálogo é mais ampla que a pasta: agrupa esses
+  minis Forja e os one-knobs MIT, que continuam em `Airwindows/OneKnob/` por regra de
+  proveniência.
+- **Exceção registrada — `pianoforge/`**: é um projeto **autônomo e separado** (repo
+  Git próprio, `github.com/pablito331/pianoforge`), **não** uma base Forja. É **non-JUCE**
+  (SDK VST3 cru da Steinberg + backend de janela Win32/Cocoa/X11 próprio, C++17), tem
+  engine de soundfont (tsf/sfizz), formato de bundle `.pforge`, parâmetros próprios e
+  painel FUNDAMENTOS caseiro. **Não** entra no `CMakeLists.txt` raiz, **não** usa
+  `forja_add_plugin`/`ForjaEditorBase`/APVTS/`utf8()` e **não** compartilha a UI da suíte.
+  Está ignorado no `.gitignore` da Forja (o repo da suíte não rastreia seu conteúdo, para
+  não gravar um gitlink quebrado). As regras deste arquivo **não** se aplicam a ele; quem
+  mexer no pianoforge segue o guia dentro do próprio repo.
 - Uma base nova é uma pasta irmã com `CMakeLists.txt` listando suas famílias/plugins e
   `add_subdirectory(<Base>)` na raiz. `forja_add_plugin` já é agnóstico de pasta; os
   geradores `tools/new_plugin.*` são específicos da base Airwindows.
@@ -161,6 +189,12 @@ Siga `docs/NOVO-PLUGIN.md`. Resumo:
   round-robin, choke, roubo de voz, multi-out, mute/solo, MIDI, latência 0, bypass,
   zero alocação, importação de pasta, biblioteca e preview de loops). As três abas
   (KITS, MIXER, LOOPS) estão implementadas; a validação em host segue pendente.
+- FORJARACK compila como VST3 e Standalone; `forja_forjarack_engine` PASS (catálogo
+  append-only, encadeamento das gavetas, bypass/solo por gaveta, seção master).
+- MINIDRUM compila como VST3 e Standalone; `forja_minidrum` PASS (carga/adoção de kit,
+  volume no trim do master, premix `.dfkit`, latência 0, bypass, medidor, troca com reap,
+  rejeição de kit inválido, zero alocação e registro da gaveta instrument no ForjaRack).
+- Última verificação local (Windows, Release): `ctest` com 32/32 testes verdes.
 - Sem DAW no ambiente de desenvolvimento: automação/bypass de host seguem pendentes de
   validação manual (ver README).
 - REPIQUE e ECO têm sync de BPM opcional; com `sync = false` o caminho é bit-exato.

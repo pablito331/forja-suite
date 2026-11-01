@@ -180,6 +180,56 @@ target_link_libraries(forja_drumforge_engine PRIVATE
 
 add_test(NAME drumforge_engine COMMAND forja_drumforge_engine)
 
+# Engine do ForjaRack: rack serie de modulos Airwindows MIT. Sem paridade do
+# rack em si (cada modulo ja e parity-testado isolado); o teste cobre cadeia em
+# serie, pass-through, bypass/mute/solo de slot, fase e isolamento por instancia.
+add_executable(forja_forjarack_engine
+    Source/forjarack_engine.cpp
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source/rack/RackEngine.cpp
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source/rack/ModuleCatalog.cpp)
+
+target_include_directories(forja_forjarack_engine PRIVATE
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source
+    ${CMAKE_SOURCE_DIR}/Forja/Source)
+
+target_compile_definitions(forja_forjarack_engine PRIVATE _USE_MATH_DEFINES)
+target_compile_options(forja_forjarack_engine PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+target_compile_features(forja_forjarack_engine PRIVATE cxx_std_20)
+
+add_test(NAME forjarack_engine COMMAND forja_forjarack_engine)
+
+# MiniDrum: o wrapper que toca o engine do Drumforge em formato mini (pequeno
+# VST e gaveta do ForjaRack). Sem paridade (DSP proprio herdado, ja coberto
+# pelo teste do engine); cobre carga adocao, volume, premix do kit, latencia,
+# bypass, medidor, troca com reap, ausencia de alocacao e registro da gaveta.
+add_executable(forja_minidrum
+    Source/minidrum.cpp
+    ${CMAKE_SOURCE_DIR}/Minis/Minidrum/Source/minidrum/MiniDrum.cpp
+    ${CMAKE_SOURCE_DIR}/Minis/Minidrum/Source/minidrum/MiniDrumRackModule.cpp
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source/rack/ModuleCatalog.cpp
+    ${CMAKE_SOURCE_DIR}/drumforge/Drumforge/Source/engine/DrumEngine.cpp
+    ${CMAKE_SOURCE_DIR}/drumforge/Drumforge/Source/engine/SampleStore.cpp)
+
+target_include_directories(forja_minidrum PRIVATE
+    ${CMAKE_SOURCE_DIR}/Minis/Minidrum/Source
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source
+    ${CMAKE_SOURCE_DIR}/drumforge/Drumforge/Source
+    ${CMAKE_SOURCE_DIR}/Forja/Source)
+
+target_compile_definitions(forja_minidrum PRIVATE _USE_MATH_DEFINES JUCE_MODAL_LOOPS_PERMITTED=1)
+target_compile_options(forja_minidrum PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+target_compile_features(forja_minidrum PRIVATE cxx_std_20)
+
+target_link_libraries(forja_minidrum PRIVATE
+    juce::juce_audio_basics
+    juce::juce_audio_formats
+    juce::juce_events
+    juce::juce_graphics
+    juce::juce_gui_basics
+    juce::juce_recommended_config_flags)
+
+add_test(NAME minidrum COMMAND forja_minidrum)
+
 # One parity executable per model: each compiles only its own vendored sources,
 # so a failure in one model never masks another.
 function(forja_add_parity_model slug model_name vendor_dir)

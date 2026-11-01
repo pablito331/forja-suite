@@ -307,6 +307,8 @@ void DrumEngine::process (const juce::MidiBuffer& midi,
     masterPeakLeft.store (masterMeter.peakLeft, std::memory_order_relaxed);
     masterPeakRight.store (masterMeter.peakRight, std::memory_order_relaxed);
     masterReduction.store (masterMeter.reductionDb, std::memory_order_relaxed);
+    masterCompReduction.store (masterMeter.compReductionDb, std::memory_order_relaxed);
+    masterLimReduction.store (masterMeter.limReductionDb, std::memory_order_relaxed);
 
     if (masterMeter.clip)
         masterClip.store (true, std::memory_order_relaxed);
@@ -430,6 +432,8 @@ DrumEngine::MasterMeter DrumEngine::readMasterMeter() noexcept
     meter.peakLeft = masterPeakLeft.exchange (0.0f, std::memory_order_relaxed);
     meter.peakRight = masterPeakRight.exchange (0.0f, std::memory_order_relaxed);
     meter.reductionDb = masterReduction.exchange (0.0f, std::memory_order_relaxed);
+    meter.compReductionDb = masterCompReduction.exchange (0.0f, std::memory_order_relaxed);
+    meter.limReductionDb = masterLimReduction.exchange (0.0f, std::memory_order_relaxed);
     meter.clip = masterClip.exchange (false, std::memory_order_relaxed);
     return meter;
 }

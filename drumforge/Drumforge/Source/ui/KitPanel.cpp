@@ -29,7 +29,7 @@ KitDetail::KitDetail()
             onOpenMixer();
     };
 
-    saveButton.setTooltip (forja::ui::utf8 ("Salva o kit aberto como .dfkit, com a mix atual do mixer"));
+    saveButton.setTooltip (forja::ui::utf8 ("Cria uma pasta com o nome do kit, copiando os audios e a imagem junto do .dfkit, com a mix atual"));
     saveButton.setWantsKeyboardFocus (false);
     saveButton.setEnabled (false);
     saveButton.onClick = [this]
@@ -530,8 +530,8 @@ void KitPanel::chooseSaveAs()
                                                  : juce::String ("Kit"));
 
     chooser = std::make_unique<juce::FileChooser> (
-        "Salvar kit como .dfkit",
-        processor.getLibraryDirectory().getChildFile (suggestion + ".dfkit"),
+        "Salvar kit (cria uma pasta com o nome do kit, com os audios)",
+        processor.getLibraryDirectory().getChildFile (suggestion),
         "*.dfkit");
 
     juce::Component::SafePointer<KitPanel> safe (this);
@@ -548,8 +548,14 @@ void KitPanel::chooseSaveAs()
                               if (file == juce::File())
                                   return;
 
-                              if (! file.hasFileExtension ("dfkit"))
-                                  file = juce::File (file.getFullPathName() + ".dfkit");
+                              const auto kitName = file.getFileNameWithoutExtension();
+
+                              if (kitName.isEmpty())
+                                  return;
+
+                              // O pacote e uma pasta com o nome do kit; o .dfkit,
+                              // os samples e a imagem vao todos para dentro dela.
+                              const auto bundleDir = file.getParentDirectory().getChildFile (kitName);
 
                               const auto kit = safe->processor.getKitForSaving();
 
@@ -558,7 +564,7 @@ void KitPanel::chooseSaveAs()
 
                               juce::String error;
 
-                              if (! kit.saveToFile (file, error))
+                              if (! kit.saveAsBundle (bundleDir, error))
                               {
                                   juce::AlertWindow::showAsync (
                                       juce::MessageBoxOptions()
@@ -571,7 +577,8 @@ void KitPanel::chooseSaveAs()
                                   return;
                               }
 
-                              safe->processor.markKitSaved (file);
+                              safe->processor.markKitSaved (
+                                  bundleDir.getChildFile (kitName + ".dfkit"));
                               safe->updateLibrary();
                               safe->refreshStatus();
                           });

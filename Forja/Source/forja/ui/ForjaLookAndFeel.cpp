@@ -29,6 +29,14 @@ void ForjaLookAndFeel::drawRotarySlider (juce::Graphics& g,
     const float end = juce::MathConstants<float>::pi * 2.75f;
     const float angle = start + juce::jlimit (0.0f, 1.0f, sliderPos) * (end - start);
 
+    // Accentos por knob (propriedade opcional "accent"): a mesa pinta EQ,
+    // dinamica e envios em cores diferentes; sem a propriedade tudo segue
+    // no padrao ember.
+    const juce::uint32 accentBits = static_cast<juce::uint32> (
+        static_cast<double> (slider.getProperties().getWithDefault (
+            "accent", static_cast<double> (colour::ember.getARGB()))));
+    const juce::Colour accent (accentBits);
+
     juce::Path track;
     track.addCentredArc (cx, cy, trackRadius, trackRadius, 0.0f, start, end, true);
     g.setColour (juce::Colour (0xff3b4552));
@@ -40,11 +48,11 @@ void ForjaLookAndFeel::drawRotarySlider (juce::Graphics& g,
         juce::Path active;
         active.addCentredArc (cx, cy, trackRadius, trackRadius, 0.0f, start, angle, true);
 
-        g.setColour (colour::ember.withAlpha (0.12f));
+        g.setColour (accent.withAlpha (0.12f));
         g.strokePath (active, juce::PathStrokeType (strokeWidth * 3.2f, juce::PathStrokeType::curved,
                                                     juce::PathStrokeType::rounded));
 
-        g.setColour (colour::ember);
+        g.setColour (accent);
         g.strokePath (active, juce::PathStrokeType (strokeWidth, juce::PathStrokeType::curved,
                                                     juce::PathStrokeType::rounded));
     }
@@ -74,7 +82,7 @@ void ForjaLookAndFeel::drawRotarySlider (juce::Graphics& g,
     const juce::Line<float> needleRotated (needle.getStart().transformedBy (needleTransform),
                                            needle.getEnd().transformedBy (needleTransform));
 
-    g.setColour (colour::ember.withAlpha (0.4f));
+    g.setColour (accent.withAlpha (0.4f));
     g.drawLine (needleRotated, size * 3.6f / 80.0f);
 
     g.setColour (colour::emberPale);

@@ -12,7 +12,7 @@ com `forja_add_instrument` e a biblioteca compartilhada `forja_ui`.
 | --- | --- |
 | Engine (`forja::drumforge::DrumEngine`) | Implementado: 64 vozes, camadas, RR, choke, roubo |
 | Importação de kit (pasta de samples) | Implementada: classificação por nome + marcadores `vl`/`rr` |
-| Kit em arquivo (`.dfkit`) | Implementado: texto no estilo drumlabooh (notas, camadas, `@`pad, `~`choke) e mix premixada (`#mix@`/`#master`) |
+| Kit em arquivo (`.dfkit`) | Implementado: texto no estilo drumlabooh (notas, camadas, `@`pad, `~`choke) e mix premixada (`#mix@`/`#master`); SALVAR KIT cria pacote portável com os audios |
 | Kit de texto (`drumkit.txt` / `drumkit.labooh` do drumlabooh) | Implementado: mapa MIDI, camadas, `>`/`*`/`^`, listas `.txt`, subpastas |
 | Processor | APVTS de 249 parâmetros, MIDI, multi-out, estado e bypass |
 | Interface | Abas KITS, MIXER e LOOPS MIDI prontas |
@@ -41,7 +41,7 @@ Cada pad tem 15 parâmetros de automação: 11 contínuos, 3 booleanos e 1 escol
 | EQ High | `padNN_eqHigh` | 0,00 – 1,00 | 0,50 | Shelf em 8 kHz, ±15 dB |
 | Comp Threshold | `padNN_compThr` | 0,00 – 1,00 | 0,70 | Limiar de −40 a 0 dB |
 | Comp Ratio | `padNN_compRatio` | 0,00 – 1,00 | 0,10 | Razão de 1:1 a 20:1 |
-| Send FX1 | `padNN_send1` | 0,00 – 1,00 | 0,00 | Envio pós-fader ao SALÃO |
+| Send FX1 | `padNN_send1` | 0,00 – 1,00 | 0,00 | Envio pós-fader ao SALÃO; curva quadrada, topo em −12 dB (o retorno é 100% wet) |
 | Send FX2 | `padNN_send2` | 0,00 – 1,00 | 0,00 | Envio pós-fader à LIXA |
 | Mute / Solo / Fase | `padNN_mute`, `padNN_solo`, `padNN_phase` | on/off | off | Mute, solo e inversão de fase |
 | Saída | `padNN_out` | Master, Aux 1–4 | Master | Barramento de destino do canal |
@@ -71,13 +71,16 @@ e `loop_bpm` (0,40, de 40 a 240 BPM quando o sync está desligado). O `bypass` �
 4. **Choke** — tocar um pad de um grupo desliga as vozes dos outros pads do mesmo grupo
    com rampa de 5 ms. O kit padrão põe HI-HAT e OPEN HAT no grupo 1.
 5. **Canal** — trim → HPF (12 dB/oct) → compressor estéreo-linkado com joelho de 6 dB →
-   EQ de três bandas → pan → fader. Os envios saem pós-fader.
+   EQ de três bandas → pan → fader. Os envios saem pós-fader; como o SALÃO devolve 100%
+   wet, o SEND 1 dosa com curva quadrada e teto de −12 dB (um dedo no botão mal injeta
+   sala), e o SEND 2 segue linear porque ali o nível é drive, não dose de retorno.
 6. **Master** — soma dos 16 canais para o MAIN, trim, TÊMPERA (`master_comp`, desligado em
    0), limiter de teto −0,3 dBFS (ataque instantâneo, retorno de 80 ms, sem lookahead) e
    os retornos de FX 1 (SALÃO) e FX 2 (LIXA).
 
 Medidores: cada canal publica pico e redução de ganho em atômicos; o master publica pico
-L/R, redução e clip. O editor lê uma vez por tique (30 Hz) e envia o retrato para a aba
+L/R, clip e a redução já separada em compressor e limitador (dois campos), para a UI desenhar
+cada rail à parte. O editor lê uma vez por tique (30 Hz) e envia o retrato para a aba
 visível — a leitura consome o valor, então não há corrida entre abas.
 
 Os blocos de efeito do master reutilizam adaptadores Airwindows MIT já validados na suíte
@@ -143,12 +146,17 @@ master; mute, solo, fase e a escolha de saída **não** vão no kit (são decis�
 mix é aplicada **só na carga manual** (`ABRIR KIT`, `IMPORTAR PASTA`, arrastar-e-soltar):
 kit com `#mix` assume os knobs, kit sem `#mix` volta a mesa ao neutro. Ao **reabrir a
 sessão**, o estado que a DAW salvou vence a mix do arquivo, para o plugin não brigar com o
-preset/automação do projeto. A importação grava o `.dfkit` sem mix; para premixar, use o
-botão **SALVAR KIT** no rodapé da aba KITS: ele pega o kit aberto (mesmo vindo de
-`drumkit.txt`, `drumkit.labooh` ou pasta de samples), captura o estado atual do mixer
-(os 11 controles contínuos de cada pad mais os do master) e grava como `.dfkit` com
-"Salvar como" apontando para a biblioteca. Assim dá para abrir um kit estrangeiro, ajustar
-a mesa e fechar o ciclo no nosso formato premixado.
+preset/automação do projeto. A importação grava o `.dfkit` sem mix; para premixar e levar os
+áudios junto, use o botão **SALVAR KIT** no rodapé da aba KITS: ele pega o kit aberto (mesmo
+vindo de `drumkit.txt`, `drumkit.labooh` ou pasta de samples), captura o estado atual do
+mixer (os 11 controles contínuos de cada pad mais os do master) e cria um **pacote
+portável** — uma pasta com o nome do kit contendo o `.dfkit`, a subpasta `samples/` com uma
+cópia de cada WAV (um sample usado em vários pads é copiado só uma vez) e a foto normalizada
+como `image.png`/`image.jpg`. Os caminhos no `.dfkit` ficam relativos à própria pasta, então
+dá para mover o pacote ou mandar para outra máquina que o kit abre sozinho, sem depender dos
+WAVs originais. "Salvar como" aponta para a biblioteca e a varredura recursiva já mostra o
+`.dfkit` do pacote na lista. Assim fecha-se o ciclo: abrir um kit estrangeiro, ajustar a mesa
+e salvar tudo junto no nosso formato premixado.
 
 O `.dfkit` é **gerado pela importação**: não é preciso escrever a linha à mão. O mínimo que
 o leitor aceita é uma linha com o `=` e ao menos um arquivo (relativo à pasta do `.dfkit`):
@@ -262,8 +270,12 @@ buffer de áudio.
   pads e o painel do kit selecionado (foto grande do kit à esquerda; à direita, pads com
   áudio, amostras, camadas e RR). Clicar em
   um pad dispara o som com velocity pela posição vertical; arrastar uma pasta importa.
-- Aba **MIXER**: 16 canais de 92 px com `MiniKnob` (10 controles em 5 linhas), mute/solo/
-  fase, chip de saída, fader com medidor e leitura de GR, além do master fixo à direita.
+- Aba **MIXER**: 16 canais de 92 px com `MiniKnob` (10 controles em 5 linhas, coloridos por
+  função dentro da paleta: brasa para ganho/dinâmica, âmbar para HPF, gradiente verde→cinza→
+  laranja no EQ, branco nos envios), mute/solo/
+  fase, chip de saída, fader estreito com medidor, rail vertical de GR do canal e leitura de
+  GR, além do master fixo à direita com medidor estéreo e dois rails separados (C =
+  compressor, L = limitador, 0 a −24 dB).
 - Aba **LOOPS**: biblioteca com busca e filtro por pacote/categoria (subpastas aninhadas),
   detalhe do loop com `TOCAR`, `SYNC DAW`, `BPM`, transporte, grade de 1/16 e
   `ARRASTAR MIDI`.

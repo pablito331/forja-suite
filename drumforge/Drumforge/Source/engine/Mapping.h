@@ -94,6 +94,16 @@ inline float ratio (float value) noexcept
     return 1.0f + 19.0f * unit (value);
 }
 
+// Envio ao FX1 (SALAO): a volta e 100% wet e as somas do reverb empilham, entao
+// o botao entra com atenuacao forte. Lei quadrada, topo em 0,25 (-12 dB): um
+// dedo no knob (0,1) injeta -52 dB, sala audivel so passa de 0,5. O FX2 recebe
+// nivel de drive (LIXA e non-linear), entao esse segue linear.
+inline float wetSendGain (float value) noexcept
+{
+    const float v = unit (value);
+    return v * v * 0.25f;
+}
+
 // Coeficiente de suavização de um polo para uma constante de tempo em ms.
 inline double smoothingCoefficient (double timeMs, double sampleRate) noexcept
 {

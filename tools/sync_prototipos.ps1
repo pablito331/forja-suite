@@ -93,6 +93,7 @@ function Get-SuitePlugins {
     $manifests = @()
     $manifests += Get-ChildItem -Path (Join-Path $Root "Airwindows\*\*\CMakeLists.txt") -ErrorAction SilentlyContinue
     $manifests += Get-ChildItem -Path (Join-Path $Root "drumforge\*\CMakeLists.txt") -ErrorAction SilentlyContinue
+    $manifests += Get-ChildItem -Path (Join-Path $Root "Forjarack\*\CMakeLists.txt") -ErrorAction SilentlyContinue
 
     $found = @()
     foreach ($manifest in $manifests) {
@@ -147,6 +148,7 @@ function Get-SuitePlugins {
 
         $base = 'airwindows'
         if ($manifest.FullName -match '\\drumforge\\') { $base = 'drumforge' }
+        if ($manifest.FullName -match '\\Forjarack\\') { $base = 'forjarack' }
 
         # Titulos do README as vezes comecam em minuscula ("de-esser dinamico").
         if ($description.Length -gt 1 -and $description[0] -cmatch '[a-z]') {
@@ -210,6 +212,8 @@ if ($installed.Count -eq 0) { throw "nenhum .vst3 encontrado em $Dest" }
 $standaloneCount = @(Get-ChildItem $Dest -Filter *-standalone.exe -ErrorAction SilentlyContinue).Count
 $airwindows = @($installed | Where-Object { $_.Base -eq 'airwindows' })
 $instruments = @($installed | Where-Object { $_.Base -ne 'airwindows' })
+$ownForja = @($installed | Where-Object { $_.Base -in @('drumforge', 'forjarack') })
+$drumforge = @($installed | Where-Object { $_.Base -eq 'drumforge' })
 
 $families = @()
 foreach ($name in $familyOrder) {
@@ -240,7 +244,7 @@ if (-not $Verify) {
 
     if ($instruments.Count -gt 0) {
         $lines += ''
-        $lines += Get-WrappedText -Text ("Sao {0} adaptacoes MIT da Airwindows (Chris Johnson) e {1} plugin da base drumforge, com DSP proprio: {2}." -f $airwindows.Count, $instruments.Count, (($instruments | ForEach-Object { $_.Product }) -join ', '))
+        $lines += Get-WrappedText -Text ("Sao {0} adaptacoes MIT da Airwindows (Chris Johnson) e {1} plugin de DSP proprio da Forja (bases drumforge e Forjarack): {2}." -f $airwindows.Count, $ownForja.Count, (($ownForja | ForEach-Object { $_.Product }) -join ', '))
     }
 
     $lines += ''
@@ -256,7 +260,10 @@ if (-not $Verify) {
     $lines += 'A DAW mostra o nome do plugin seguido da familia, por exemplo:'
     $lines += '   Torno (Forja - EQ)'
     $lines += '   Laminador (Forja - Fita)'
-    foreach ($instrument in $instruments) { $lines += ('   {0} (Forja)' -f $instrument.Product) }
+    foreach ($instrument in $instruments) {
+        $suffix = if ($instrument.Base -eq 'forjarack') { ' - Rack' } else { '' }
+        $lines += ('   {0} (Forja{1})' -f $instrument.Product, $suffix)
+    }
 
     $lines += ''
     $lines += 'INSTALACAO POR FAMILIA'
@@ -275,17 +282,28 @@ if (-not $Verify) {
         $lines += '   ' + (($legacy | ForEach-Object { $_.Name }) -join ', ')
     }
 
-    if ($instruments.Count -gt 0) {
+    if ($drumforge.Count -gt 0) {
         $lines += ''
         $lines += 'DRUMFORGE'
         $lines += ('-' * 9)
-        $lines += Get-WrappedText -Text ("O {0} e um sampler de bateria com DSP proprio, nao uma adaptacao Airwindows. Ele nao vem com samples: importe uma pasta de WAVs pela aba KITS, abra um arquivo .dfkit (texto no estilo drumlabooh) ou use um drumkit.txt / drumkit.labooh do Drumlabooh." -f (($instruments | ForEach-Object { $_.Product }) -join ', '))
+        $lines += Get-WrappedText -Text ("O {0} e um sampler de bateria com DSP proprio, nao uma adaptacao Airwindows. Ele nao vem com samples: importe uma pasta de WAVs pela aba KITS, abra um arquivo .dfkit (texto no estilo drumlabooh) ou use um drumkit.txt / drumkit.labooh do Drumlabooh." -f (($drumforge | ForEach-Object { $_.Product }) -join ', '))
         $lines += Get-WrappedText -Text "Kits do drum_sklad (drumkit.txt ou drumkit.labooh) colocados em C:\Users\<voce>\drum_sklad, drumlabooh-kits ou drumrox-kits aparecem na biblioteca da aba KITS sem copiar nada."
         $lines += Get-WrappedText -Text "A foto de preview do kit (image.png ou image.jpg na pasta do drum_sklad) aparece no card da aba KITS."
-        $lines += Get-WrappedText -Text "Um .dfkit pode vir premixado: a mix de cada pad e do master vai em linhas de comentario #mix@N e #master e e aplicada na carga manual do kit. Veja INSTALAR-BATERIA.txt."
+        $lines += Get-WrappedText -Text "Um .dfkit pode vir premixado: a mix de cada pad e do master vai em linhas de comentario #mix@N e #master e e aplicada na carga manual do kit. SALVAR KIT cria uma pasta com o nome do kit levando o .dfkit, os audios copiados para samples/ e a imagem: um pacote autonomo que abre em qualquer maquina. Veja INSTALAR-BATERIA.txt."
+        $lines += Get-WrappedText -Text "Na aba MIXER cada canal traz um rail vertical com a reducao de ganho do compressor ao lado do fader, e o master mostra dois rails separados (C = compressor, L = limitador). Os knobs tem cor por funcao dentro da paleta (brasa para ganho/dinamica, ambar para HPF, gradiente no EQ). O envio S1 (ambiente SALAO) dosa com curva quadrada e teto de -12 dB: como o retorno e 100% wet, um dedo no botao mal injeta sala e a dose cresce conforme o giro."
         $lines += 'Kits e loops ficam em:'
         $lines += '      Documentos\Forja\Drumforge\Kits'
         $lines += '      Documentos\Forja\Drumforge\Loops'
+    }
+
+    $rackPlugins = @($installed | Where-Object { $_.Base -eq 'forjarack' })
+    if ($rackPlugins.Count -gt 0) {
+        $lines += ''
+        $lines += 'FORJARACK'
+        $lines += ('-' * 9)
+        $lines += Get-WrappedText -Text "O ForjaRack e um rack em cadeia estilo Serie 500: oito gavetas em serie, cada uma hospedando um modulo Airwindows MIT ja validado por paridade na suite. Sao 22 modulos em seis familias: cor (CERA, MEL, CORPO, IMPETO), drive (LIXA, OXIDO, REBARBA, LAMINADOR), dinamica (TEMPERA, MURALHA, DIQUE, MALHO, PRENSA, ESCORIA), EQ (CINZEL, TORNO, LIMA), lo-fi (GRANALHA) e ambiente (FOLEGO, SALAO, REPIQUE, ECO). A gaveta toca assim que recebe um modulo, sem chave de ligar: gaveta vazia ou em BYPASS e pass-through exato. SOLO em qualquer gaveta silencia as demais, e o solo de uma gaveta ja em bypass nao conta para nao mutar o rack inteiro."
+        $lines += Get-WrappedText -Text "Secao master com trim de entrada e saida (+-24 dB) e inversao de fase do canal direito. Bypass global com rampa de 10 ms. Latencia 0 (PDC): reverb e delay tem atraso musical, como nos originais."
+        $lines += Get-WrappedText -Text "O plugin aceita MIDI e o registro de modulos e expansivel: futuros instrumentos (leitor de soundfont sf2/sf3, mini drum que le os kits .dfkit do Drumforge, outros mini plugins) entram como gavetas que somam sua voz na cadeia, sem instalar plugins separados."
     }
 
     $lines += ''
@@ -331,6 +349,10 @@ if (-not $Verify) {
     $lines += 'LICENSE e PROVENANCE.md (URL, commit, data e SHA-256).'
     if ($instruments.Count -gt 0) {
         $lines += 'Engine, mixer, importacao e interface do Drumforge sao Forja.'
+    }
+    if ($rackPlugins.Count -gt 0) {
+        $lines += 'Rack, registro de modulos e medidores do ForjaRack sao Forja; os'
+        $lines += 'modulos reutilizam adaptadores MIT da Airwindows (Chris Johnson).'
     }
     $lines += 'Interface, medidores, bypass e a camada dinamica do Cinzel sao Forja.'
 
@@ -389,7 +411,12 @@ if (-not $Verify) {
         $lines += 'clicando fora do painel.'
 
         $lines += ''
-        $lines += 'DSP Airwindows (MIT, Chris Johnson). Interface, medidores e bypass: Forja.'
+        if ($family.Key -eq 'RACK') {
+            $lines += 'Modulos: adaptadores Airwindows MIT (Chris Johnson). A cadeia em serie,'
+            $lines += 'as chaves de slot, o master e o registro de expansoes: Forja.'
+        } else {
+            $lines += 'DSP Airwindows (MIT, Chris Johnson). Interface, medidores e bypass: Forja.'
+        }
         $written += Set-GuideFile -Name ("INSTALAR-{0}.txt" -f $family.Key) -Lines $lines
     }
 
@@ -441,8 +468,19 @@ if (-not $Verify) {
         $lines += ''
         $lines += 'Para criar um kit premixado sem editar arquivo: abra qualquer kit (ate um'
         $lines += 'drumkit.txt ou pasta de WAVs), ajuste o mixer e use SALVAR KIT na aba'
-        $lines += 'KITS. Ele grava o mapa + a mix atual como .dfkit pelo Salvar como, por'
-        $lines += 'padrao na pasta Documentos\Forja\Drumforge\Kits.'
+        $lines += 'KITS. Ele cria uma pasta com o nome do kit levando o .dfkit (mapa + mix'
+        $lines += 'atual), a subpasta samples/ com uma copia de cada audio e a foto como'
+        $lines += 'image.png/image.jpg, tudo com caminhos relativos a pasta. O pacote e'
+        $lines += 'autonomo: pode mover ou enviar para outra maquina sem perder samples.'
+        $lines += 'Por padrao o Salvar como aponta para Documentos\Forja\Drumforge\Kits,'
+        $lines += 'onde o pacote ja aparece na biblioteca.'
+        $lines += ''
+        $lines += 'AMBIENTE NA MESA'
+        $lines += ('-' * 15)
+        $lines += 'O envio S1 de cada canal dosa o reverb SALAO, que devolve 100% wet.'
+        $lines += 'Para um dedo no botao nao injetar sala demais, o knob usa curva'
+        $lines += 'quadrada com teto de -12 dB: comece em 0,5 e ajuste ouvindo. O S2'
+        $lines += 'manda para a saturacao LIXA e segue linear (ali o nivel e drive).'
         $lines += ''
         $lines += 'A aba LOOPS le arquivos .mid e .midi de:'
         $lines += '      Documentos\Forja\Drumforge\Loops'
@@ -550,8 +588,8 @@ foreach ($ref in [regex]::Matches($readme, 'docs/images/([\w.\-]+\.png)')) {
 if (-not $Verify -and $written.Count -gt 0) {
     Write-Output ("Guias gerados: " + ($written -join ', '))
 }
-Write-Output ("{0} plugins ({1} Airwindows + {2} drumforge) | {3} .vst3 | {4} standalones" -f
-    $installed.Count, $airwindows.Count, $instruments.Count, $installed.Count, $standaloneCount)
+Write-Output ("{0} plugins ({1} Airwindows + {2} Forja) | {3} .vst3 | {4} standalones" -f
+    $installed.Count, $airwindows.Count, $ownForja.Count, $installed.Count, $standaloneCount)
 
 if ($problems.Count -eq 0) {
     Write-Output "DOCS OK: README, AGENTS e capturas batem com o codigo."

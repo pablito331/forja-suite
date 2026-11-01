@@ -23,6 +23,8 @@ public:
         float peakLeft = 0.0f;
         float peakRight = 0.0f;
         float reductionDb = 0.0f;
+        float compReductionDb = 0.0f;
+        float limReductionDb = 0.0f;
         bool clip = false;
     };
 
@@ -46,6 +48,7 @@ public:
         limiterGain = 1.0f;
         peakLeft = peakRight = 0.0f;
         reductionDb = 0.0f;
+        compMeterDb = limMeterDb = 0.0f;
         clip = false;
         primed = false;
     }
@@ -154,6 +157,8 @@ public:
         }
 
         reductionDb = std::min (reductionDb, compressorReduction + limiterReductionDb);
+        compMeterDb = std::min (compMeterDb, compressorReduction);
+        limMeterDb = std::min (limMeterDb, limiterReductionDb);
     }
 
     Meter readMeters() noexcept
@@ -162,10 +167,14 @@ public:
         meter.peakLeft = peakLeft;
         meter.peakRight = peakRight;
         meter.reductionDb = reductionDb;
+        meter.compReductionDb = compMeterDb;
+        meter.limReductionDb = limMeterDb;
         meter.clip = clip;
 
         peakLeft = peakRight = 0.0f;
         reductionDb = 0.0f;
+        compMeterDb = 0.0f;
+        limMeterDb = 0.0f;
         clip = false;
         return meter;
     }
@@ -217,6 +226,8 @@ private:
     float peakLeft = 0.0f;
     float peakRight = 0.0f;
     float reductionDb = 0.0f;
+    float compMeterDb = 0.0f;
+    float limMeterDb = 0.0f;
     bool clip = false;
 };
 

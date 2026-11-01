@@ -4,6 +4,7 @@
 // e preview.
 #include <juce_audio_basics/juce_audio_basics.h>
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <cmath>
@@ -16,6 +17,7 @@
 
 #include "engine/DrumEngine.h"
 #include "engine/Kit.h"
+#include "engine/MasterBus.h"
 #include "loops/LoopLibrary.h"
 #include "loops/LoopPlayer.h"
 
@@ -418,6 +420,96 @@ void testBypass()
         h.render (testBlockSize);
 
     check (h.busPeak (0) > 1.0e-3f, "bypass desligado retoma o audio");
+}
+
+// O medidor do master separa compressor e limitador: cada rail da UI so
+// recebe a reducao da propria etapa.
+void testMasterMeterSplit()
+{
+    std::printf ("\n[medicao do master: comp e limiter separados]\n");
+
+    constexpr int frames = 512;
+    std::array<float, frames> left {};
+    std::array<float, frames> right {};
+    std::array<float, frames> fx1L {}, fx1R {}, fx2L {}, fx2R {};
+
+    auto fillSine = [&] (float amplitude)
+    {
+        for (int i = 0; i < frames; ++i)
+        {
+            const auto value = amplitude
+                * std::sin (2.0 * juce::MathConstants<double>::pi * (double) i / 24.0);
+            left[(size_t) i] = (float) value;
+            right[(size_t) i] = (float) value;
+        }
+    };
+
+    auto run = [&] (const MasterParameters& parameters, float amplitude)
+    {
+        MasterBus bus;
+        bus.prepare (testSampleRate);
+        bus.setParameters (parameters);
+
+        MasterBus::Meter worst;
+        worst.compReductionDb = worst.limReductionDb = 0.0f;
+
+        for (int block = 0; block < 8; ++block)
+        {
+            fillSine (amplitude);
+            bus.process (left.data(), right.data(), fx1L.data(), fx1R.data(),
+                         fx2L.data(), fx2R.data(), frames);
+            const auto meter = bus.readMeters();
+            worst.compReductionDb = std::min (worst.compReductionDb, meter.compReductionDb);
+            worst.limReductionDb = std::min (worst.limReductionDb, meter.limReductionDb);
+        }
+
+        return worst;
+    };
+
+    MasterParameters base;
+    base.trim = 0.5f;   // 0 dB
+    base.fx1Regen = 0.0f;
+    base.fx2Drive = 0.0f;
+
+    MasterParameters compOnly = base;
+    compOnly.comp = 1.0f;
+    compOnly.limiter = false;
+
+    const auto comp = run (compOnly, 0.9f);
+    check (comp.compReductionDb < -0.1f, "compressor mede reducao proprio",
+           juce::String (comp.compReductionDb, 2));
+    check (comp.limReductionDb == 0.0f, "limiter desligado nao mede nada");
+
+    MasterParameters limOnly = base;
+    limOnly.comp = 0.0f;
+    limOnly.limiter = true;
+
+    const auto lim = run (limOnly, 1.0f);
+    check (lim.compReductionDb == 0.0f, "compressor desligado nao mede nada");
+    check (lim.limReductionDb < -0.05f, "limitador mede reducao proprio",
+           juce::String (lim.limReductionDb, 3));
+
+    const auto off = run (base, 0.8f);
+    check (off.compReductionDb == 0.0f && off.limReductionDb == 0.0f,
+           "sem cadeia dinamica os dois rails ficam zerados");
+}
+
+// O envio de ambiente (S1) volta 100% wet pelo SALAO, entao o knob entra com
+// atenuacao quadrada: um dedo nao injeta sala mais alta que a fonte.
+void testSendTaper()
+{
+    std::printf ("\n[taper do envio de ambiente]\n");
+
+    check (mapping::wetSendGain (0.0f) == 0.0f, "zero nao injeta nada");
+    check (mapping::wetSendGain (0.10f) < 0.005f, "dedo no knob injeta menos de -46 dB",
+           juce::String (mapping::gainToDb (mapping::wetSendGain (0.10f)), 1) + " dB");
+    check (mapping::wetSendGain (1.0f) <= 0.25f, "topo do envio limita em -12 dB",
+           juce::String (mapping::gainToDb (mapping::wetSendGain (1.0f)), 1) + " dB");
+    check (mapping::wetSendGain (0.5f) > mapping::wetSendGain (0.4f)
+               && mapping::wetSendGain (0.5f) < mapping::wetSendGain (0.6f),
+           "a curva e monotona");
+    check (mapping::wetSendGain (0.5f) < mapping::unit (0.5f),
+           "a metade do knob injeta menos que a metade linear");
 }
 
 void testNoAllocations()
@@ -1452,6 +1544,81 @@ void testRealTxtKits()
                      " (checkout com git-lfs nao baixado)\n", missingItems);
 }
 
+// SALVAR KIT em pacote: cria uma pasta com o nome do kit, copia os audios e a
+// imagem para dentro e grava o .dfkit com caminhos relativos. Apagar a pasta de
+// origem nao pode quebrar o kit salvo.
+void testKitBundle()
+{
+    std::printf ("\n[pacote de kit portavel]\n");
+
+    const auto root = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                            .getChildFile ("forja-drumforge-bundle");
+    root.deleteRecursively();
+
+    const auto srcSamples = root.getChildFile ("orig").getChildFile ("samples");
+    const auto srcAlt = root.getChildFile ("orig").getChildFile ("alt");
+    srcSamples.createDirectory();
+    srcAlt.createDirectory();
+
+    const auto kick = srcSamples.getChildFile ("kick.wav");
+    const auto altKick = srcAlt.getChildFile ("kick.wav");   // mesmo nome, outra pasta
+    const auto snare = srcSamples.getChildFile ("snare.wav");
+    writeTestWav (kick, 0.5f);
+    writeTestWav (altKick, 0.4f);
+    writeTestWav (snare, 0.3f);
+
+    const auto srcImage = root.getChildFile ("orig").getChildFile ("photo.png");
+    srcImage.replaceWithText ("fake-png-bytes");
+
+    Kit kit = Kit::createDefault();
+    kit.name = "Meu Kit";
+    kit.pads[0].name = "Kick";
+    kit.pads[0].layers = { { kick.getFullPathName() },
+                           { kick.getFullPathName(), altKick.getFullPathName() } };
+    kit.pads[1].name = "Snare";
+    kit.pads[1].layers = { { snare.getFullPathName() } };
+    kit.imageFile = srcImage.getFullPathName();
+    kit.hasMix = true;
+    kit.mixers[0].trim = 0.66f;
+
+    const auto bundleDir = root.getChildFile ("Meu Kit");
+    juce::String error;
+    check (kit.saveAsBundle (bundleDir, error), "salva o kit em pacote", error);
+
+    const auto savedFile = bundleDir.getChildFile ("Meu Kit.dfkit");
+    check (savedFile.existsAsFile(), ".dfkit fica dentro da pasta do kit");
+    check (bundleDir.getChildFile ("samples").isDirectory(), "amostras vao para samples/");
+    check (bundleDir.getChildFile ("image.png").existsAsFile(), "imagem copiada e normalizada");
+
+    const auto copied = bundleDir.getChildFile ("samples")
+                            .findChildFiles (juce::File::findFiles, false, "*.wav");
+    check (copied.size() == 3, "os tres WAVs unicos sao copiados (kick reusado nao duplica)",
+           juce::String (copied.size()));
+
+    // Originais apagados: o pacote tem de se bastar.
+    root.getChildFile ("orig").deleteRecursively();
+
+    Kit loaded;
+    error.clear();
+    check (Kit::loadFromFile (savedFile, loaded, error), "pacote reabre sem a origem", error);
+    check (loaded.padsWithAudio() == 2, "os dois pads voltam com audio");
+
+    bool allExist = true;
+    for (const auto& pad : loaded.pads)
+        for (const auto& layer : pad.layers)
+            for (const auto& path : layer)
+                if (! juce::File (path).existsAsFile())
+                    allExist = false;
+
+    check (allExist, "todo sample resolve dentro do pacote");
+    check (loaded.imageFile.isNotEmpty() && juce::File (loaded.imageFile).existsAsFile(),
+           "a imagem volta apontando para dentro do pacote");
+    check (loaded.hasMix && approximatelyEqual (loaded.mixers[0].trim, 0.66f),
+           "a mix premixada sobrevive ao pacote");
+
+    root.deleteRecursively();
+}
+
 } // namespace
 
 void* operator new (std::size_t size)
@@ -1523,6 +1690,7 @@ int main()
     testRealTxtKits();
     testLoopLibrary();
     testKitAdoption();
+    testKitBundle();
     testVelocityLayers();
     testRoundRobin();
     testChokeGroup();
@@ -1533,6 +1701,8 @@ int main()
     testLoopPreview();
     testIdleSilence();
     testBypass();
+    testMasterMeterSplit();
+    testSendTaper();
     testNoAllocations();
 
     if (failures == 0)

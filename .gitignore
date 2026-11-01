@@ -53,11 +53,20 @@ desktop.ini
 # Screenshots and review scripts produced during development
 build/_shots/
 
+# Installer staging: payload coletado e .exe gerado sao saida de build
+installer/payload/
+installer/dist/
+
 # Reference material kept locally (not part of the shipped suite)
 _ref/
 _src/
 Brasa-Concept-v1/
 *.zip
+
+# pianoforge/ é um projeto Git autônomo (repo próprio, non-JUCE), irmão da suíte:
+# fica no working tree mas NÃO faz parte do build nem do histórico da Forja.
+# Sem esta linha o Git gravaria um gitlink quebrado do repo embutido.
+pianoforge/
 
 # Scratch files
 compile_tmp.bat

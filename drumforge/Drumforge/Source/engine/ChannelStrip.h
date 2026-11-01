@@ -64,7 +64,7 @@ public:
         const float pan = mapping::panUnit (parameters.pan);
         const double panTargetLeft = (double) mapping::panGainLeft (pan);
         const double panTargetRight = (double) mapping::panGainRight (pan);
-        const double sendTarget1 = (double) mapping::unit (parameters.send1);
+        const double sendTarget1 = (double) mapping::wetSendGain (parameters.send1);
         const double sendTarget2 = (double) mapping::unit (parameters.send2);
         const bool invert = parameters.phase;
 

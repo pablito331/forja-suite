@@ -71,6 +71,37 @@ juce::String formatMasterKnobValue (int knob, double value)
     }
 }
 
+// Acento por funcao, sempre dentro da paleta da Forja: ganho/dinamica em
+// ember (quente), EQ em gradiente por faixa (graves verdes, medios cinza,
+// agudos quente do medidor), filtro em amber e envios neutros.
+juce::Colour padKnobAccent (int knob)
+{
+    switch (knob)
+    {
+        case 0:  return forja::ui::colour::ember;         // TRIM
+        case 1:  return forja::ui::colour::dim;           // PAN
+        case 2:  return forja::ui::colour::meterCaution;  // HPF
+        case 3:  return forja::ui::colour::success;       // LO (graves)
+        case 4:  return forja::ui::colour::muted;         // MID
+        case 5:  return forja::ui::colour::meterHot;      // HI (agudos)
+        case 6:
+        case 7:  return forja::ui::colour::ember;         // THR / RAT
+        default: return forja::ui::colour::meterPeak;     // SEND 1 / 2
+    }
+}
+
+juce::Colour masterKnobAccent (int knob)
+{
+    switch (knob)
+    {
+        case 0:
+        case 1:  return forja::ui::colour::ember;         // TRIM / COMP
+        case 2:
+        case 3:  return forja::ui::colour::meterCaution;  // REGEN / POS (SALAO)
+        default: return forja::ui::colour::meterHot;      // DRIVE (LIXA)
+    }
+}
+
 // Fader vertical desenhado como pista fina com capa, no lugar da barra
 // padrao do JUCE, para o canal lembrar uma mesa analógica.
 class FaderLookAndFeel final : public juce::LookAndFeel_V4
@@ -144,6 +175,32 @@ void paintLevelMeter (juce::Graphics& g, juce::Rectangle<int> area, float peak)
     g.fillRoundedRectangle (filled, 2.0f);
 }
 
+// Rail vertical de gain reduction: cresce para baixo conforme o compressor
+// segura o canal (0 a -24 dB, a mesma escala do medidor das dinamicas).
+void paintGainReductionRail (juce::Graphics& g, juce::Rectangle<int> area, float reductionDb)
+{
+    if (area.isEmpty())
+        return;
+
+    const auto bounds = area.toFloat();
+    g.setColour (forja::ui::colour::meterTrack);
+    g.fillRoundedRectangle (bounds, 2.0f);
+
+    const float norm = juce::jlimit (0.0f, 1.0f, -reductionDb / 24.0f);
+
+    if (norm > 0.001f)
+    {
+        const auto filled = bounds.withHeight (bounds.getHeight() * norm);
+        juce::ColourGradient gradient (forja::ui::colour::emberSoft, 0.0f, bounds.getY(),
+                                       forja::ui::colour::ember, 0.0f, bounds.getBottom(), false);
+        g.setGradientFill (gradient);
+        g.fillRoundedRectangle (filled, 2.0f);
+    }
+
+    g.setColour (forja::ui::colour::line);
+    g.drawRoundedRectangle (bounds.reduced (0.5f), 2.0f, 1.0f);
+}
+
 void configureToggle (juce::TextButton& button, const juce::String& text,
                       const juce::String& tooltip)
 {
@@ -174,6 +231,7 @@ public:
         {
             auto knob = std::make_unique<MiniKnob> (labels[i], 20.0f);
             knob->setFormatter ([i] (double value) { return formatKnobValue (i, value); });
+            knob->setAccent (padKnobAccent (i));
             addAndMakeVisible (*knob);
 
             sliderAttachments.push_back (
@@ -236,9 +294,17 @@ public:
     void setMeter (float peak, float reductionDb)
     {
         meterPeak = peak;
-        meterReduction = reductionDb;
+
+        // O engine entrega o minimo do intervalo de UI; sem esta lei de
+        // indicio o rail piscaria a cada tick. Ataque instantaneo, libera
+        // ~1,2 dB por atualizacao (igual ao medidor das dinamicas).
+        if (reductionDb < meterReduction)
+            meterReduction = reductionDb;
+        else
+            meterReduction = juce::jmin (reductionDb, meterReduction + 1.2f);
+
         updateOutputText();
-        repaint (meterArea.getUnion (grArea).expanded (1));
+        repaint (meterArea.getUnion (grRailArea).getUnion (grArea).expanded (1));
     }
 
     void paint (juce::Graphics& g) override
@@ -268,6 +334,7 @@ public:
         g.drawText (name.toUpperCase(), header, juce::Justification::centred, true);
 
         paintLevelMeter (g, meterArea, meterPeak);
+        paintGainReductionRail (g, grRailArea, meterReduction);
 
         if (! grArea.isEmpty())
         {
@@ -311,6 +378,7 @@ public:
 
         grArea = area.removeFromBottom (9);
         meterArea = area.removeFromRight (16).reduced (1, 1);
+        grRailArea = area.removeFromRight (11).reduced (2, 1);
         fader.setBounds (area.reduced (6, 0));
     }
 
@@ -364,7 +432,7 @@ private:
     float meterPeak = 0.0f;
     float meterReduction = 0.0f;
 
-    juce::Rectangle<int> headerArea, meterArea, grArea;
+    juce::Rectangle<int> headerArea, meterArea, grRailArea, grArea;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MixerStrip)
 };
@@ -385,6 +453,7 @@ public:
         {
             auto knob = std::make_unique<MiniKnob> (labels[i], 26.0f);
             knob->setFormatter ([i] (double value) { return formatMasterKnobValue (i, value); });
+            knob->setAccent (masterKnobAccent (i));
             addAndMakeVisible (*knob);
 
             sliderAttachments.push_back (
@@ -419,7 +488,9 @@ public:
             meter.setClip (true);
 
         reductionDb = snapshot.reductionDb;
-        repaint (grArea.expanded (1));
+        smoothRail (compReductionDb, snapshot.compReductionDb);
+        smoothRail (limReductionDb, snapshot.limReductionDb);
+        repaint (grArea.getUnion (compRailArea).getUnion (limRailArea).expanded (1));
     }
 
     void paint (juce::Graphics& g) override
@@ -440,6 +511,17 @@ public:
         g.setFont (forja::ui::tracked (forja::ui::uiFont (7.6f, juce::Font::bold), 0.16f));
         g.setColour (forja::ui::colour::emberPale);
         g.drawText ("MASTER", headerArea, juce::Justification::centred, false);
+
+        paintGainReductionRail (g, railBodyArea (compRailArea), compReductionDb);
+        paintGainReductionRail (g, railBodyArea (limRailArea), limReductionDb);
+
+        // Legenda sobre cada rail: C = compressor, L = limitador.
+        {
+            g.setFont (forja::ui::tracked (forja::ui::uiFont (6.4f, juce::Font::bold), 0.08f));
+            g.setColour (forja::ui::colour::dim);
+            g.drawText ("C", railLabelArea (compRailArea), juce::Justification::centred, false);
+            g.drawText ("L", railLabelArea (limRailArea), juce::Justification::centred, false);
+        }
 
         if (! grArea.isEmpty())
         {
@@ -475,11 +557,34 @@ public:
         area.removeFromTop (6);
 
         grArea = area.removeFromBottom (12);
-        meter.setBounds (area);
+        limRailArea = area.removeFromRight (14);
+        compRailArea = area.removeFromRight (14);
+        meter.setBounds (area.reduced (0, 2));
     }
 
 private:
     static constexpr int numKnobs = 5;
+
+    // Coluna do rail no master: 10px de legenda em cima, rail ate embaixo.
+    static juce::Rectangle<int> railLabelArea (juce::Rectangle<int> column)
+    {
+        return column.withHeight (10);
+    }
+
+    static juce::Rectangle<int> railBodyArea (juce::Rectangle<int> column)
+    {
+        return column.withY (column.getY() + 10).withHeight (column.getHeight() - 10);
+    }
+
+    static void smoothRail (float& current, float incomingDb)
+    {
+        // O engine entrega o minimo por intervalo; a lei de indicio evita
+        // piscada (ataque instantaneo, libera ~1,2 dB por atualizacao).
+        if (incomingDb < current)
+            current = incomingDb;
+        else
+            current = juce::jmin (incomingDb, current + 1.2f);
+    }
 
     juce::AudioProcessorValueTreeState& apvts;
     std::array<std::unique_ptr<MiniKnob>, numKnobs> knobStorage;
@@ -492,7 +597,9 @@ private:
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>> buttonAttachments;
 
     float reductionDb = 0.0f;
-    juce::Rectangle<int> headerArea, grArea;
+    float compReductionDb = 0.0f;
+    float limReductionDb = 0.0f;
+    juce::Rectangle<int> headerArea, grArea, compRailArea, limRailArea;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MasterStrip)
 };

@@ -4,6 +4,15 @@ FORJA - INSTALACAO NO WINDOWS
 Esta pasta contem os plugins da suite Forja em VST3. Todos usam DSP
 Airwindows (MIT, Chris Johnson) com interface Forja.
 
+A forma recomendada e o instalador Forja-<versao>-windows-x64.exe: feche a
+DAW, rode o .exe, escolha "Personalizada" e marque as familias que quiser
+(Amps, Dynamics, EQ, Lo-Fi, OneKnob, Saturation, Space, Strips, Tape,
+Drumforge, ForjaRack, Minis). Ele coloca os .vst3 em
+C:\Program Files\Common Files\VST3 e registra um desinstalador no Painel de
+Controle. Depois e so abrir a DAW e refazer o escaneamento.
+
+Se preferir copiar a mao (ou baixou o .zip), faca assim:
+
 1. Feche o seu DAW.
 2. Copie as pastas .vst3 INTEIRAS de VST3\ para:
       C:\Program Files\Common Files\VST3\

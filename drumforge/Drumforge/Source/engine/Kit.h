@@ -162,6 +162,12 @@ struct Kit
     static bool loadFromFile (const juce::File& file, Kit& kit, juce::String& error);
     // Grava .dfkit em texto; com hasMix, inclui a mix como linhas de comentario.
     bool saveToFile (const juce::File& file, juce::String& error) const;
+
+    // Pacote portavel: cria |bundleDirectory| (pasta com o nome do kit), copia
+    // para dentro os samples (em samples/) e a imagem, e grava o .dfkit la com
+    // caminhos relativos a propria pasta. O kit passa a nao depender dos
+    // arquivos originais nem de onde eles estavam.
+    bool saveAsBundle (const juce::File& bundleDirectory, juce::String& error) const;
 };
 
 namespace kitdetail
@@ -1731,6 +1737,128 @@ inline bool Kit::saveToFile (const juce::File& file, juce::String& error) const
     if (! file.replaceWithText (text))
     {
         error = "Nao foi possivel gravar " + file.getFullPathName();
+        return false;
+    }
+
+    return true;
+}
+
+inline bool Kit::saveAsBundle (const juce::File& bundleDirectory, juce::String& error) const
+{
+    error.clear();
+
+    if (padsWithAudio() == 0)
+    {
+        error = "O kit nao tem samples para levar no pacote.";
+        return false;
+    }
+
+    if (bundleDirectory.existsAsFile())
+    {
+        error = "Ja existe um arquivo com o nome da pasta do kit.";
+        return false;
+    }
+
+    if (! bundleDirectory.isDirectory() && bundleDirectory.createDirectory().failed())
+    {
+        error = "Nao foi possivel criar " + bundleDirectory.getFullPathName();
+        return false;
+    }
+
+    const auto samplesDir = bundleDirectory.getChildFile ("samples");
+
+    Kit packed = *this;   // reescreve os caminhos para dentro do pacote
+
+    // Origem -> destino, para um WAV usado em varios pads nao ser copiado duas
+    // vezes. O prefixo com indice guarda nomes iguais de pastas diferentes.
+    juce::StringPairArray copied;
+    int index = 0;
+
+    auto place = [&] (const juce::File& source, const juce::File& directory,
+                      const juce::String& forcedName, juce::String& outError)
+    {
+        const auto key = source.getFullPathName();
+
+        if (copied.containsKey (key))
+            return juce::File (copied[key]);
+
+        if (! source.existsAsFile())
+        {
+            outError = "Arquivo nao encontrado: " + key;
+            return juce::File();
+        }
+
+        if (! directory.isDirectory() && directory.createDirectory().failed())
+        {
+            outError = "Nao foi possivel criar " + directory.getFullPathName();
+            return juce::File();
+        }
+
+        const auto name = forcedName.isNotEmpty()
+                              ? forcedName
+                              : juce::String (index).paddedLeft ('_', 4) + "_"
+                                + juce::File::createLegalFileName (source.getFileName());
+
+        const auto target = directory.getChildFile (name);
+
+        // Re-salvar o proprio pacote: a origem ja e o destino, nada a copiar.
+        if (target.getFullPathName() != key && ! source.copyFileTo (target))
+        {
+            outError = "Nao foi possivel copiar " + source.getFileName();
+            return juce::File();
+        }
+
+        copied.set (key, target.getFullPathName());
+        ++index;
+        return target;
+    };
+
+    for (auto& pad : packed.pads)
+    {
+        for (auto& layer : pad.layers)
+        {
+            for (auto& path : layer)
+            {
+                const auto target = place (juce::File (path), samplesDir, {}, error);
+
+                if (target == juce::File())
+                {
+                    samplesDir.deleteRecursively();
+                    bundleDirectory.deleteFile();
+                    return false;
+                }
+
+                path = target.getFullPathName();
+            }
+        }
+    }
+
+    if (packed.imageFile.isNotEmpty())
+    {
+        const juce::File image (packed.imageFile);
+
+        if (image.existsAsFile())
+        {
+            // Normaliza para image.<ext>, a convencao que o drum_sklad le.
+            const auto forced = juce::String ("image") + image.getFileExtension();
+            const auto target = place (image, bundleDirectory, forced, error);
+            packed.imageFile = target != juce::File() ? target.getFullPathName() : juce::String();
+        }
+        else
+        {
+            packed.imageFile.clear();
+        }
+    }
+
+    // A base passa a ser a propria pasta: o texto sai com caminhos relativos.
+    packed.sourceFile.clear();
+
+    const auto kitFile = bundleDirectory.getChildFile (bundleDirectory.getFileName() + ".dfkit");
+
+    if (! packed.saveToFile (kitFile, error))
+    {
+        samplesDir.deleteRecursively();
+        bundleDirectory.deleteFile();
         return false;
     }
 

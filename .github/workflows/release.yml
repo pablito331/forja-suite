@@ -25,6 +25,18 @@ jobs:
       - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
 
+      - name: Stage installer payload
+        shell: pwsh
+        run: ./installer/collect_payload.ps1 -BuildRoot build -Clean
+
+      - name: Build Windows installer (Inno Setup)
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
+          & $iscc "/DAppVersion=${{ github.ref_name }}" installer\forja.iss
+          Copy-Item installer/dist/Forja-*-windows-x64.exe ./
+
       - name: Package
         shell: pwsh
         run: |
@@ -40,7 +52,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: forja-windows-x64
-          path: Forja-*-windows-x64.zip
+          path: |
+            Forja-*-windows-x64.zip
+            Forja-*-windows-x64.exe
           if-no-files-found: error
 
   macos:
@@ -131,6 +145,8 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.zip
+          files: |
+            dist/*.zip
+            dist/*.exe
           generate_release_notes: true
           fail_on_unmatched_files: true

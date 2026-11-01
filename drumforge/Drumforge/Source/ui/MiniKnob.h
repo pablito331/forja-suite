@@ -34,6 +34,15 @@ public:
 
     juce::Slider& getSlider() noexcept { return slider; }
 
+    // Agrupa knobs por funcao: arco, brilho e ponteiro seguem o acento
+    // (padrao ember quando nao definido).
+    void setAccent (juce::Colour accent)
+    {
+        accentColour = accent;
+        slider.getProperties().set ("accent", static_cast<double> (accent.getARGB()));
+        repaint();
+    }
+
     void setFormatter (std::function<juce::String (double)> formatter)
     {
         slider.textFromValueFunction = [formatter = std::move (formatter)] (double value)
@@ -48,7 +57,7 @@ public:
 
         g.setFont (active ? forja::ui::uiFont (7.2f, juce::Font::bold)
                           : forja::ui::tracked (forja::ui::uiFont (6.6f, juce::Font::bold), 0.08f));
-        g.setColour (active ? forja::ui::colour::emberSoft : forja::ui::colour::muted);
+        g.setColour (active ? accentColour.brighter() : forja::ui::colour::muted);
 
         const auto text = active ? slider.getTextFromValue (slider.getValue())
                                  : label.toUpperCase();
@@ -65,6 +74,7 @@ public:
 
 private:
     juce::String label;
+    juce::Colour accentColour { forja::ui::colour::ember };
     float diameter = 21.0f;
     juce::Slider slider;
 

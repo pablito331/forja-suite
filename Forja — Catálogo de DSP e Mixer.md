@@ -191,8 +191,8 @@ O léxico cresce sem colidir com os papéis já definidos: CINZÉL continua send
 insert, agora com camada dinâmica por banda; TORNO e LIMA são EQs alternativos de tom e de
 bus; BIGORNA continua o channel strip completo e CADINHO é a variante de bus; ESCÓRIA é o
 de-esser; LAMINADOR e ÓXIDO são as fitas; REPIQUE e ECO são os delays; SALÃO e FÔLEGO são
-os reverbs; GRANALHA é o lo-fi; LIXA, MEL, CERA, CORPO, ÍMPETO e REBARBA são os one-knobs;
-GABINETE, PONTA, CHIME, CRICK, LOBO e DELUXE são os amps e gabinetes.
+os reverbs; GRANALHA é o lo-fi; LIXA, MEL, CERA, CORPO, ÍMPETO e REBARBA são os one-knobs
+da família MINIS; GABINETE, PONTA, CHIME, CRICK, LOBO e DELUXE são os amps e gabinetes.
 
 ---
 
@@ -335,6 +335,14 @@ FUNDAMENTOS:
 | `Airwindows/OneKnob/` | LIXA (PurestDrive), MEL (Sweeten), CERA (PurestWarm3), CORPO (Mojo), ÍMPETO (Dyno), REBARBA (Slew3) |
 | `Airwindows/Amps/` | GABINETE (Cabs2), PONTA (PointyGuitar), CHIME (ChimeyGuitar2), CRICK (CrickBass), LOBO (Wolfbot), DELUXE (ChimeyDeluxe) |
 
+A família **MINIS** é o guarda-chuva dos plugins compactos de propósito único. Ela agrupa
+os seis one-knobs da tabela — que continuam fisicamente em `Airwindows/OneKnob/` por regra
+de proveniência MIT — e os minis originais Forja, que vivem na base `Minis/` (pasta irmã).
+O primeiro mini é o **MINIDRUM**: leitor de kits `.dfkit` do Drumforge em formato de gaveta,
+com um knob de volume, reutilizando o engine `drumforge` como bloco próprio. Os minis Forja
+não têm paridade com vendor; seguem os testes funcionais e de RT-safety da base deles e
+podem reutilizar adaptadores Airwindows como blocos internos.
+
 Os adaptadores rodam com paridade amostra a amostra contra o código Airwindows
 original e passam pela guarda de alocação. Latências medidas: 0 na maioria; 1 amostra em
 PRENSA, MALHO, CADINHO, LAMINADOR, MURALHA e DIQUE; 1/3/5 em CRICK conforme a taxa; delays
@@ -373,6 +381,15 @@ O preview de loops tem módulo próprio (`Source/loops/`): o arquivo MIDI é lid
 o loop fecha em compasso inteiro e o `LoopPlayer` enfileira cada golpe com o offset exato
 em amostras no mesmo caminho do MIDI ao vivo. O BPM vem do playhead (`loop_sync`) ou do
 controle manual `loop_bpm`, e o `.mid` selecionado pode ser arrastado para a DAW.
+
+**Também fora do catálogo DSP-0xx:** o **FORJARACK** (`Forjarack/Forjarack/`) é a terceira
+base da suíte — um rack em cadeia estilo Série 500 com oito gavetas em série, cada uma
+hospedando um adaptador Airwindows já validado por paridade (CERA, MEL, LIXA, ÓXIDO,
+TÊMPERA, MURALHA, CINZÉL, FÔLEGO, SALÃO e mais, conforme as fatias avançarem). O DSP é o
+dos módulos; o FORJARACK acrescenta apenas o encadeamento, a chave on/off e de escuta por
+gaveta e a seção master de trim e fase. O `ModuleCatalog` é append-only: minis como o
+MINIDRUM registram-se como gaveta `instrument` sem alterar o rack. Teste próprio:
+`forja_forjarack_engine` no `ctest` (catálogo, encadeamento, bypass/solo e zero alocação).
 
 **Pendências, em ordem:**
 

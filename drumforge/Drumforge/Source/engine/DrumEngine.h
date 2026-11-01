@@ -33,6 +33,8 @@ public:
         float peakLeft = 0.0f;
         float peakRight = 0.0f;
         float reductionDb = 0.0f;
+        float compReductionDb = 0.0f;
+        float limReductionDb = 0.0f;
         bool clip = false;
     };
 
@@ -128,6 +130,8 @@ private:
     std::atomic<float> masterPeakLeft { 0.0f };
     std::atomic<float> masterPeakRight { 0.0f };
     std::atomic<float> masterReduction { 0.0f };
+    std::atomic<float> masterCompReduction { 0.0f };
+    std::atomic<float> masterLimReduction { 0.0f };
     std::atomic<bool> masterClip { false };
 
     std::array<int, kNumPads> lastLayer {};

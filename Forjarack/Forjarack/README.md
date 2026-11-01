@@ -216,6 +216,34 @@ propagação/restauração de latência. **PASS**. A carga de arquivos VST3 reai
 depende do ambiente (não há DAW/plugins na máquina de dev) e fica registrada
 como pendência de validação manual.
 
+## Banda de arquivos nas gavetas de instrumento
+
+As gavetas de instrumento com biblioteca própria — **MINIDRUM** (kits `.dfkit`
+de `Documentos/Forja/Drumforge/Kits`, incluindo os txt-kit roots do Drumforge)
+e **CANIVETE** (soundfonts `.sf2`/`.sf3` de `Documentos/Forja/Canivete`) —
+mostram uma banda de arquivos abaixo das chaves da gaveta, no mesmo espírito
+da banda da gaveta HOSPEDADO:
+
+- O **seletor** lista o conteúdo da biblioteca da gaveta; escolher pela lista
+  sincroniza o knob de índice (o engine reenvia os knobs a cada bloco, então a
+  escolha precisa viver no parâmetro) e o nome exibido é o material vivo do
+  módulo, não o último caminho gravado.
+- **ARQUIVO** abre um kit/soundfont **fora da biblioteca** via `FileChooser`
+  nativo (para o MINIDRUM também aceita pasta de kit). Enquanto o arquivo
+  externo toca, o knob de índice fica mudo; a próxima escolha pela lista
+  devolve o comando ao knob. Se o arquivo sumir, a gaveta volta ao knob em
+  silêncio, sem crash.
+- A escolha vive no preset do rack como propriedade de estado (`drawer_slotN`),
+  pois a lista é dinâmica demais para um `AudioParameterChoice` — mesmo
+  mecanismo da escolha hospedada.
+
+Validação: `testDrawerFiles()` em `forja_minidrum` e `forja_canivete` cobre o
+contrato no nível do módulo (banda exposta, rejeição de nome fora da lista,
+colheita do externo pelo `idle()`, knob mudo enquanto o externo manda e
+reversão graciosa quando o arquivo não existe). O `FileChooser` em si é UI
+nativa e depende de sessão gráfica; fica registrado como pendência de
+validação manual em host, como o resto da banda HOSPEDADO.
+
 ## Licença
 
 DSP dos módulos: Airwindows (PurestWarm, Sweeten, PurestDrive, IronOxide5,

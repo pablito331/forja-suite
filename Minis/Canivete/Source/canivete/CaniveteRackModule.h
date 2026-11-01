@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <string>
 #include <vector>
 
 #include <juce_audio_basics/juce_audio_basics.h>
@@ -40,9 +41,19 @@ public:
     void processMidi (const forjarack::MidiEventSpan& span) noexcept override;
 
     // Roda na thread de mensagens (RackEngine::idleModules): colhe o resultado
-    // da carga em background, libera banks substituidos e atende um pedido de
-    // troca de BANK feito pelo knob.
+    // da carga em background (da lista ou do FileChooser da gaveta), libera
+    // banks substituidos e atende um pedido de troca de BANK feito pelo audio
+    // ou pela lista da gaveta.
     void idle() override;
+
+    // Gaveta de arquivos: a biblioteca vira seletor e o FileChooser do rack
+    // pode trazer um soundfont de fora. Thread de mensagens (IHostedSlot).
+    bool supportsDrawerFiles() const noexcept override { return true; }
+    std::vector<std::string> drawerFileNames() const override;
+    void drawerRefreshLibrary() override { refreshLibrary(); reselectAfterRefresh(); }
+    std::string drawerCurrentName() const override;
+    bool drawerSelectFile (const std::string& name) override;
+    void drawerLoadExternalFile (const std::string& path) override;
 
     // Unica janela de teste para o estado interno do wrapper (o rack nunca usa).
     float getVolumeForTest() const noexcept { return engine.getVolume(); }
@@ -66,7 +77,17 @@ private:
     std::atomic<int> desiredBank { -1 };
     int loadedBank = -1;
 
+    // Ultima escolha da gaveta (thread de mensagens). Persiste atraves de um
+    // re-prepare: o bank escolhido e re-adotado contra a lista reescaneada.
+    std::string selectedPath;                 // caminho da escolha ativa (lista ou externo)
+    std::atomic<bool> externalActive { false };
+    std::string externalPath;                 // carga externa pendente (esvazia ao colher)
+    std::string loadedExternalName;           // nome exibido do bank externo carregado
+
     void refreshLibrary();
+    // Resolve selectedPath contra banks[] depois de um escaneamento: indice da
+    // lista (knob manda) ou externo (knob fica mudo ate a proxima escolha).
+    void reselectAfterRefresh();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CaniveteModule)
 };

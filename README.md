@@ -64,7 +64,7 @@ desenvolvimento.
 | Gerador de plugins | `new_plugin.ps1` gera plugin que compila de imediato |
 | DRUMFORGE (sampler) | Engine, mesa, multi-out e abas KITS/MIXER/LOOPS prontos |
 | Loops MIDI do DRUMFORGE | Biblioteca, grade de passos, preview no BPM do host e arrasto prontos |
-| FORJARACK (rack) | Oito gavetas em série, bypass/solo, master e barra de redução de ganho |
+| FORJARACK (rack) | Oito gavetas em série, bypass/solo, master, barra de redução de ganho, hosting dinâmico (HOSPEDADO) e banda de arquivos nas gavetas MINIDRUM/CANIVETE |
 | MINIDRUM (mini) | Leitor de kits do Drumforge: puxar kit, foto e volume |
 | MINISAT (mini) | Saturador de um knob: drive sobre o adaptador do BRASA, gaveta no rack |
 | CANIVETE (mini) | Player SoundFont SF2/SF3 multi-timbral: pasta de banks, seletor de instrumento e volume |

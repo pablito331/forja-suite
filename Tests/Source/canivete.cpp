@@ -803,6 +803,64 @@ void testRackModule()
         std::printf ("  SKIP  biblioteca compartilhada vazia nesta maquina\n");
 }
 
+void testDrawerFiles()
+{
+    std::printf ("\n[gaveta de arquivos do rack]\n");
+
+    // SF2 minimo valido fora da biblioteca (Documents/Forja/Canivete).
+    const auto file = writeTestSf2 ("forja-canivete-drawer", "Gaveta Piano");
+
+    CaniveteModule module;
+    module.prepare (testSampleRate);
+
+    check (module.supportsDrawerFiles(), "gaveta expoe a banda de arquivos");
+
+    // Nome fora da biblioteca nao e escolha de lista.
+    check (! module.drawerSelectFile ("C:/nao/existe/bank.sf2"),
+           "nome fora da lista nao e aceito como escolha");
+
+    // Externo de verdade: o idle colhe a carga e passa a exibir o nome; o knob
+    // de indice fica mudo ate a proxima escolha pela lista.
+    module.drawerLoadExternalFile (file.getFullPathName().toStdString());
+
+    for (int pass = 0; pass < 5; ++pass)
+    {
+        module.idle();
+        pumpMessages (20);
+    }
+
+    const auto shown = juce::String (module.drawerCurrentName());
+    check (shown.containsIgnoreCase ("forja-canivete-drawer"), "externo colhido pelo idle",
+           shown);
+
+    module.setParam (1, 0.5f);   // o knob nao pode recolher o externo
+
+    for (int pass = 0; pass < 5; ++pass)
+    {
+        module.idle();
+        pumpMessages (20);
+    }
+
+    check (juce::String (module.drawerCurrentName()).containsIgnoreCase ("forja-canivete-drawer"),
+           "knob fica mudo enquanto o externo manda");
+
+    // Caminho inexistente: a gaveta tenta, falha e devolve o comando ao knob.
+    module.drawerLoadExternalFile ("C:/forja-que-nao-existe/bank.sf2");
+    module.idle();
+    pumpMessages (20);
+    module.idle();
+
+    for (int pass = 0; pass < 50; ++pass)
+    {
+        module.idle();
+        pumpMessages (10);
+    }
+
+    check (true, "externo inexistente nao derruba a gaveta");
+
+    file.deleteFile();
+}
+
 void testRegistration()
 {
     std::printf ("\n[registro no catalogo]\n");
@@ -912,6 +970,7 @@ int main()
     testInvalidBankKeepsPlaying();
     testNoAllocations();
     testRackModule();
+    testDrawerFiles();
     testRegistration();
 
     if (failures == 0)

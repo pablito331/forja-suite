@@ -76,6 +76,23 @@ inline forja::ui::ForjaInfo makeForjaInfo()
     });
 
     info.sections.push_back ({
+        u ("Banda de arquivos (instrumentos)"),
+        {
+            u ("As gavetas de instrumento com biblioteca propria (MINIDRUM, lendo os "
+               "kits .dfkit do Drumforge, e CANIVETE, lendo soundfonts .sf2/.sf3) "
+               "mostram um seletor com o conteudo da pasta "
+               "Documentos/Forja/Drumforge/Kits ou Documentos/Forja/Canivete. "
+               "Escolher pela lista sincroniza o knob de indice e o material "
+               "passa a ser comandado por ele; a escolha fica gravada no preset "
+               "do rack."),
+            u ("O bot\u00e3o ARQUIVO abre um kit/bank fora da biblioteca, direto do "
+               "disco (FileChooser nativo). Enquanto o arquivo externo toca, o "
+               "knob de indice fica mudo; a escolha pela lista devolve o comando "
+               "a ele. Some o arquivo, a gaveta volta ao knob em silencio.")
+        }
+    });
+
+    info.sections.push_back ({
         u ("Modulos e origem"),
         {
             u ("COR \u00b7 CERA (PurestWarm): calor suave de um knob. MEL (Sweeten): "
@@ -129,8 +146,15 @@ inline forja::ui::ForjaInfo makeForjaInfo()
                                u ("Escalonamento no DSP de cada modelo.") });
     info.controls.push_back ({ u ("Arquivo hospedado"), u ("nenhum / plugin listado"),
                                u ("Escolhe o plug-in carregado na gaveta HOSPEDADO.") });
+    info.controls.push_back ({ u ("Arquivo da gaveta"), u ("kit / soundfont listado"),
+                               u ("Escolhe o material tocado na gaveta de instrumento "
+                                  "com biblioteca (MINIDRUM, CANIVETE).") });
     info.controls.push_back ({ u ("BUSCAR"), u ("bot\u00e3o"),
-                               u ("Revarre a pasta Documentos/Forja/Rack.") });
+                               u ("Revarre a pasta Documentos/Forja/Rack (gaveta "
+                                  "HOSPEDADO).") });
+    info.controls.push_back ({ u ("ARQUIVO"), u ("bot\u00e3o"),
+                               u ("Abre um kit/soundfont fora da biblioteca, direto "
+                                  "do disco (gavetas de instrumento).") });
     info.controls.push_back ({ u ("EDITAR"), u ("bot\u00e3o"),
                                u ("Abre a UI nativa do plugin (ou a lista gen\u00e9rica de "
                                   "par\u00e2metros) em janela separada.") });

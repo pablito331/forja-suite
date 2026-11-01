@@ -55,12 +55,17 @@ public:
 
     // forjarackui::IHostedSlot ------------------------------------------------
     // A gaveta HOSPEDADA expoe seus controles pelo plugin vivo (nao pelo
-    // ModuleSpec fixo). A UI so pergunta; o processor faz (thread de mensagens).
+    // ModuleSpec fixo) e as gavetas de instrumento com biblioteca (MINIDRUM,
+    // CANIVETE) expem a lista do modulo + ARQUIVO. A UI so pergunta; o
+    // processor faz (thread de mensagens).
     bool isHosted (int slot) const override;
+    bool isDrawer (int slot) const override;
     juce::StringArray fileList() const override;
+    juce::StringArray drawerFileNames (int slot) const override;
     juce::String fileName (int slot) const override;
     void chooseFile (int slot, const juce::String& name) override;
     int rescan() override;
+    void browseFile (int slot) override;
     int paramCount (int slot) const override;
     juce::String paramLabel (int slot, int index) const override;
     bool canOpenEditor (int slot) const override;
@@ -96,6 +101,21 @@ private:
     void adoptHosted (int slot);
     void seedHostedKnobs (int slot, HostedModule& module);
     static juce::String hostedStateKey (int slot);
+
+    // Gaveta de arquivos (instrumentos com biblioteca propria): o modulo vivo
+    // e a fonte da lista; a escolha externa (FileChooser) vive em propriedade
+    // do estado, igual ao arquivo hospedado, porque a lista e dinamica.
+    ModuleBase* drawerModuleAt (int slot) const noexcept;
+    void applyDrawerChoice (int slot, const juce::String& path);
+    void syncDrawerKnob (int slot, int index, int count);
+    void startDrawerBrowse (int slot, const juce::File& startDir, const juce::String& filter,
+                            bool foldersAllowed, bool directoriesToo);
+    static juce::String drawerStateKey (int slot);
+
+    std::array<juce::String, kNumSlots> drawerFile {};   // escolha persistida ("" = knob manda)
+    std::array<bool, kNumSlots> drawerApplied {};        // escolha ja entregue ao modulo vivo
+    std::shared_ptr<juce::FileChooser> drawerChooser;    // mantem viva a janela async
+    int browseSlot = -1;   // slot dono do FileChooser aberto (callback async)
 
     std::array<std::atomic<float>*, kNumSlots> typePtr {};
     std::array<std::atomic<float>*, kNumSlots> bypassPtr {};

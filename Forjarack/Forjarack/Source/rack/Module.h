@@ -1,6 +1,8 @@
 #pragma once
 
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include "RackState.h"
 
@@ -66,6 +68,26 @@ public:
     // Faxina na thread de mensagens (o engine expoe idleModules): modulos que
     // carregam material em background (mini drum) liberam o substituido aqui.
     virtual void idle() {}
+
+    // ---- gaveta de arquivos (instrumentos com biblioteca propria) ----------
+    // MINIDRUM e CANIVETE tem mais que um knob de indice: expoe a lista da
+    // biblioteca no seletor da gaveta e aceita um arquivo fora dela escolhido
+    // no FileChooser do processador. Tudo aqui roda na thread de mensagens;
+    // std::string carrega o caminho cru (o nucleo do rack nao conhece juce::File
+    // nem UTF-8: as libs aceitam ASCII; a UI mostra so o nome do arquivo).
+    virtual bool supportsDrawerFiles() const noexcept { return false; }
+    virtual std::vector<std::string> drawerFileNames() const { return {}; }
+    // Revarre a biblioteca propria (botao BUSCAR do rack depositou arquivo novo).
+    virtual void drawerRefreshLibrary() {}
+    // Nome do material carregado agora ("" = nada carregado). Biblioteca:
+    // o nome da lista; externo: o nome do arquivo aberto.
+    virtual std::string drawerCurrentName() const { return {}; }
+    // Escolha pela lista da biblioteca (caminho exato de drawerFileNames);
+    // o modulo adota no proximo idle(). False se o nome nao esta na lista.
+    virtual bool drawerSelectFile (const std::string& name) { (void) name; return false; }
+    // Arquivo escolhido fora da biblioteca (caminho absoluto). O modulo carrega
+    // e deixa de obedecer ao knob de indice ate a proxima escolha pela lista.
+    virtual void drawerLoadExternalFile (const std::string& path) { (void) path; }
 };
 
 template <typename Dsp>

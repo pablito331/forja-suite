@@ -482,25 +482,32 @@ SlotComponent::SlotComponent (juce::AudioProcessorValueTreeState& state, int slo
         addChildComponent (*knobs[(size_t) knob]);
     }
 
-    // Controles da gaveta hospedada: so aparecem quando o modulo e HOSPEDADO.
-    // O seletor de arquivo escreve via IHostedSlot::chooseFile (carrega o
-    // plugin); BUSCAR revarre a pasta; EDITAR abre a UI nativa em janela nova.
+    // Controles da banda de arquivos (HOSPEDADO e gavetas de instrumento com
+    // biblioteca): o seletor escreve via IHostedSlot::chooseFile; BUSCAR revarre
+    // a pasta de plugins; ARQUIVO abre o FileChooser do kit/bank; EDITAR abre a
+    // UI nativa do plugin hospedado em janela nova.
     fileSelector.setWantsKeyboardFocus (false);
-    fileSelector.setTooltip (forja::ui::utf8 ("Plugin em Documents/Forja/Rack"));
+    fileSelector.setTooltip (forja::ui::utf8 ("Arquivos da biblioteca da gaveta"));
     fileSelector.onChange = [this]
     {
         if (hosted == nullptr)
             return;
 
-        const int id = fileSelector.getSelectedId();
-        hosted->chooseFile (slot, id <= 1 ? juce::String() : fileSelector.getText());
+        if (hosted->isHosted (slot))
+            hosted->chooseFile (slot, fileSelector.getSelectedId() <= 1
+                                           ? juce::String() : fileSelector.getText());
+        else
+            hosted->chooseFile (slot, fileSelector.getSelectedId() > 1
+                                           ? fileSelector.getText() : juce::String());
+
         refresh();
     };
     addChildComponent (fileSelector);
 
     procurarButton.setButtonText ("BUSCAR");
     procurarButton.setWantsKeyboardFocus (false);
-    procurarButton.setTooltip (forja::ui::utf8 ("Reescanear a pasta de plugins"));
+    procurarButton.setClickingTogglesState (false);
+    procurarButton.setTooltip (forja::ui::utf8 ("Reescanear a pasta Documents/Forja/Rack"));
     procurarButton.onClick = [this]
     {
         if (hosted != nullptr)
@@ -510,13 +517,17 @@ SlotComponent::SlotComponent (juce::AudioProcessorValueTreeState& state, int slo
     };
     addChildComponent (procurarButton);
 
-    editarButton.setButtonText ("EDITAR");
     editarButton.setWantsKeyboardFocus (false);
-    editarButton.setTooltip (forja::ui::utf8 ("Abrir a UI do plugin em janela separada"));
+    editarButton.setClickingTogglesState (false);
     editarButton.onClick = [this]
     {
-        if (hosted != nullptr)
+        if (hosted == nullptr)
+            return;
+
+        if (editarButton.getButtonText() == "EDITAR")
             hosted->openEditor (slot);
+        else
+            hosted->browseFile (slot);   // ARQUIVO: FileChooser do kit/bank
     };
     addChildComponent (editarButton);
 }
@@ -538,10 +549,11 @@ void SlotComponent::refresh()
     accentColour = juce::Colour (spec.accent);
 
     const bool isHost = hosted != nullptr && hosted->isHosted (slot);
+    const bool isBand = hosted != nullptr && (isHost || hosted->isDrawer (slot));
 
     // Barra de GR so aparece em compressor/limitador que mede reducao real.
     // Gaveta hospedada nunca mostra GR: nao medimos a reducao de um plugin alheio.
-    const bool grNow = ! isHost && spec.showsGainReduction;
+    const bool grNow = ! isBand && spec.showsGainReduction;
 
     if (grNow != showsGr)
     {
@@ -560,33 +572,71 @@ void SlotComponent::refresh()
     syncCategoryChoice();
     populateModuleChoices();
 
-    // Controles da gaveta hospedada: seletor de arquivo + BUSCAR/EDITAR.
-    fileSelector.setVisible (isHost);
+    // Banda de arquivos: seletor + botoes. HOSPEDADO: BUSCAR (revarre a pasta)
+    // e EDITAR (UI nativa). Gaveta de instrumento: so ARQUIVO (FileChooser),
+    // ocupando a fileira inteira; o nome carregado e o material vivo do modulo.
+    fileSelector.setVisible (isBand);
     procurarButton.setVisible (isHost);
-    editarButton.setVisible (isHost);
+    editarButton.setVisible (isBand);
 
     int knobCount = spec.numParams;
 
-    if (isHost)
+    if (isBand)
     {
+        editarButton.setButtonText (isHost ? "EDITAR" : "ARQUIVO");
+        editarButton.setTooltip (isHost
+            ? forja::ui::utf8 ("Abrir a UI do plugin em janela separada")
+            : forja::ui::utf8 ("Abrir um kit/soundfont fora da biblioteca"));
+
         fileSelector.clear (juce::dontSendNotification);
-        fileSelector.addItem (forja::ui::utf8 ("(nenhum)"), 1);
-
-        const auto files = hosted->fileList();
-
-        for (int i = 0; i < files.size(); ++i)
-            fileSelector.addItem (files[i], i + 2);
 
         const auto current = hosted->fileName (slot);
-        fileSelector.setSelectedId (1, juce::dontSendNotification);
+        int selectedId = 0;
 
-        for (int i = 0; i < files.size(); ++i)
-            if (files[i] == current)
-                fileSelector.setSelectedId (i + 2, juce::dontSendNotification);
+        if (isHost)
+        {
+            fileSelector.addItem (forja::ui::utf8 ("(nenhum)"), 1);
 
-        editarButton.setEnabled (hosted->canOpenEditor (slot));
+            const auto files = hosted->fileList();
 
-        knobCount = hosted->paramCount (slot);
+            for (int i = 0; i < files.size(); ++i)
+                fileSelector.addItem (files[i], i + 2);
+
+            for (int i = 0; i < files.size(); ++i)
+                if (files[i] == current)
+                    selectedId = i + 2;
+
+            fileSelector.setSelectedId (selectedId != 0 ? selectedId : 1,
+                                         juce::dontSendNotification);
+            editarButton.setEnabled (hosted->canOpenEditor (slot));
+        }
+        else
+        {
+            const auto paths = hosted->drawerFileNames (slot);
+
+            for (int i = 0; i < paths.size(); ++i)
+                fileSelector.addItem (juce::File (paths[i]).getFileName(), i + 2);
+
+            // Nome do material vivo (ou da escolha externa em transito): se nao
+            // esta na lista, entra como item extra para o seletor poder mostra-lo.
+            if (! current.isEmpty())
+            {
+                for (int i = 0; i < paths.size(); ++i)
+                    if (juce::File (paths[i]).getFileName() == current)
+                        selectedId = i + 2;
+
+                if (selectedId == 0)
+                {
+                    fileSelector.addItem (current, paths.size() + 2);
+                    selectedId = paths.size() + 2;
+                }
+            }
+
+            fileSelector.setSelectedId (selectedId, juce::dontSendNotification);
+        }
+
+        if (isHost)
+            knobCount = hosted->paramCount (slot);
     }
 
     const int knobsShown = std::clamp (knobCount, 0, forjarack::kMaxModuleParams);
@@ -768,23 +818,35 @@ void SlotComponent::resized()
                                 .withWidth (toggles.getWidth() - each - toggleGap));
 
     const bool isHost = hosted != nullptr && hosted->isHosted (slot);
+    const bool isBand = hosted != nullptr && (isHost || hosted->isDrawer (slot));
 
-    // Gaveta hospedada: seletor de arquivo + fileira BUSCAR/EDITAR ocupam a
-    // faixa que nos modulos fixos seria dos knobs; os knobs comecam mais abaixo.
-    if (isHost)
+    // Banda de arquivos: seletor + fileira de botoes ocupam a faixa que nos
+    // modulos fixos seria dos knobs; os knobs comecam mais abaixo.
+    if (isBand)
     {
         auto hostArea = getLocalBounds().withY (knobsTop).reduced (6, 0);
         fileSelector.setBounds (hostArea.withHeight (hostedFileH));
 
         auto btnRow = hostArea.withY (knobsTop + hostedFileH + hostedGap).withHeight (hostedBtnH);
-        const int bEach = (btnRow.getWidth() - toggleGap) / 2;
 
-        procurarButton.setBounds (btnRow.withX (btnRow.getX()).withWidth (bEach));
-        editarButton.setBounds (btnRow.withX (btnRow.getX() + bEach + toggleGap)
-                                     .withWidth (btnRow.getWidth() - bEach - toggleGap));
+        if (isHost)
+        {
+            const int bEach = (btnRow.getWidth() - toggleGap) / 2;
+
+            procurarButton.setBounds (btnRow.withX (btnRow.getX()).withWidth (bEach));
+            editarButton.setBounds (btnRow.withX (btnRow.getX() + bEach + toggleGap)
+                                         .withWidth (btnRow.getWidth() - bEach - toggleGap));
+        }
+        else
+        {
+            // ARQUIVO sozinho na fileira (nao ha BUSCAR nem EDITAR aqui).
+            procurarButton.setBounds (btnRow.withWidth (0));
+            editarButton.setBounds (btnRow.withX (btnRow.getX())
+                                         .withWidth (btnRow.getWidth()));
+        }
     }
 
-    const int knobTop = isHost ? hostedKnobsTop : knobsTop;
+    const int knobTop = isBand ? hostedKnobsTop : knobsTop;
 
     // A coluna de knobs usa o tanto de knobs que o modulo tem (no hospedado,
     // quantos params o plugin vivo expoe): um de um knob nao espreme oito

@@ -394,7 +394,11 @@ hospedando um adaptador Airwindows já validado por paridade (CERA, MEL, LIXA, �
 TÊMPERA, MURALHA, CINZÉL, FÔLEGO, SALÃO e mais, conforme as fatias avançarem). O DSP é o
 dos módulos; o FORJARACK acrescenta apenas o encadeamento, a chave on/off e de escuta por
 gaveta e a seção master de trim e fase. O `ModuleCatalog` é append-only: minis como o
-MINIDRUM registram-se como gaveta `instrument` sem alterar o rack. Desde a gaveta
+MINIDRUM e o CANIVETE registram-se como gaveta `instrument` sem alterar o rack. Essas
+gavetas de instrumento com biblioteca própria mostram banda de arquivos: um seletor com o
+conteúdo da pasta da biblioteca (sincronizando o knob de índice ao escolher) e um botão
+ARQUIVO que abre kit/soundfont fora da biblioteca via FileChooser — enquanto o externo
+toca, o knob fica mudo; a escolha pela lista devolve o comando a ele. Desde a gaveta
 **HOSPEDADO**, o registro também aceita hosting dinâmico: qualquer `.vst3` (AU no macOS)
 solto em `Documentos/Forja/Rack` vira gaveta em tempo de execução, com knobs vindos do
 próprio plugin, editor nativo em janela separada (travando os knobs do rack enquanto
@@ -403,7 +407,8 @@ mantêm a própria licença (carregados em runtime, modelo de DAW; nada entra na
 Manual: `docs/MANUAL-GAVETA.md`. Testes próprios: `forja_forjarack_engine` (catálogo,
 encadeamento, bypass/solo e zero alocação) e `forja_forjarack_hosted` (stub de
 `AudioPluginInstance`: adoção efeito/instrumento, params dinâmicos, trava da UI nativa,
-MIDI nativo e latência) no `ctest`.
+MIDI nativo e latência) no `ctest`. A banda de arquivos das gavetas de instrumento é
+coberta por `testDrawerFiles()` dentro de `forja_minidrum` e `forja_canivete`.
 
 **Pendências, em ordem:**
 
@@ -412,6 +417,10 @@ MIDI nativo e latência) no `ctest`.
       `Documentos/Forja/Rack` (efeito e instrumento), abrir editor nativo em janela
       separada e conferir o PDC com a DAW — o bridge já tem teste próprio
       (`forja_forjarack_hosted`), mas a carga de formato real depende do ambiente.
+- [ ] Validar no host a banda de arquivos das gavetas MINIDRUM/CANIVETE: escolher pela
+      lista, abrir kit/soundfont fora da biblioteca via ARQUIVO e conferir o knob mudo
+      enquanto o externo toca — o contrato já tem teste (`testDrawerFiles()`), mas o
+      FileChooser depende de sessão gráfica.
 - [ ] Implementar o DRUMFORGE no host: automação dos 249 parâmetros, multi-out em DAW,
       bypass, preview sincronizado e arrasto de loop para a timeline; aqui não há DAW,
       então segue pendente como nos demais.

@@ -25,6 +25,42 @@ void MiniDrumModule::refreshLibrary()
     kitCount.store (static_cast<int> (kits.size()), std::memory_order_release);
 }
 
+void MiniDrumModule::reselectAfterRefresh()
+{
+    // Re-prepare / BUSCAR: a escolha ativa vira indice contra a lista nova.
+    // Externo continua externo (o knob fica mudo para o idle ate a proxima
+    // escolha pela lista); nome que sumiu da biblioteca recai no default 0.
+    if (selectedPath.empty())
+    {
+        externalActive.store (false, std::memory_order_relaxed);
+        desiredKit.store (-1, std::memory_order_relaxed);
+        loadedKit = -1;
+        return;
+    }
+
+    for (size_t i = 0; i < kits.size(); ++i)
+    {
+        if (kits[i].getFullPathName().toStdString() != selectedPath)
+            continue;
+
+        externalActive.store (false, std::memory_order_relaxed);
+        loadedKit = static_cast<int> (i);
+        desiredKit.store (loadedKit, std::memory_order_relaxed);
+        return;
+    }
+
+    if (externalActive.load (std::memory_order_relaxed))
+    {
+        loadedKit = -1;   // externo: idle colhera externalPath / recarrega
+        return;
+    }
+
+    selectedPath.clear();
+    externalActive.store (false, std::memory_order_relaxed);
+    desiredKit.store (-1, std::memory_order_relaxed);
+    loadedKit = -1;
+}
+
 void MiniDrumModule::prepare (double sampleRate)
 {
     refreshLibrary();
@@ -35,9 +71,9 @@ void MiniDrumModule::prepare (double sampleRate)
 
     drum.prepare (sampleRate, engineCapacity);
 
-    // Recomeca do kit indicado pelo knob no proximo idle().
-    loadedKit = -1;
-    desiredKit.store (-1, std::memory_order_relaxed);
+    // Re-adota a escolha da gaveta contra a lista recem-escaneada (default: o
+    // kit indicado pelo knob no proximo idle()).
+    reselectAfterRefresh();
 }
 
 void MiniDrumModule::setParam (int index, float value)
@@ -107,6 +143,37 @@ void MiniDrumModule::idle()
 {
     drum.reapRetiredKits();
 
+    // Carga externa pedida pela gaveta (FileChooser) ou re-colheita depois de
+    // um re-prepare: roda no loader em background do MiniDrum, seguro na
+    // thread de mensagens com audio ativo.
+    if (externalActive.load (std::memory_order_relaxed)
+        && (! externalPath.empty() || loadedExternalName.empty()))
+    {
+        const juce::File file (juce::String (externalPath.empty() ? selectedPath : externalPath));
+        externalPath.clear();
+
+        if (file.existsAsFile() || file.isDirectory())
+        {
+            loadedExternalName = file.getFileName().toStdString();
+            loadedKit = -1;
+            drum.loadKitFile (file);
+        }
+        else
+        {
+            // Arquivo sumiu (escolha persistida de outra maquina): o knob
+            // volta a mandar e a gaveta recai no kit indicado pelo indice.
+            externalActive.store (false, std::memory_order_relaxed);
+            selectedPath.clear();
+            loadedKit = -1;
+            desiredKit.store (-1, std::memory_order_relaxed);
+        }
+
+        return;
+    }
+
+    if (externalActive.load (std::memory_order_relaxed))
+        return;   // kit de fora do seletor: o knob nao manda ate nova escolha
+
     if (kits.empty())
         return;
 
@@ -148,6 +215,57 @@ void registerMinidrumModule()
     };
 
     forjarack::ModuleCatalog::registerModule (spec);
+}
+
+// ---- gaveta de arquivos (thread de mensagens) --------------------------------
+
+std::vector<std::string> MiniDrumModule::drawerFileNames() const
+{
+    // Caminhos completos: sao o identificador da lista e a chave de match de
+    // drawerSelectFile. A UI mostra so o nome; o nucleo nao conhece juce::File.
+    std::vector<std::string> names;
+    names.reserve (kits.size());
+
+    for (const auto& kit : kits)
+        names.push_back (kit.getFullPathName().toStdString());
+
+    return names;
+}
+
+std::string MiniDrumModule::drawerCurrentName() const
+{
+    if (externalActive.load (std::memory_order_relaxed))
+        return loadedExternalName;
+
+    if (loadedKit >= 0 && static_cast<size_t> (loadedKit) < kits.size())
+        return kits[static_cast<size_t> (loadedKit)].getFileName().toStdString();
+
+    return {};
+}
+
+bool MiniDrumModule::drawerSelectFile (const std::string& name)
+{
+    for (size_t i = 0; i < kits.size(); ++i)
+    {
+        if (kits[i].getFullPathName().toStdString() != name)
+            continue;
+
+        selectedPath = name;
+        externalActive.store (false, std::memory_order_relaxed);
+        loadedExternalName.clear();
+        desiredKit.store (static_cast<int> (i), std::memory_order_relaxed);
+        return true;
+    }
+
+    return false;
+}
+
+void MiniDrumModule::drawerLoadExternalFile (const std::string& path)
+{
+    selectedPath = path;
+    externalActive.store (true, std::memory_order_relaxed);
+    loadedExternalName.clear();
+    externalPath = path;
 }
 
 } // namespace forja::minidrum

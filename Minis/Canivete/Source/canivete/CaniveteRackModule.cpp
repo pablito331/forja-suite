@@ -25,6 +25,42 @@ void CaniveteModule::refreshLibrary()
     bankCount.store (static_cast<int> (banks.size()), std::memory_order_release);
 }
 
+void CaniveteModule::reselectAfterRefresh()
+{
+    // Re-prepare / BUSCAR: a escolha ativa vira indice contra a lista nova.
+    // Externo continua externo (o knob fica mudo para o idle ate a proxima
+    // escolha pela lista); nome que sumiu da biblioteca recai no default 0.
+    if (selectedPath.empty())
+    {
+        externalActive.store (false, std::memory_order_relaxed);
+        desiredBank.store (-1, std::memory_order_relaxed);
+        loadedBank = -1;
+        return;
+    }
+
+    for (size_t i = 0; i < banks.size(); ++i)
+    {
+        if (banks[i].getFullPathName().toStdString() != selectedPath)
+            continue;
+
+        externalActive.store (false, std::memory_order_relaxed);
+        loadedBank = static_cast<int> (i);
+        desiredBank.store (loadedBank, std::memory_order_relaxed);
+        return;
+    }
+
+    if (externalActive.load (std::memory_order_relaxed))
+    {
+        loadedBank = -1;   // externo: idle colhera externalPath / selectedPath
+        return;
+    }
+
+    selectedPath.clear();
+    externalActive.store (false, std::memory_order_relaxed);
+    desiredBank.store (-1, std::memory_order_relaxed);
+    loadedBank = -1;
+}
+
 void CaniveteModule::prepare (double sampleRate)
 {
     refreshLibrary();
@@ -35,9 +71,9 @@ void CaniveteModule::prepare (double sampleRate)
 
     engine.prepare (sampleRate, engineCapacity);
 
-    // Recomeca do bank indicado pelo knob no proximo idle().
-    loadedBank = -1;
-    desiredBank.store (-1, std::memory_order_relaxed);
+    // Re-adota a escolha da gaveta contra a lista recem-escaneada (default: o
+    // bank indicado pelo knob no proximo idle()).
+    reselectAfterRefresh();
 }
 
 void CaniveteModule::setParam (int index, float value)
@@ -108,6 +144,37 @@ void CaniveteModule::idle()
     engine.pollLoadResult();
     engine.reapRetiredBanks();
 
+    // Carga externa pedida pela gaveta (FileChooser) ou re-colheita depois de
+    // um re-prepare: a leitura vai ao background do SoundFontEngine, segura na
+    // thread de mensagens com audio ativo.
+    if (externalActive.load (std::memory_order_relaxed)
+        && (! externalPath.empty() || loadedExternalName.empty()))
+    {
+        const juce::File file (juce::String (externalPath.empty() ? selectedPath : externalPath));
+        externalPath.clear();
+
+        if (file.existsAsFile())
+        {
+            loadedExternalName = file.getFileName().toStdString();
+            loadedBank = -1;
+            engine.loadBankFile (file);
+        }
+        else
+        {
+            // Arquivo sumiu (escolha persistida de outra maquina): o knob
+            // volta a mandar e a gaveta recai no bank indicado pelo indice.
+            externalActive.store (false, std::memory_order_relaxed);
+            selectedPath.clear();
+            loadedBank = -1;
+            desiredBank.store (-1, std::memory_order_relaxed);
+        }
+
+        return;
+    }
+
+    if (externalActive.load (std::memory_order_relaxed))
+        return;   // bank de fora do seletor: o knob nao manda ate nova escolha
+
     if (banks.empty())
         return;
 
@@ -149,6 +216,57 @@ void registerCaniveteModule()
     };
 
     forjarack::ModuleCatalog::registerModule (spec);
+}
+
+// ---- gaveta de arquivos (thread de mensagens) --------------------------------
+
+std::vector<std::string> CaniveteModule::drawerFileNames() const
+{
+    // Caminhos completos: sao o identificador da lista e a chave de match de
+    // drawerSelectFile. A UI mostra so o nome; o nucleo nao conhece juce::File.
+    std::vector<std::string> names;
+    names.reserve (banks.size());
+
+    for (const auto& bank : banks)
+        names.push_back (bank.getFullPathName().toStdString());
+
+    return names;
+}
+
+std::string CaniveteModule::drawerCurrentName() const
+{
+    if (externalActive.load (std::memory_order_relaxed))
+        return loadedExternalName;
+
+    if (loadedBank >= 0 && static_cast<size_t> (loadedBank) < banks.size())
+        return banks[static_cast<size_t> (loadedBank)].getFileName().toStdString();
+
+    return {};
+}
+
+bool CaniveteModule::drawerSelectFile (const std::string& name)
+{
+    for (size_t i = 0; i < banks.size(); ++i)
+    {
+        if (banks[i].getFullPathName().toStdString() != name)
+            continue;
+
+        selectedPath = name;
+        externalActive.store (false, std::memory_order_relaxed);
+        loadedExternalName.clear();
+        desiredBank.store (static_cast<int> (i), std::memory_order_relaxed);
+        return true;
+    }
+
+    return false;
+}
+
+void CaniveteModule::drawerLoadExternalFile (const std::string& path)
+{
+    selectedPath = path;
+    externalActive.store (true, std::memory_order_relaxed);
+    loadedExternalName.clear();
+    externalPath = path;
 }
 
 } // namespace forja::canivete

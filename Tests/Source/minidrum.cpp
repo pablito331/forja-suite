@@ -569,6 +569,71 @@ void testRackModule()
         std::printf ("  SKIP  biblioteca compartilhada vazia nesta maquina\n");
 }
 
+void testDrawerFiles()
+{
+    std::printf ("\n[gaveta de arquivos do rack]\n");
+
+    // Kit avulso fora da biblioteca: .dfkit com os samples ao lado, no tmp.
+    const auto box = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                         .getChildFile ("forja-minidrum-drawer");
+    box.deleteRecursively();
+    box.createDirectory();
+
+    writeClickWav (box.getChildFile ("kick.wav"), 0.2f);
+    box.getChildFile ("solto.dfkit").replaceWithText (
+        "#name Kit Solto\n[36]@0 KICK=kick.wav\n");
+
+    MiniDrumModule module;
+    module.prepare (testSampleRate);
+
+    check (module.supportsDrawerFiles(), "gaveta expoe a banda de arquivos");
+
+    // Nome fora da biblioteca nao e escolha de lista.
+    check (! module.drawerSelectFile ("C:/nao/existe/kit.dfkit"),
+           "nome fora da lista nao e aceito como escolha");
+
+    // Externo de verdade: o idle colhe a carga e passa a exibir o nome; o knob
+    // de indice fica mudo ate a proxima escolha pela lista.
+    module.drawerLoadExternalFile (box.getChildFile ("solto.dfkit").getFullPathName().toStdString());
+
+    for (int pass = 0; pass < 5; ++pass)
+    {
+        module.idle();
+        pumpMessages (20);
+    }
+
+    const auto shown = juce::String (module.drawerCurrentName());
+    check (shown.containsIgnoreCase ("solto.dfkit"), "externo colhido pelo idle",
+           shown);
+
+    module.setParam (1, 0.5f);   // o knob nao pode recolher o externo
+
+    for (int pass = 0; pass < 5; ++pass)
+    {
+        module.idle();
+        pumpMessages (20);
+    }
+
+    check (juce::String (module.drawerCurrentName()).containsIgnoreCase ("solto.dfkit"),
+           "knob fica mudo enquanto o externo manda");
+
+    // Caminho inexistente: a gaveta tenta, falha e devolve o comando ao knob.
+    module.drawerLoadExternalFile ("C:/forja-que-nao-existe/kit.dfkit");
+    module.idle();
+    pumpMessages (20);
+    module.idle();
+
+    for (int pass = 0; pass < 50; ++pass)
+    {
+        module.idle();
+        pumpMessages (10);
+    }
+
+    check (true, "externo inexistente nao derruba a gaveta");
+
+    box.deleteRecursively();
+}
+
 void testRegistration()
 {
     std::printf ("\n[registro no catalogo]\n");
@@ -674,6 +739,7 @@ int main()
     testInvalidKitKeepsPlaying();
     testNoAllocations();
     testRackModule();
+    testDrawerFiles();
     testRegistration();
 
     if (failures == 0)

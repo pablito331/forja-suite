@@ -233,6 +233,19 @@ void ForjarackAudioProcessorEditor::updateTelemetry()
             }
         }
 
+        // Banda de arquivos: na gaveta de instrumento o seletor mostra o
+        // material vivo, que muda em background (idle/carga do kit/bank).
+        if (processor.isHosted (slot) || processor.isDrawer (slot))
+        {
+            const auto bandFile = processor.fileName (slot);
+
+            if (bandFile != lastBandFile[(size_t) slot])
+            {
+                lastBandFile[(size_t) slot] = bandFile;
+                target.refresh();
+            }
+        }
+
         target.setOutputPeak (engine.readSlotPeak (slot));
         target.setGainReductionDb (engine.readSlotGainReductionDb (slot));
 

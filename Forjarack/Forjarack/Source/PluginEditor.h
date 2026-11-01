@@ -35,6 +35,9 @@ private:
     // A carga de um plugin hospedado termina no timer do processor; quando o
     // numero de params aparece, reloidamos a gaveta para desenhar os knobs.
     std::array<int, forjarack::kNumSlots> lastHostedParams {};
+    // Banda de arquivos: o material vivo de uma gaveta de instrumento muda
+    // async (carga do kit/bank); quando o nome muda, reloidamos o seletor.
+    std::array<juce::String, forjarack::kNumSlots> lastBandFile {};
     double clipHoldUntilMs = 0.0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ForjarackAudioProcessorEditor)

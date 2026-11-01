@@ -5,8 +5,10 @@
 #include "PluginEditor.h"
 #include "rack/ModuleCatalog.h"
 #include "minidrum/MiniDrumRackModule.h"
+#include "minidrum/KitLibrary.h"
 #include "minisat/MiniSatRackModule.h"
 #include "canivete/CaniveteRackModule.h"
+#include "canivete/BankLibrary.h"
 
 namespace
 {
@@ -314,6 +316,8 @@ void ForjarackAudioProcessor::syncGraphFromParams (bool applyDefaults)
             continue;
 
         cachedTypes[(size_t) slot] = raw;
+        drawerApplied[(size_t) slot] = false;   // modulo novo: a escolha (se houver)
+                                                // espera este slot ficar vivo
 
         const int index = juce::jlimit (0, ModuleCatalog::count() - 1, raw);
 
@@ -357,6 +361,13 @@ void ForjarackAudioProcessor::timerCallback()
 
     // Faxina dos modulos (mini drum libera kit substituido e adota o pedido).
     engine.idleModules();
+
+    // Escolha de gaveta esperando modulo vivo (estado carregado antes do
+    // primeiro prepareToPlay): tenta de novo a cada tick ate assentar.
+    for (int slot = 0; slot < kNumSlots; ++slot)
+        if (! drawerApplied[(size_t) slot] && isDrawer (slot)
+            && ! drawerFile[(size_t) slot].isEmpty())
+            applyDrawerChoice (slot, drawerFile[(size_t) slot]);
 }
 
 bool ForjarackAudioProcessor::isBypassed() const
@@ -387,10 +398,20 @@ void ForjarackAudioProcessor::setStateInformation (const void* data, int sizeInB
             // A escolha de arquivo hospedado vive em propriedade do estado (o
             // AudioParameterChoice congela as opcoes na construcao, nao serve
             // para uma lista dinamica). Le de volta antes de realinhar o grafo.
+            // O mesmo vale para a gaveta de instrumentos (kit/bank do disco).
             for (int slot = 0; slot < kNumSlots; ++slot)
+            {
                 hostedFile[(size_t) slot] = apvts.state.getProperty (hostedStateKey (slot)).toString();
+                drawerFile[(size_t) slot] = apvts.state.getProperty (drawerStateKey (slot)).toString();
+            }
 
             syncGraphFromParams (false);
+
+            // Reaplica as escolhas de gaveta depois de reconstruir o grafo; o
+            // timer cuida das que esperam o primeiro prepareToPlay.
+            for (int slot = 0; slot < kNumSlots; ++slot)
+                if (! drawerFile[(size_t) slot].isEmpty())
+                    applyDrawerChoice (slot, drawerFile[(size_t) slot]);
         }
     }
 }
@@ -483,12 +504,46 @@ juce::StringArray ForjarackAudioProcessor::fileList() const
 
 juce::String ForjarackAudioProcessor::fileName (int slot) const
 {
-    return (slot >= 0 && slot < kNumSlots) ? hostedFile[(size_t) slot] : juce::String();
+    if (slot < 0 || slot >= kNumSlots)
+        return {};
+
+    if (isHosted (slot))
+        return hostedFile[(size_t) slot];
+
+    if (isDrawer (slot))
+    {
+        // Na gaveta de instrumentos o display e o material vivo (o modulo e a
+        // verdade, nao o pedido); sem modulo montado, o nome do arquivo escolha.
+        if (auto* module = drawerModuleAt (slot))
+        {
+            const auto current = juce::String (module->drawerCurrentName());
+
+            if (! current.isEmpty())
+                return current;
+
+            return juce::File (drawerFile[(size_t) slot]).getFileName();
+        }
+
+        return juce::File (drawerFile[(size_t) slot]).getFileName();
+    }
+
+    return {};
 }
 
 void ForjarackAudioProcessor::chooseFile (int slot, const juce::String& name)
 {
-    if (slot < 0 || slot >= kNumSlots || hostedIndex < 0)
+    if (slot < 0 || slot >= kNumSlots)
+        return;
+
+    if (isDrawer (slot))
+    {
+        // Gaveta de instrumento: o nome da lista e o caminho completo do kit
+        // (identificador, nao rotulo). Vazio devolve o knob ao comando.
+        applyDrawerChoice (slot, name);
+        return;
+    }
+
+    if (hostedIndex < 0)
         return;
 
     hostedFile[(size_t) slot] = name;
@@ -576,7 +631,150 @@ int ForjarackAudioProcessor::rescanFiles()
 
 int ForjarackAudioProcessor::rescan()
 {
-    return hostedLibrary.refresh();
+    const int found = hostedLibrary.refresh();
+
+    // Reescaneia tambem as bibliotecas dos modulos-drawer vivos (kits depositados
+    // no Drumforge depois da abertura do rack entram na lista sem reabrir nada).
+    for (int slot = 0; slot < kNumSlots; ++slot)
+        if (auto* module = drawerModuleAt (slot))
+            module->drawerRefreshLibrary();
+
+    return found;
+}
+
+// ---------------------------------------------------------------------------
+// Gaveta de arquivos (instrumentos com biblioteca propria: MINIDRUM, CANIVETE).
+// A lista vem do modulo vivo; a escolha externa vive em propriedade do estado
+// (a AudioParameterChoice congela opcoes). Tudo na thread de mensagens.
+
+juce::String ForjarackAudioProcessor::drawerStateKey (int slot)
+{
+    return "drawer_slot" + juce::String (slot + 1);
+}
+
+ModuleBase* ForjarackAudioProcessor::drawerModuleAt (int slot) const noexcept
+{
+    if (slot < 0 || slot >= kNumSlots)
+        return nullptr;
+
+    // Fonte de verdade e o modulo vivo (nao o 'type' cru): assim a banda so
+    // aparece quando o modulo com biblioteca esta de fato na gaveta. O cast
+    // mutavel e de configuracao (msg thread), mesmo truque de hostedModuleAt.
+    auto* module = const_cast<ModuleBase*> (engine.moduleAt (slot));
+    return module != nullptr && module->supportsDrawerFiles() ? module : nullptr;
+}
+
+bool ForjarackAudioProcessor::isDrawer (int slot) const
+{
+    return drawerModuleAt (slot) != nullptr;
+}
+
+juce::StringArray ForjarackAudioProcessor::drawerFileNames (int slot) const
+{
+    juce::StringArray paths;
+
+    if (auto* module = drawerModuleAt (slot))
+        for (const auto& name : module->drawerFileNames())
+            paths.add (juce::String (name));
+
+    return paths;
+}
+
+void ForjarackAudioProcessor::syncDrawerKnob (int slot, int index, int count)
+{
+    // O engine realimenta setParam(1, knob) todo bloco: sem esta sementeira o
+    // knob voltaria a gaveta para o indice antigo dois blocos depois da escolha.
+    if (count <= 1)
+        return;
+
+    if (auto* param = apvts.getParameter (knobId (slot, 1)))
+        param->setValueNotifyingHost (static_cast<float> (index) / static_cast<float> (count - 1));
+}
+
+void ForjarackAudioProcessor::applyDrawerChoice (int slot, const juce::String& path)
+{
+    if (slot < 0 || slot >= kNumSlots)
+        return;
+
+    drawerFile[(size_t) slot] = path;
+    apvts.state.setProperty (drawerStateKey (slot), path, nullptr);
+
+    auto* module = drawerModuleAt (slot);
+
+    if (module == nullptr)
+        return;   // audio ainda nao montou o modulo; o timer tenta de novo
+
+    if (path.isEmpty())
+    {
+        syncDrawerKnob (slot, 0, 2);
+        module->drawerSelectFile ("");   // limpa a escolha; o knob volta a mandar
+        drawerApplied[(size_t) slot] = true;
+        return;
+    }
+
+    if (module->drawerSelectFile (path.toStdString()))
+    {
+        drawerApplied[(size_t) slot] = true;
+
+        const auto names = module->drawerFileNames();
+
+        for (size_t i = 0; i < names.size(); ++i)
+            if (names[i] == path.toStdString())
+                syncDrawerKnob (slot, static_cast<int> (i), static_cast<int> (names.size()));
+
+        return;
+    }
+
+    // Externo (FileChooser) ou escolha de outra maquina que nao esta na pasta:
+    // o modulo carrega direto e fica mudo ao knob ate a proxima escolha.
+    module->drawerLoadExternalFile (path.toStdString());
+    drawerApplied[(size_t) slot] = true;
+}
+
+void ForjarackAudioProcessor::browseFile (int slot)
+{
+    auto* module = drawerModuleAt (slot);
+
+    if (module == nullptr)
+        return;   // no HOSPEDADO a busca e sempre a pasta-fixa do BUSCAR
+
+    const bool kits = ModuleCatalog::specByIndex (engine.slotModuleIndex (slot)).id == "minidrum";
+
+    auto start = kits ? forja::minidrum::libraryDirectory()
+                      : forja::canivete::libraryDirectory();
+
+    if (! start.isDirectory())
+        start = start.getParentDirectory();
+
+    if (! start.isDirectory())
+        start = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory);
+
+    drawerChooser = std::make_shared<juce::FileChooser> (
+        forja::ui::utf8 (kits ? "Abrir kit (.dfkit, .txt, .labooh ou pasta)"
+                              : "Abrir soundfont (.sf2, .sf3)"),
+        start, kits ? "*.dfkit;*.txt;*.labooh" : "*.sf2;*.sf3");
+
+    browseSlot = slot;
+
+    // O shared_ptr mantem o chooser vivo ate o callback (padrao da suite; no
+    // standalone o editor e SafePointer porque la o dono e a janela).
+    drawerChooser->launchAsync (juce::FileBrowserComponent::openMode
+                                   | juce::FileBrowserComponent::canSelectFiles
+                                   | (kits ? juce::FileBrowserComponent::canSelectDirectories : 0),
+                                [this] (const juce::FileChooser& result)
+                                {
+                                    const int slotNow = browseSlot;
+                                    browseSlot = -1;
+                                    drawerChooser.reset();
+
+                                    if (slotNow < 0)
+                                        return;
+
+                                    const auto file = result.getResult();
+
+                                    if (file.existsAsFile() || file.isDirectory())
+                                        applyDrawerChoice (slotNow, file.getFullPathName());
+                                });
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

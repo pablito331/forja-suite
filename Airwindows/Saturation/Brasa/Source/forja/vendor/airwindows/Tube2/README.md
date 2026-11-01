@@ -13,7 +13,7 @@ aqui sem modificações para rastrear a proveniência do DSP do BRASA.
 
 O BRASA **não compila** estes arquivos. `Tube2.cpp` inclui `audioeffectx.h`
 (SDK VST2), que não faz parte deste projeto. O adaptador
-`Source/forja/dsp/ForjaBrasa.h` porta o laço de `processDoubleReplacing` para
+`Forja/Source/forja/dsp/ForjaBrasa.h` porta o laço de `processDoubleReplacing` para
 `forja::BrasaDSP`, mantendo:
 
 - o pad de entrada e o cálculo de `powerfactor` a partir de `Tube`;

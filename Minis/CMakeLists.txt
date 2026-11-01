@@ -2,3 +2,4 @@
 # seguem os testes funcionais e de RT-safety da base e podem reutilizar blocos
 # proprios da suite (o MINIDRUM toca o engine do Drumforge).
 add_subdirectory(Minidrum)
+add_subdirectory(Minisat)

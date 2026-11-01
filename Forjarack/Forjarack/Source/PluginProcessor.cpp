@@ -3,6 +3,7 @@
 #include "PluginEditor.h"
 #include "rack/ModuleCatalog.h"
 #include "minidrum/MiniDrumRackModule.h"
+#include "minisat/MiniSatRackModule.h"
 
 namespace
 {
@@ -45,6 +46,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ForjarackAudioProcessor::cre
     // Gavetas registram antes das choices: o catalogo e append-only e a lista
     // de slots e montada a partir dele.
     forja::minidrum::registerMinidrumModule();
+    forja::minisat::registerMinisatModule();
 
     juce::StringArray choices;
 

@@ -8,7 +8,6 @@ target_sources(Brasa PRIVATE
 
     Source/PluginProcessor.h
     Source/PluginEditor.h
-    Source/forja/dsp/ForjaBrasa.h
     Source/forja/ui/ForjaTransferCurve.h
     Source/forja/ui/ForjaValve.h
 

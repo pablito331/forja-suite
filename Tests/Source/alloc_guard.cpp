@@ -1,4 +1,5 @@
 #include "forja/dsp/ForjaBigorna.h"
+#include "forja/dsp/ForjaBrasa.h"
 #include "forja/dsp/ForjaCadinho.h"
 #include "forja/dsp/ForjaCera.h"
 #include "forja/dsp/ForjaChime.h"

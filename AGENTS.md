@@ -5,14 +5,15 @@ Ele explica de onde vem o DSP, qual padrão a suíte segue e o que **não** pode
 
 ## O que é a Forja
 
-Forja é uma suíte de 34 plugins VST3 + Standalone em JUCE 9 (C++20) para Windows,
+Forja é uma suíte de 35 plugins VST3 + Standalone em JUCE 9 (C++20) para Windows,
 macOS e Linux, organizada em bases de DSP. A base `Airwindows/` adapta plugins da
 [Airwindows](https://www.airwindows.com/vsts/) de **Chris Johnson**, licenciado em MIT.
 A base `drumforge/` é a de DSP original: o **DRUMFORGE**, sampler de bateria com engine
 própria, mesa e multi-out. A base `Forjarack/` entrega o **FORJARACK**, um rack em cadeia
 estilo Série 500 que hospeda adaptadores Airwindows já validados. A base `Minis/` entrega
-os minis Forja de propósito único, começando pelo **MINIDRUM** (leitor de kits do Drumforge
-com um knob de volume). A Forja acrescenta interface nativa (sem WebView), painel
+os minis Forja de propósito único: **MINIDRUM** (leitor de kits do Drumforge com um knob de
+volume) e **MINISAT** (saturador de um knob que reusa o adaptador do BRASA). A Forja
+acrescenta interface nativa (sem WebView), painel
 FUNDAMENTOS em português, bypass suavizado, medição, presets/estado via APVTS e validação
 de paridade amostra a amostra contra o código original nas adaptações Airwindows.
 
@@ -37,8 +38,9 @@ drumforge/                         base 2: sampler de bateria, DSP Forja
   Drumforge/Source/ui/             abas Kits, Mixer e Loops, MiniKnob
 Forjarack/                         base 3: FORJARACK, rack Série 500 de módulos Airwindows
   Forjarack/Source/rack/           ModuleCatalog (registro append-only), módulos
-Minis/                             base 4: minis Forja de propósito único (MINIDRUM)
+Minis/                             base 4: minis Forja de propósito único (MINIDRUM, MINISAT)
   Minidrum/Source/minidrum/        wrapper do engine Drumforge como plugin autônomo
+  Minisat/Source/minisat/          wrapper do adaptador do BRASA como plugin e módulo de rack
 Forja/                             biblioteca compartilhada forja_ui + DSP + vendor
   Source/forja/dsp/                adapters header-only (Forja<Modelo>.h)
   Source/forja/ui/                 chrome nativo (topBar, statusBar, cards, knobs, painel)
@@ -62,13 +64,15 @@ tools/                             gerador de scaffold de plugin
   original MIT, reusado como bloco de canal. Não tem vendor novo nem teste de paridade
   próprio (a paridade é herdada dos módulos); o teste do engine cobre o catalogo
   append-only, o encadeamento das gavetas, bypass/solo por gaveta e ausência de alocação.
-- `Minis/` — base dos minis originais Forja: plugins compactos de propósito único,
-  começando pelo **MINIDRUM** (leitor de kits do Drumforge com um knob de volume). Não usa
-  vendor Airwindows nem tem paridade (o DSP é o engine do Drumforge); os testes cobrem
-  carga/adoção de kit, volume, premix, latência, bypass, medidor e o registro no catálogo
-  do ForjaRack. A família **MINIS** no catálogo é mais ampla que a pasta: agrupa esses
-  minis Forja e os one-knobs MIT, que continuam em `Airwindows/OneKnob/` por regra de
-  proveniência.
+- `Minis/` — base dos minis originais Forja: plugins compactos de propósito único —
+  **MINIDRUM** (leitor de kits do Drumforge com um knob de volume) e **MINISAT**
+  (saturador de um knob que reusa o adaptador validado do BRASA). Cada mini reusa um bloco
+  já testado como DSP (engine do DRUMFORGE ou `forja::BrasaDSP`), sem fork e sem vendor
+  novo; **não** têm paridade própria (herdada do bloco), e o teste de cada um cobre o
+  wrapper, o mapeamento/estado próprio, latência, bypass, medidor, zero alocação e o
+  registro no catálogo do ForjaRack. A família **MINIS** no catálogo é mais ampla que a
+  pasta: agrupa esses minis Forja e os one-knobs MIT, que continuam em
+  `Airwindows/OneKnob/` por regra de proveniência.
 - **Exceção registrada — `pianoforge/`**: é um projeto **autônomo e separado** (repo
   Git próprio, `github.com/pablito331/pianoforge`), **não** uma base Forja. É **non-JUCE**
   (SDK VST3 cru da Steinberg + backend de janela Win32/Cocoa/X11 próprio, C++17), tem
@@ -194,7 +198,12 @@ Siga `docs/NOVO-PLUGIN.md`. Resumo:
 - MINIDRUM compila como VST3 e Standalone; `forja_minidrum` PASS (carga/adoção de kit,
   volume no trim do master, premix `.dfkit`, latência 0, bypass, medidor, troca com reap,
   rejeição de kit inválido, zero alocação e registro da gaveta instrument no ForjaRack).
-- Última verificação local (Windows, Release): `ctest` com 32/32 testes verdes.
+- MINISAT compila como VST3 e Standalone; `forja_minisat` PASS (mapa drive→pad bit-exato
+  com o adaptador do BRASA em seis drives, monotonia, crest caindo com o drive, rampa de
+  bypass, latência 0 medida por impulso, zero alocação em estéreo e mono e registro da
+  gaveta `minisat` no ForjaRack). O adaptador compartilhado `forja::BrasaDSP` entrou no
+  `alloc_guard`.
+- Última verificação local (Windows, Release): `ctest` com 33/33 testes verdes.
 - Sem DAW no ambiente de desenvolvimento: automação/bypass de host seguem pendentes de
   validação manual (ver README).
 - REPIQUE e ECO têm sync de BPM opcional; com `sync = false` o caminho é bit-exato.

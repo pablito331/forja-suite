@@ -28,9 +28,17 @@ target_sources(Forjarack PRIVATE
     ${CMAKE_SOURCE_DIR}/Minis/Minidrum/Source/minidrum/KitLibrary.h
     ${CMAKE_SOURCE_DIR}/drumforge/Drumforge/Source/engine/DrumEngine.cpp
     ${CMAKE_SOURCE_DIR}/drumforge/Drumforge/Source/engine/SampleStore.cpp
+
+    # Gaveta drive MINISAT: mesmo wrapper do plugin standalone, adaptador
+    # forja::BrasaDSP compartilhado via include de forja_ui.
+    ${CMAKE_SOURCE_DIR}/Minis/Minisat/Source/minisat/MiniSatRackModule.h
+    ${CMAKE_SOURCE_DIR}/Minis/Minisat/Source/minisat/MiniSatRackModule.cpp
+    ${CMAKE_SOURCE_DIR}/Minis/Minisat/Source/minisat/MiniSat.h
+    ${CMAKE_SOURCE_DIR}/Minis/Minisat/Source/minisat/MiniSat.cpp
 )
 
 target_include_directories(Forjarack PRIVATE
     ${CMAKE_SOURCE_DIR}/Minis/Minidrum/Source
+    ${CMAKE_SOURCE_DIR}/Minis/Minisat/Source
     ${CMAKE_SOURCE_DIR}/drumforge/Drumforge/Source
 )

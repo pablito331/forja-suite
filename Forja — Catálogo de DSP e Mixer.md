@@ -338,8 +338,13 @@ FUNDAMENTOS:
 A família **MINIS** é o guarda-chuva dos plugins compactos de propósito único. Ela agrupa
 os seis one-knobs da tabela — que continuam fisicamente em `Airwindows/OneKnob/` por regra
 de proveniência MIT — e os minis originais Forja, que vivem na base `Minis/` (pasta irmã).
-O primeiro mini é o **MINIDRUM**: leitor de kits `.dfkit` do Drumforge em formato de gaveta,
-com um knob de volume, reutilizando o engine `drumforge` como bloco próprio. Os minis Forja
+O **MINIDRUM** é o leitor de kits `.dfkit` do Drumforge em formato de gaveta,
+com um knob de volume, reutilizando o engine `drumforge` como bloco próprio. O **MINISAT**
+é o saturador de um knob (DRIVE): reusa o adaptador validado do BRASA (Tube2), promovido a
+`Forja/Source/forja/dsp/ForjaBrasa.h` justamente para ser bloco compartilhado. A única camada
+Forja ali é o mapa `input = 0,50 + 0,50·drive` (Válvula 0,50 e Saída 0 dB fixos, sem makeup
+gain), com drive 0 equivalendo ao default documentado do BRASA; latência 0 medida por impulso.
+No rack, registra-se como gaveta `minisat` (categoria drive, fachada valve). Os minis Forja
 não têm paridade com vendor; seguem os testes funcionais e de RT-safety da base deles e
 podem reutilizar adaptadores Airwindows como blocos internos.
 

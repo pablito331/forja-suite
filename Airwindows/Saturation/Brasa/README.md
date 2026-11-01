@@ -33,7 +33,8 @@ botão de bypass da DAW usam o mesmo parâmetro. A latência reportada é 0 amos
 
 ## DSP
 
-`Source/forja/dsp/ForjaBrasa.h` porta fielmente `Tube2::processDoubleReplacing`:
+`Forja/Source/forja/dsp/ForjaBrasa.h` (biblioteca compartilhada) porta fielmente
+`Tube2::processDoubleReplacing`:
 
 1. pad de entrada (`input`);
 2. média simples em sample rates > 1,9 × 44,1 kHz;
@@ -103,10 +104,12 @@ Airwindows/Saturation/Brasa/
     PluginEditor.h/.cpp        layout 1000x540, cards e integração do painel
     ForjaInfoText.h            conteúdo do painel FUNDAMENTOS
     forja/
-      dsp/ForjaBrasa.h         adaptador C++ do Tube2 + trim/bypass Forja
       ui/                      curva de transferência e válvula (específicos)
       vendor/airwindows/Tube2/ original MIT (referência, não compilado)
 ```
+
+O adaptador do Tube2 mora na biblioteca compartilhada:
+`Forja/Source/forja/dsp/ForjaBrasa.h` (MINISAT o reutiliza como bloco interno).
 
 Componentes visuais compartilhados (tema, card, knob, LookAndFeel, medidores,
 topo, status e painel Fundamentos) ficam em `../../Forja/Source/forja/ui/`.

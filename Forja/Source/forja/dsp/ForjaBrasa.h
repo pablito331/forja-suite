@@ -1,7 +1,8 @@
 #pragma once
 
 // Adaptador Forja para o DSP do Airwindows Tube2 (MIT, Chris Johnson).
-// Fonte original em ../vendor/airwindows/Tube2/Tube2Proc.cpp, commit
+// Fonte original em Airwindows/Saturation/Brasa/Source/forja/vendor/
+// airwindows/Tube2/Tube2Proc.cpp, commit
 // b110fac3991fff7c4655cc2d25d6a3e221f9799c. O arquivo original não é
 // compilado: o laço abaixo é a porta fiel de processDoubleReplacing.
 //

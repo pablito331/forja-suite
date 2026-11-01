@@ -230,6 +230,32 @@ target_link_libraries(forja_minidrum PRIVATE
 
 add_test(NAME minidrum COMMAND forja_minidrum)
 
+# MiniSat: mapeamento documentado do DRIVE, identidade bit a bit com o
+# adaptador bruto forja::BrasaDSP (a paridade mora no BRASA), bypass, latencia
+# medida, RT-safety do wrapper e a gaveta registrada no catalogo do rack.
+add_executable(forja_minisat
+    Source/minisat.cpp
+    ${CMAKE_SOURCE_DIR}/Minis/Minisat/Source/minisat/MiniSat.cpp
+    ${CMAKE_SOURCE_DIR}/Minis/Minisat/Source/minisat/MiniSatRackModule.cpp
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source/rack/ModuleCatalog.cpp)
+
+target_include_directories(forja_minisat PRIVATE
+    ${CMAKE_SOURCE_DIR}/Minis/Minisat/Source
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source
+    ${CMAKE_SOURCE_DIR}/Forja/Source)
+
+target_compile_definitions(forja_minisat PRIVATE _USE_MATH_DEFINES)
+target_compile_options(forja_minisat PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+target_compile_features(forja_minisat PRIVATE cxx_std_20)
+
+target_link_libraries(forja_minisat PRIVATE
+    juce::juce_audio_basics
+    juce::juce_events
+    juce::juce_graphics
+    juce::juce_recommended_config_flags)
+
+add_test(NAME minisat COMMAND forja_minisat)
+
 # One parity executable per model: each compiles only its own vendored sources,
 # so a failure in one model never masks another.
 function(forja_add_parity_model slug model_name vendor_dir)

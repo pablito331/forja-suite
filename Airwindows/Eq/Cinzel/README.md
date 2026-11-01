@@ -2,7 +2,7 @@
 
 Equalizador paramétrico de três bandas construído sobre o DSP do **Airwindows
 Parametric** (MIT), com uma camada dinâmica por banda exclusiva da Forja. Projeto
-JUCE nativo (VST3 + Standalone), compilado a partir da raiz da suíte e usando a
+JUCE nativo (VST3), compilado a partir da raiz da suíte e usando a
 biblioteca compartilhada `forja_ui`.
 
 ## Estado
@@ -13,7 +13,7 @@ biblioteca compartilhada `forja_ui`.
 | Paridade com o original (`dyn = 0`) | 66/66 casos, idêntico sample a sample em double |
 | Comportamento dinâmico (`dyn = 0,5`) | Rajada de 1 kHz na banda alvo: −12 dB; banda vizinha: 0,00 dB |
 | Guarda de alocação em `process()` | Passa |
-| Projeto JUCE (VST3 + Standalone) | Compila; UI conferida no Standalone |
+| Projeto JUCE (VST3) | Compila; UI conferida via Standalone local (`FORJA_STANDALONE=ON`) |
 | Painel FUNDAMENTOS | Implementado |
 | Validação em host (REAPER etc.) | Pendente |
 
@@ -74,13 +74,12 @@ estático é fiel; `dyn > 0` é comportamento Forja.
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config Release --target Cinzel_VST3 Cinzel_Standalone
+cmake --build build --config Release --target Cinzel_VST3
 ```
 
 Artefatos:
 
 - `build/Airwindows/Eq/Cinzel/Cinzel_artefacts/Release/VST3/Cinzel.vst3`
-- `build/Airwindows/Eq/Cinzel/Cinzel_artefacts/Release/Standalone/Cinzel.exe`
 
 ## Licença e créditos
 

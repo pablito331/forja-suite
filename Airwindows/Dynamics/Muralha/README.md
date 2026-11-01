@@ -1,7 +1,7 @@
 # MURALHA — Limitador adaptativo (ADClip9)
 
 Limitador de clipe adaptativo construído sobre o DSP do **Airwindows ADClip9**
-(MIT) com a interface do padrão Forja. Projeto JUCE nativo (VST3 + Standalone)
+(MIT) com a interface do padrão Forja. Projeto JUCE nativo (VST3)
 compilado a partir da raiz da suíte, usando a biblioteca compartilhada `forja_ui`.
 
 ## Estado
@@ -11,7 +11,7 @@ compilado a partir da raiz da suíte, usando a biblioteca compartilhada `forja_u
 | DSP portado (`forja::dsp::MuralhaDSP`) | Implementado |
 | Paridade com o original | 41/41 casos, idêntico sample a sample em double |
 | Guarda de alocação em `process()` | Passa |
-| Projeto JUCE (VST3 + Standalone) | Compila; UI conferida no Standalone |
+| Projeto JUCE (VST3) | Compila; UI conferida via Standalone local (`FORJA_STANDALONE=ON`) |
 | Painel FUNDAMENTOS | Implementado |
 | Validação em host (REAPER etc.) | Pendente |
 
@@ -74,13 +74,12 @@ A partir da raiz da suíte:
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config Release --target Muralha_VST3 Muralha_Standalone
+cmake --build build --config Release --target Muralha_VST3
 ```
 
 Artefatos:
 
 - `build/Airwindows/Dynamics/Muralha/Muralha_artefacts/Release/VST3/Muralha.vst3`
-- `build/Airwindows/Dynamics/Muralha/Muralha_artefacts/Release/Standalone/Muralha.exe`
 
 Para instalar, copie a pasta `Muralha.vst3` para
 `C:\Program Files\Common Files\VST3\`.

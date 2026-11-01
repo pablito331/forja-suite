@@ -2,7 +2,7 @@
 
 Emulação de fita de estúdio de duas pistas construída sobre o DSP do
 **Airwindows ToTape9** (MIT), com a interface do padrão Forja. Projeto JUCE
-nativo (VST3 + Standalone), compilado a partir da raiz da suíte e usando a
+nativo (VST3), compilado a partir da raiz da suíte e usando a
 biblioteca compartilhada `forja_ui`.
 
 ## Estado
@@ -12,7 +12,7 @@ biblioteca compartilhada `forja_ui`.
 | DSP portado (`forja::dsp::LaminadorDSP`) | Implementado |
 | Paridade com o original | 65/65 casos, idêntico sample a sample em double |
 | Guarda de alocação em `process()` | Passa |
-| Projeto JUCE (VST3 + Standalone) | Compila; UI conferida no Standalone |
+| Projeto JUCE (VST3) | Compila; UI conferida via Standalone local (`FORJA_STANDALONE=ON`) |
 | Painel FUNDAMENTOS | Implementado |
 | Validação em host (REAPER etc.) | Pendente |
 
@@ -86,13 +86,12 @@ Desvios do adaptador, todos documentados no `FUNDAMENTOS`:
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config Release --target Laminador_VST3 Laminador_Standalone
+cmake --build build --config Release --target Laminador_VST3
 ```
 
 Artefatos:
 
 - `build/Airwindows/Tape/Laminador/Laminador_artefacts/Release/VST3/Laminador.vst3`
-- `build/Airwindows/Tape/Laminador/Laminador_artefacts/Release/Standalone/Laminador.exe`
 
 ## Licença e créditos
 

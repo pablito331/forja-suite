@@ -1,6 +1,6 @@
 # ForjaRack — rack em cadeia estilo Série 500 com módulos Airwindows MIT
 
-Plugin VST3 + Standalone da suíte **Forja** e primeira entrega da base
+Plugin VST3 da suíte **Forja** e primeira entrega da base
 `Forjarack/`. É um **rack em cadeia estilo Série 500**: oito gavetas em série,
 cada uma hospedando um adaptador **Airwindows** (MIT, Chris Johnson) já
 validado por paridade amostra a amostra na suíte. A interface das gavetas sai

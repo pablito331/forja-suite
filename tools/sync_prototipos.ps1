@@ -3,13 +3,15 @@
     Copia os binarios Release para a pasta de prototipos e regera os guias.
 
 .DESCRIPTION
-    Para cada plugin copia a pasta .vst3 inteira e o Standalone renomeado para
-    <Nome>-standalone.exe. Em seguida gera INSTALAR-FORJA.txt, um
-    INSTALAR-<FAMILIA>.txt por familia e INSTALAR-BATERIA.txt do DRUMFORGE.
+    Para cada plugin copia a pasta .vst3 inteira para a pasta de prototipos.
+    O teste e feito no VST3 dentro da DAW, entao o Standalone nao e copiado.
+    Em seguida gera INSTALAR-FORJA.txt, um INSTALAR-<FAMILIA>.txt por familia e
+    INSTALAR-BATERIA.txt do DRUMFORGE.
 
     A lista de plugins vem dos CMakeLists (forja_add_plugin / forja_add_instrument)
-    e o texto de cada um vem do README do plugin. Assim o guia acompanha a suite
-    sozinho: plugin novo entra na conta e na lista sem edicao manual.
+    de todas as bases (Airwindows, drumforge, Forjarack e Minis) e o texto de cada
+    um vem do README do plugin. Assim o guia acompanha a suite sozinho: plugin novo
+    entra na conta e na lista sem edicao manual.
 
 .PARAMETER GuidesOnly
     Nao copia binarios; apenas regera os guias a partir do que ja existe em Dest.
@@ -47,9 +49,10 @@ $familyKeyMap = @{
     'Mix'          = 'MIX'
     'Amp'          = 'AMP'
     'Bateria'      = 'BATERIA'
+    'Minis'        = 'MINIS'
 }
 $familyOrder = @('Saturacao', 'EQ', 'Dinamica', 'Channel Strip', 'Fita', 'Espaco',
-                 'Lo-Fi', 'Mix', 'Amp', 'Bateria')
+                 'Lo-Fi', 'Mix', 'Amp', 'Bateria', 'Minis')
 
 function ConvertTo-AsciiText {
     param([string]$Text)
@@ -94,6 +97,7 @@ function Get-SuitePlugins {
     $manifests += Get-ChildItem -Path (Join-Path $Root "Airwindows\*\*\CMakeLists.txt") -ErrorAction SilentlyContinue
     $manifests += Get-ChildItem -Path (Join-Path $Root "drumforge\*\CMakeLists.txt") -ErrorAction SilentlyContinue
     $manifests += Get-ChildItem -Path (Join-Path $Root "Forjarack\*\CMakeLists.txt") -ErrorAction SilentlyContinue
+    $manifests += Get-ChildItem -Path (Join-Path $Root "Minis\*\CMakeLists.txt") -ErrorAction SilentlyContinue
 
     $found = @()
     foreach ($manifest in $manifests) {
@@ -113,8 +117,11 @@ function Get-SuitePlugins {
 
         $quoted = @([regex]::Matches($callArgs, '"([^"]*)"') | ForEach-Object { $_.Groups[1].Value })
         if ($kind -eq 'instrument') {
-            $family = 'Bateria'
-            $categories = if ($quoted.Count -ge 2) { $quoted[1] } else { 'Instrument|Drum' }
+            # Instrumento sem argumento de empresa (Drumforge) e a Bateria.
+            # Instrumentos de outras bases (MINIDRUM) trazem a familia no ultimo
+            # argumento ("Forja - Minis"), entao derivam dali em vez de cair em Bateria.
+            $family = if ($quoted.Count -ge 3 -and $quoted[2]) { $quoted[2] -replace '^Forja\s*-\s*', '' } else { 'Bateria' }
+            $categories = if ($quoted.Count -ge 2 -and $quoted[1]) { $quoted[1] } else { 'Instrument|Drum' }
         } else {
             $family = if ($quoted.Count -ge 3) { $quoted[2] -replace '^Forja\s*-\s*', '' } else { 'Forja' }
             $categories = if ($quoted.Count -ge 2) { $quoted[1] } else { 'Fx' }
@@ -149,6 +156,7 @@ function Get-SuitePlugins {
         $base = 'airwindows'
         if ($manifest.FullName -match '\\drumforge\\') { $base = 'drumforge' }
         if ($manifest.FullName -match '\\Forjarack\\') { $base = 'forjarack' }
+        if ($manifest.FullName -match '\\Minis\\') { $base = 'minis' }
 
         # Titulos do README as vezes comecam em minuscula ("de-esser dinamico").
         if ($description.Length -gt 1 -and $description[0] -cmatch '[a-z]') {
@@ -188,16 +196,9 @@ if (-not $GuidesOnly -and -not $Verify) {
         $copied++
     }
 
-    $standalones = Get-ChildItem -Path $BuildDir -Recurse -Directory -Filter "Standalone" |
-        Where-Object { $_.FullName -match "_artefacts.Release" }
-
-    foreach ($dir in $standalones) {
-        Get-ChildItem $dir.FullName -Filter *.exe | ForEach-Object {
-            $target = Join-Path $Dest ("{0}-standalone.exe" -f $_.BaseName)
-            Copy-Item $_.FullName $target -Force
-            $copied++
-        }
-    }
+    # O Standalone saiu do build: remove os .exe legados que ainda estejam na pasta.
+    $stale = @(Get-ChildItem $Dest -Filter *-standalone.exe -ErrorAction SilentlyContinue)
+    foreach ($exe in $stale) { Remove-Item $exe.FullName -Force }
 
     Write-Output ("{0} binarios copiados para {1}" -f $copied, $Dest)
 }
@@ -209,10 +210,9 @@ foreach ($plugin in $notBuilt) {
 }
 if ($installed.Count -eq 0) { throw "nenhum .vst3 encontrado em $Dest" }
 
-$standaloneCount = @(Get-ChildItem $Dest -Filter *-standalone.exe -ErrorAction SilentlyContinue).Count
 $airwindows = @($installed | Where-Object { $_.Base -eq 'airwindows' })
 $instruments = @($installed | Where-Object { $_.Base -ne 'airwindows' })
-$ownForja = @($installed | Where-Object { $_.Base -in @('drumforge', 'forjarack') })
+$ownForja = @($installed | Where-Object { $_.Base -in @('drumforge', 'forjarack', 'minis') })
 $drumforge = @($installed | Where-Object { $_.Base -eq 'drumforge' })
 
 $families = @()
@@ -239,12 +239,12 @@ if (-not $Verify) {
     $lines = @($title, ('=' * $title.Length), '',
         'Gerado por tools/sync_prototipos.ps1 a partir do CMake e do build.',
         'Nao edite a mao: rode o script para atualizar.', '',
-        ("Esta pasta contem os {0} plugins da suite Forja em VST3 e os {1}" -f $installed.Count, $standaloneCount),
-        'executaveis Standalone.')
+        ("Esta pasta contem os {0} plugins da suite Forja, cada um como pasta .vst3." -f $installed.Count),
+        'O teste e feito no VST3 dentro da DAW; nao ha mais executavel Standalone.')
 
     if ($instruments.Count -gt 0) {
         $lines += ''
-        $lines += Get-WrappedText -Text ("Sao {0} adaptacoes MIT da Airwindows (Chris Johnson) e {1} plugin de DSP proprio da Forja (bases drumforge e Forjarack): {2}." -f $airwindows.Count, $ownForja.Count, (($ownForja | ForEach-Object { $_.Product }) -join ', '))
+        $lines += Get-WrappedText -Text ("Sao {0} adaptacoes MIT da Airwindows (Chris Johnson) e {1} plugin de DSP proprio da Forja (bases drumforge, Forjarack e Minis): {2}." -f $airwindows.Count, $ownForja.Count, (($ownForja | ForEach-Object { $_.Product }) -join ', '))
     }
 
     $lines += ''
@@ -307,10 +307,11 @@ if (-not $Verify) {
     }
 
     $lines += ''
-    $lines += 'TESTE RAPIDO'
-    $lines += ('-' * 12)
-    $lines += 'Cada plugin tem um "<Nome>-standalone.exe" que abre o mesmo processamento'
-    $lines += 'fora do DAW, sem instalacao. O processamento e o mesmo do VST3.'
+    $lines += 'TESTE'
+    $lines += ('-' * 6)
+    $lines += 'O teste e feito dentro da DAW: copie a pasta .vst3 para'
+    $lines += 'C:\Program Files\Common Files\VST3\ e refaca o escaneamento. Nao ha mais'
+    $lines += 'executavel Standalone (a suite entrega so o VST3).'
 
     $lines += ''
     $lines += 'FUNDAMENTOS'
@@ -377,14 +378,6 @@ if (-not $Verify) {
         $lines += '      C:\Program Files\Common Files\VST3\'
         $lines += '3. Nao copie o arquivo .vst3 de dentro de Contents\x86_64-win.'
         $lines += '4. Abra a DAW e refaca o escaneamento.'
-
-        $withExe = @($family.Plugins | Where-Object { Test-Path (Join-Path $Dest ("{0}-standalone.exe" -f $_.Product)) })
-        if ($withExe.Count -gt 0) {
-            $lines += ''
-            $lines += 'TESTE RAPIDO'
-            $lines += ('-' * 12)
-            $lines += Get-WrappedText -Text ((($withExe | ForEach-Object { "$($_.Product)-standalone.exe" }) -join ', ') + ' abrem os mesmos plugins fora do DAW, sem instalacao.')
-        }
 
         $lines += ''
         $lines += 'O QUE CADA UM FAZ'
@@ -494,12 +487,7 @@ if (-not $Verify) {
         $lines += 'O preview de loops segue o BPM do host (SYNC DAW) ou o BPM manual de'
         $lines += '40 a 240. ARRASTAR MIDI entrega o arquivo selecionado para a DAW.'
         $lines += ''
-        $lines += 'TESTE RAPIDO'
-        $lines += ('-' * 12)
-        if ($battery | Where-Object { Test-Path (Join-Path $Dest ("{0}-standalone.exe" -f $_.Product)) }) {
-            $lines += 'Drumforge-standalone.exe abre o instrumento fora do DAW, sem instalacao.'
-            $lines += ''
-        }
+        $lines += 'O teste e feito dentro da DAW (VST3); nao ha executavel Standalone.'
         $lines += 'FUNDAMENTOS'
         $lines += ('-' * 11)
         $lines += 'O botao FUNDAMENTOS abre o painel nativo com o que o plugin faz, como'
@@ -588,8 +576,8 @@ foreach ($ref in [regex]::Matches($readme, 'docs/images/([\w.\-]+\.png)')) {
 if (-not $Verify -and $written.Count -gt 0) {
     Write-Output ("Guias gerados: " + ($written -join ', '))
 }
-Write-Output ("{0} plugins ({1} Airwindows + {2} Forja) | {3} .vst3 | {4} standalones" -f
-    $installed.Count, $airwindows.Count, $ownForja.Count, $installed.Count, $standaloneCount)
+Write-Output ("{0} plugins ({1} Airwindows + {2} Forja) | {3} .vst3" -f
+    $installed.Count, $airwindows.Count, $ownForja.Count, $installed.Count)
 
 if ($problems.Count -eq 0) {
     Write-Output "DOCS OK: README, AGENTS e capturas batem com o codigo."

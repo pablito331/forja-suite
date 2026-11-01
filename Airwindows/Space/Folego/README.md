@@ -3,7 +3,7 @@
 Reverb de ambiente pequeno com reflexões iniciais 3×3, corpo de seis vias por
 canal e dois estágios de subamostragem por Bézier, construído sobre o DSP do
 **Airwindows kStation** (MIT), com a interface do padrão Forja. Projeto JUCE
-nativo (VST3 + Standalone), compilado a partir da raiz da suíte e usando a
+nativo (VST3), compilado a partir da raiz da suíte e usando a
 biblioteca compartilhada `forja_ui`.
 
 ## Estado
@@ -13,7 +13,7 @@ biblioteca compartilhada `forja_ui`.
 | DSP portado (`forja::dsp::FolegoDSP`) | Implementado |
 | Paridade com o original | 49/49 casos, idêntico sample a sample em double |
 | Guarda de alocação em `process()` | Passa |
-| Projeto JUCE (VST3 + Standalone) | Compila; UI conferida no Standalone |
+| Projeto JUCE (VST3) | Compila; UI conferida via Standalone local (`FORJA_STANDALONE=ON`) |
 | Painel FUNDAMENTOS | Implementado |
 | Validação em host (REAPER etc.) | Pendente |
 
@@ -67,13 +67,12 @@ Desvios do adaptador:
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config Release --target Folego_VST3 Folego_Standalone
+cmake --build build --config Release --target Folego_VST3
 ```
 
 Artefatos:
 
 - `build/Airwindows/Space/Folego/Folego_artefacts/Release/VST3/Folego.vst3`
-- `build/Airwindows/Space/Folego/Folego_artefacts/Release/Standalone/Folego.exe`
 
 ## Licença e créditos
 

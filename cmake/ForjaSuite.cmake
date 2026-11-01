@@ -1,8 +1,10 @@
 # LTO acelera o áudio e é o padrão local. A CI desliga para caber no tempo do runner.
 option(FORJA_LTO "Enable link-time optimization for plugin targets" ON)
 
-# Os Standalone são úteis no desenvolvimento local, mas não vão nos pacotes de release.
-option(FORJA_STANDALONE "Build standalone plugin targets" ON)
+# O teste é feito no VST3 dentro da DAW, entao o Standalone nao faz parte do
+# build por padrao. Ligue ON apenas quando precisar abrir um plugin sem DAW
+# (por exemplo, para capturar a UI). Os pacotes de release nunca incluem Standalone.
+option(FORJA_STANDALONE "Build standalone plugin targets" OFF)
 
 # Configuração comum a plugins de efeito e instrumentos (Drumforge).
 function(forja_configure_target target_name source_dir)

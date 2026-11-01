@@ -5,7 +5,7 @@ Ele explica de onde vem o DSP, qual padrão a suíte segue e o que **não** pode
 
 ## O que é a Forja
 
-Forja é uma suíte de 35 plugins VST3 + Standalone em JUCE 9 (C++20) para Windows,
+Forja é uma suíte de 35 plugins VST3 em JUCE 9 (C++20) para Windows,
 macOS e Linux, organizada em bases de DSP. A base `Airwindows/` adapta plugins da
 [Airwindows](https://www.airwindows.com/vsts/) de **Chris Johnson**, licenciado em MIT.
 A base `drumforge/` é a de DSP original: o **DRUMFORGE**, sampler de bateria com engine
@@ -153,14 +153,16 @@ cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-- Binários: `build/Airwindows/<Família>/<Plugin>/<Plugin>_artefacts/Release/{VST3,Standalone}/`.
+- Binários: `build/Airwindows/<Família>/<Plugin>/<Plugin>_artefacts/Release/VST3/`.
   O DRUMFORGE usa `build/drumforge/Drumforge/Drumforge_artefacts/Release/`.
 - Testes: `build/Tests/Release/forja_parity_<slug>.exe`, `forja_alloc_guard.exe` e
   `forja_drumforge_engine.exe`.
 - Um target isolado: `cmake --build build --config Release --target Cinzel_VST3` (ou
-  `Drumforge_Standalone`).
+  `Drumforge_VST3`).
 - `FORJA_LTO` (padrão `ON`) liga o LTO dos plugins; a CI configura com `OFF` por tempo de
   runner. Não remova a opção.
+- `FORJA_STANDALONE` (padrão `OFF`): o build da suíte é VST3-only. Ligue `ON` apenas para
+  abrir um plugin sem DAW (por exemplo, para capturar a UI); os pacotes nunca incluem Standalone.
 - CI/release: `.github/workflows/release.yml` compila os três SOs em tags `v*`.
 
 ## Como adicionar um plugin
@@ -189,16 +191,16 @@ Siga `docs/NOVO-PLUGIN.md`. Resumo:
 ## Estado conhecido
 
 - Paridade verde nos 31 modelos; `alloc_guard` PASS; latências medidas.
-- DRUMFORGE compila como VST3 e Standalone; `forja_drumforge_engine` PASS (camadas,
+- DRUMFORGE compila como VST3; `forja_drumforge_engine` PASS (camadas,
   round-robin, choke, roubo de voz, multi-out, mute/solo, MIDI, latência 0, bypass,
   zero alocação, importação de pasta, biblioteca e preview de loops). As três abas
   (KITS, MIXER, LOOPS) estão implementadas; a validação em host segue pendente.
-- FORJARACK compila como VST3 e Standalone; `forja_forjarack_engine` PASS (catálogo
+- FORJARACK compila como VST3; `forja_forjarack_engine` PASS (catálogo
   append-only, encadeamento das gavetas, bypass/solo por gaveta, seção master).
-- MINIDRUM compila como VST3 e Standalone; `forja_minidrum` PASS (carga/adoção de kit,
+- MINIDRUM compila como VST3; `forja_minidrum` PASS (carga/adoção de kit,
   volume no trim do master, premix `.dfkit`, latência 0, bypass, medidor, troca com reap,
   rejeição de kit inválido, zero alocação e registro da gaveta instrument no ForjaRack).
-- MINISAT compila como VST3 e Standalone; `forja_minisat` PASS (mapa drive→pad bit-exato
+- MINISAT compila como VST3; `forja_minisat` PASS (mapa drive→pad bit-exato
   com o adaptador do BRASA em seis drives, monotonia, crest caindo com o drive, rampa de
   bypass, latência 0 medida por impulso, zero alocação em estéreo e mono e registro da
   gaveta `minisat` no ForjaRack). O adaptador compartilhado `forja::BrasaDSP` entrou no

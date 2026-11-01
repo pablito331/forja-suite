@@ -2,7 +2,7 @@
 
 Compressor de impacto com ataque e soltura separados, construído sobre o DSP do
 **Airwindows Pop2** (MIT) com a interface do padrão Forja. Projeto JUCE nativo
-(VST3 + Standalone) compilado a partir da raiz da suíte, usando a biblioteca
+(VST3) compilado a partir da raiz da suíte, usando a biblioteca
 compartilhada `forja_ui`.
 
 ## Estado
@@ -12,7 +12,7 @@ compartilhada `forja_ui`.
 | DSP portado (`forja::dsp::MalhoDSP`) | Implementado |
 | Paridade com o original | 35/35 casos, idêntico sample a sample em double |
 | Guarda de alocação em `process()` | Passa |
-| Projeto JUCE (VST3 + Standalone) | Compila; UI conferida no Standalone |
+| Projeto JUCE (VST3) | Compila; UI conferida via Standalone local (`FORJA_STANDALONE=ON`) |
 | Painel FUNDAMENTOS | Implementado |
 | Validação em host (REAPER etc.) | Pendente |
 
@@ -76,13 +76,12 @@ A partir da raiz da suíte:
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config Release --target Malho_VST3 Malho_Standalone
+cmake --build build --config Release --target Malho_VST3
 ```
 
 Artefatos:
 
 - `build/Airwindows/Dynamics/Malho/Malho_artefacts/Release/VST3/Malho.vst3`
-- `build/Airwindows/Dynamics/Malho/Malho_artefacts/Release/Standalone/Malho.exe`
 
 Para instalar, copie a pasta `Malho.vst3` para
 `C:\Program Files\Common Files\VST3\`.

@@ -3,7 +3,7 @@
 Sampler de bateria de 16 pads com camadas de velocity, round-robin, choke, mesa de mixagem
 por canal e multi-out de 5 barramentos. É a primeira base de **DSP próprio** da Forja: o
 engine, o mixer, o limiter e a interface foram escritos para a suíte, sem paridade com a
-Airwindows. Projeto JUCE nativo (VST3 + Standalone), compilado a partir da raiz da suíte
+Airwindows. Projeto JUCE nativo (VST3), compilado a partir da raiz da suíte
 com `forja_add_instrument` e a biblioteca compartilhada `forja_ui`.
 
 ## Estado

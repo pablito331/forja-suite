@@ -2,7 +2,7 @@
 
 Compressor vari-mu com densidade e caráter, construído sobre o DSP do
 **Airwindows Pressure5** (MIT) com a interface do padrão Forja. Projeto JUCE
-nativo (VST3 + Standalone) compilado a partir da raiz da suíte, usando a
+nativo (VST3) compilado a partir da raiz da suíte, usando a
 biblioteca compartilhada `forja_ui`.
 
 ## Estado
@@ -12,7 +12,7 @@ biblioteca compartilhada `forja_ui`.
 | DSP portado (`forja::dsp::PrensaDSP`) | Implementado |
 | Paridade com o original | 39/39 casos, idêntico sample a sample em double |
 | Guarda de alocação em `process()` | Passa |
-| Projeto JUCE (VST3 + Standalone) | Compila; UI conferida no Standalone |
+| Projeto JUCE (VST3) | Compila; UI conferida via Standalone local (`FORJA_STANDALONE=ON`) |
 | Painel FUNDAMENTOS | Implementado |
 | Validação em host (REAPER etc.) | Pendente |
 
@@ -77,13 +77,12 @@ A partir da raiz da suíte:
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config Release --target Prensa_VST3 Prensa_Standalone
+cmake --build build --config Release --target Prensa_VST3
 ```
 
 Artefatos:
 
 - `build/Airwindows/Dynamics/Prensa/Prensa_artefacts/Release/VST3/Prensa.vst3`
-- `build/Airwindows/Dynamics/Prensa/Prensa_artefacts/Release/Standalone/Prensa.exe`
 
 Para instalar, copie a pasta `Prensa.vst3` para
 `C:\Program Files\Common Files\VST3\`.

@@ -2,7 +2,7 @@
 
 Condicionador de DI para guitarra e baixo, construído sobre o DSP do
 **Airwindows ChimeyDeluxe** (MIT), com a interface do padrão Forja. Projeto
-JUCE nativo (VST3 + Standalone), compilado a partir da raiz da suíte e usando a
+JUCE nativo (VST3), compilado a partir da raiz da suíte e usando a
 biblioteca compartilhada `forja_ui`.
 
 ## Estado
@@ -12,7 +12,7 @@ biblioteca compartilhada `forja_ui`.
 | DSP portado (`forja::dsp::DeluxeDSP`) | Implementado |
 | Paridade com o original | 46/46 casos, idêntico sample a sample em double |
 | Guarda de alocação em `process()` | Passa |
-| Projeto JUCE (VST3 + Standalone) | Compila; UI conferida no Standalone |
+| Projeto JUCE (VST3) | Compila; UI conferida via Standalone local (`FORJA_STANDALONE=ON`) |
 | Painel FUNDAMENTOS | Implementado |
 | Validação em host (REAPER etc.) | Pendente |
 
@@ -67,13 +67,12 @@ Desvios do adaptador:
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config Release --target Deluxe_VST3 Deluxe_Standalone
+cmake --build build --config Release --target Deluxe_VST3
 ```
 
 Artefatos:
 
 - `build/Airwindows/Amps/Deluxe/Deluxe_artefacts/Release/VST3/Deluxe.vst3`
-- `build/Airwindows/Amps/Deluxe/Deluxe_artefacts/Release/Standalone/Deluxe.exe`
 
 ## Licença e créditos
 

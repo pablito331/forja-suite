@@ -1,8 +1,8 @@
 # BRASA — Saturador de válvula (Forja)
 
 Plugin de saturação de válvula com DSP do **Airwindows Tube2** (MIT) e interface
-no padrão visual Forja. Este diretório contém o projeto nativo JUCE (VST3 +
-Standalone). O protótipo web com o mesmo DSP e a mesma UI está em
+no padrão visual Forja. Este diretório contém o projeto nativo JUCE (VST3). O
+protótipo web com o mesmo DSP e a mesma UI está em
 `../../Brasa-Concept-v1/`. O chrome visual (tema, cards, knobs, medidores, topo,
 status e painel Fundamentos) vem da biblioteca compartilhada `forja_ui`, em
 `../../Forja/`.
@@ -13,7 +13,7 @@ status e painel Fundamentos) vem da biblioteca compartilhada `forja_ui`, em
 | --- | --- |
 | Protótipo web (HTML/CSS + AudioWorklet) | Implementado e validado |
 | DSP portado para C++ (`forja::BrasaDSP`) | Implementado e conferido contra o protótipo (8 casos, resultado idêntico) |
-| Projeto JUCE (VST3 + Standalone) | Compila; UI aberta e conferida no Standalone |
+| Projeto JUCE (VST3) | Compila; UI aberta e conferida (Standalone local via `FORJA_STANDALONE=ON`) |
 | Validação em host (REAPER etc.) | Pendente |
 | Métricas/CLIP, curva de transferência, válvula animada | Implementados |
 | Painel FUNDAMENTOS (operação, controles, origem/licença) | Implementado |
@@ -89,7 +89,6 @@ cmake --build build --config Release
 Artefatos:
 
 - `build/Airwindows/Saturation/Brasa/Brasa_artefacts/Release/VST3/Brasa.vst3`
-- `build/Airwindows/Saturation/Brasa/Brasa_artefacts/Release/Standalone/Brasa.exe`
 
 Para instalar o VST3, copie a pasta `Brasa.vst3` inteira para
 `C:\Program Files\Common Files\VST3\`.

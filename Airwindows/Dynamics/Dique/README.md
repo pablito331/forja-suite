@@ -1,7 +1,7 @@
 # DIQUE — Clipe de pico extremo (FinalClip)
 
 Proteção de picos extremos construída sobre o DSP do **Airwindows FinalClip**
-(MIT) com a interface do padrão Forja. Projeto JUCE nativo (VST3 + Standalone)
+(MIT) com a interface do padrão Forja. Projeto JUCE nativo (VST3)
 compilado a partir da raiz da suíte, usando a biblioteca compartilhada `forja_ui`.
 
 O DIQUE **não é um limitador de 0 dBFS**: o FinalClip só age acima de
@@ -16,7 +16,7 @@ ultrapassem +4,18 dBFS.
 | DSP portado (`forja::dsp::DiqueDSP`) | Implementado |
 | Paridade com o original | 17/17 casos, idêntico sample a sample em double |
 | Guarda de alocação em `process()` | Passa |
-| Projeto JUCE (VST3 + Standalone) | Compila; UI conferida no Standalone |
+| Projeto JUCE (VST3) | Compila; UI conferida via Standalone local (`FORJA_STANDALONE=ON`) |
 | Painel FUNDAMENTOS | Implementado |
 | Validação em host (REAPER etc.) | Pendente |
 
@@ -87,13 +87,12 @@ A partir da raiz da suíte:
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config Release --target Dique_VST3 Dique_Standalone
+cmake --build build --config Release --target Dique_VST3
 ```
 
 Artefatos:
 
 - `build/Airwindows/Dynamics/Dique/Dique_artefacts/Release/VST3/Dique.vst3`
-- `build/Airwindows/Dynamics/Dique/Dique_artefacts/Release/Standalone/Dique.exe`
 
 Para instalar, copie a pasta `Dique.vst3` para
 `C:\Program Files\Common Files\VST3\`.

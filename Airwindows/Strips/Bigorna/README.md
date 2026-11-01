@@ -2,7 +2,7 @@
 
 Channel strip com EQ de três bandas, filtros passa-baixos/passa-altos, compressor
 e saída Spiral, construído sobre o DSP do **Airwindows CStrip2** (MIT), com a
-interface do padrão Forja. Projeto JUCE nativo (VST3 + Standalone), compilado a
+interface do padrão Forja. Projeto JUCE nativo (VST3), compilado a
 partir da raiz da suíte e usando a biblioteca compartilhada `forja_ui`.
 
 ## Estado
@@ -12,7 +12,7 @@ partir da raiz da suíte e usando a biblioteca compartilhada `forja_ui`.
 | DSP portado (`forja::dsp::BigornaDSP`) | Implementado |
 | Paridade com o original | 69/69 casos, idêntico sample a sample em double |
 | Guarda de alocação em `process()` | Passa |
-| Projeto JUCE (VST3 + Standalone) | Compila; UI conferida no Standalone |
+| Projeto JUCE (VST3) | Compila; UI conferida via Standalone local (`FORJA_STANDALONE=ON`) |
 | Painel FUNDAMENTOS | Implementado |
 | Validação em host (REAPER etc.) | Pendente |
 
@@ -70,13 +70,12 @@ interna é ±6 dB (`A·12−6`); o adaptador mantém a lei.
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config Release --target Bigorna_VST3 Bigorna_Standalone
+cmake --build build --config Release --target Bigorna_VST3
 ```
 
 Artefatos:
 
 - `build/Airwindows/Strips/Bigorna/Bigorna_artefacts/Release/VST3/Bigorna.vst3`
-- `build/Airwindows/Strips/Bigorna/Bigorna_artefacts/Release/Standalone/Bigorna.exe`
 
 ## Licença e créditos
 

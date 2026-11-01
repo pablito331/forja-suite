@@ -219,11 +219,13 @@ cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-- Abra o Standalone: layout, knobs, medidores, bypass, CLIP, status, FUNDAMENTOS (abrir,
-  rolar até o fim, fechar por botão/Esc/clique fora).
+- Para conferir a UI sem DAW, configure com `-DFORJA_STANDALONE=ON` (o build padrão é
+  VST3-only) e abra o Standalone: layout, knobs, medidores, bypass, CLIP, status,
+  FUNDAMENTOS (abrir, rolar até o fim, fechar por botão/Esc/clique fora).
 - Redimensione a janela e confira que o layout escala sem cortes.
 - Confira a latência medida contra `setLatencySamples`.
-- Atualize `Documents/prototipos` só depois do build final.
+- Rode `tools/sync_prototipos.ps1` para atualizar `Documents/prototipos` (o usuário testa
+  o VST3 ali); feche a DAW antes, porque ela trava as pastas `.vst3` copiadas.
 
 ## Dicas específicas
 

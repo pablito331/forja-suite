@@ -4,8 +4,8 @@
 quatro entregas da Forja — o sampler original **DRUMFORGE**, o rack **FORJARACK** e os minis
 **MINIDRUM** (engine do Drumforge) e **MINISAT** (adaptador do BRASA) — com interface nativa
 do padrão Forja (sem WebView), painel FUNDAMENTOS em português e validação de paridade amostra
-a amostra contra o código original nas adaptações Airwindows. O build local também gera
-Standalone opcionais para desenvolvimento.
+a amostra contra o código original nas adaptações Airwindows. A suíte entrega o VST3;
+o build é VST3-only por padrão (o Standalone só aparece se você ligar `FORJA_STANDALONE=ON`).
 
 A suíte cobre EQ, dinâmica, channel strips, fita, espaço, lo-fi, uma linha de one-knobs de
 mixagem e amps/gabinetes para guitarra, baixo e DI. Cada plugin tem README próprio com
@@ -38,7 +38,8 @@ Cada release publica três pacotes com os VST3 e um guia de instalação:
 | macOS | `Forja-<versão>-macos-universal.zip` | VST3 universais (Apple Silicon + Intel) |
 | Linux | `Forja-<versão>-linux-x64.zip` | VST3 x64 e `LEIA-ME.txt` |
 
-Os pacotes não incluem Standalone; eles continuam disponíveis no build local.
+Os pacotes trazem apenas o VST3. O build é VST3-only por padrão; o Standalone não é
+mais gerado (ligue `FORJA_STANDALONE=ON` na configuração se precisar abrir um plugin sem DAW).
 
 Os binários também ficam em `C:\Users\pablo\Documents\prototipos` neste ambiente de
 desenvolvimento.
@@ -47,14 +48,14 @@ desenvolvimento.
 
 | Item | Estado |
 | --- | --- |
-| Targets locais (`<Nome>_VST3`, `<Nome>_Standalone`) | 35 plugins · 70 binários |
+| Targets locais (`<Nome>_VST3`) | 35 plugins · 35 binários VST3 |
 | Paridade com os originais Airwindows | Verde em todos os executáveis |
 | Guarda de alocação em `process()` | PASS (adaptadores; DRUMFORGE, FORJARACK, MINIDRUM e MINISAT cobertos por testes de engine próprios) |
 | Latência por impulso | Medida em todos os modelos |
 | Interface e FUNDAMENTOS | Conferidos por captura DPI-aware nas 31 adaptações; capturas dos produtos Forja pendentes |
 | UIs redimensionáveis | 35 editores com aspecto fixo; os 31 da Airwindows conferidos em 100% e 150% |
 | Builds Windows/macOS/Linux | GitHub Actions em tags `v*` |
-| Artefatos em `Documents/prototipos` | Espelho local com 31 Airwindows + DRUMFORGE + FORJARACK; MINIDRUM e MINISAT ainda não copiados |
+| Artefatos em `Documents/prototipos` | 35 `.vst3` espelhados (31 Airwindows + DRUMFORGE + FORJARACK + MINIDRUM + MINISAT) |
 | Capturas da interface | 35 imagens em `docs/images/` |
 | Gerador de plugins | `new_plugin.ps1` gera plugin que compila de imediato |
 | DRUMFORGE (sampler) | Engine, mesa, multi-out e abas KITS/MIXER/LOOPS prontos |
@@ -286,7 +287,7 @@ ctest --test-dir build --output-on-failure
 Cada plugin também compila sozinho, por exemplo:
 
 ```powershell
-cmake --build build --config Release --target Cinzel_VST3 Cinzel_Standalone
+cmake --build build --config Release --target Cinzel_VST3
 ```
 
 Os alvos ficam em `build/Airwindows/<Família>/<Plugin>/<Plugin>_artefacts/Release/`. O
@@ -346,9 +347,9 @@ ficam em `C:\Users\pablo\Documents\prototipos`:
 - `INSTALAR-BRASA.txt`, `INSTALAR-TEMPERA.txt`, `INSTALAR-PRENSA.txt`,
   `INSTALAR-MALHO.txt` — os quatro individuais originais.
 
-Para gerar Standalone localmente, configure sem `-DFORJA_STANDALONE=OFF`; cada
-`<Nome>_Standalone` abre o plugin sem instalar. A CI desliga esses targets para não
-publicá-los.
+O teste é feito no VST3 dentro da DAW, então o build não gera Standalone por padrão.
+Para abrir um plugin sem DAW (por exemplo, para capturar a UI), configure com
+`-DFORJA_STANDALONE=ON`. Os pacotes de release nunca incluem Standalone.
 
 ## Repositório e novos plugins
 

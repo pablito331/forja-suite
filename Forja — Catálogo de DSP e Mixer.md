@@ -430,6 +430,14 @@ soltos, para o teclado ao vivo tocar sem exigir fonte de áudio na faixa. Um **l
 na seção MASTER acende em todo bloco que chega com MIDI (nota, CC ou pitch bend) para
 qualquer gaveta — o medidor de ENTRADA só mostra áudio, então sem esse led não havia
 como separar "o teclado não chega à faixa" de "chega e o módulo não gera voz".
+A costura que faltava é coberta por `forjarack_vst3_midi`
+(`Tests/Source/forjarack_vst3_midi.cpp`): **carrega o `.vst3` real do build pelo formato
+VST3 do JUCE**, como uma DAW faz, e verifica que o wrapper anuncia a fila de eventos de
+entrada, que o layout de instrumento é aceito, que sem nota a saída é silêncio e que a
+nota do host atravessa `data.inputEvents` e faz o CANIVETE soar. Sem bundle ou sem
+soundfont na biblioteca o teste se declara SKIP (exit 0). Foi exatamente essa camada que
+os outros testes não enxergavam — todos chamam `processBlock` no objeto C++ e por isso
+ficaram verdes com o plugin mudo na DAW.
 
 **Pendências, em ordem:**
 
@@ -443,13 +451,17 @@ como separar "o teclado não chega à faixa" de "chega e o módulo não gera voz
       enquanto o externo toca — o contrato já tem teste (`testDrawerFiles()`), mas o
       FileChooser depende de sessão gráfica. Na gaveta CANIVETE, conferir também a
       fileira INSTRUMENTO (`testDrawerInstruments()`) e o toque do banco pela trilha
-      do span (`testDrawerAudio()`, verde no CI). O teclado ao vivo dentro do rack já é
-      verde **em código** de ponta a ponta (`forja_forjarack_processor`: processador real,
-      MIDI do host, voz audível e CANIVETE com o bank do usuário); falta a conferência no
-      host, que exige recarregar o binário — no Windows, fechar o projeto não descarrega
-      o `.vst3`, é preciso fechar o programa inteiro e reinserir o plugin numa faixa nova.
-      O led MIDI do MASTER diz de que lado está o problema: aceso = o MIDI chega (culpa de
-      roteamento/monitoramento da faixa), apagado = a faixa não está recebendo o teclado.
+      do span (`testDrawerAudio()`, verde no CI). O teclado ao vivo dentro do rack tinha
+      uma causa de silêncio **fora do C++**: `forja_add_plugin` declarava
+      `NEEDS_MIDI_INPUT FALSE`, a macro `JucePlugin_WantsMidiInput` do wrapper VST3 ficava
+      em `0`, o plugin não anunciava o barramento `kEvent` e o wrapper pulava a conversão
+      `data.inputEvents` → `MidiBuffer` — `acceptsMidi()` não tem efeito nenhum no VST3.
+      O rack agora opta por `FORJA_WANTS_MIDI_INPUT` com a categoria `Instrument;Fx`, e a
+      costura está travada por `forjarack_vst3_midi` (validada por mutação: com a flag
+      desligada o pico cai a `0.0000`). O que resta no host é o de sempre: automação,
+      PDC e monitoramento da faixa. O led MIDI do MASTER continua sendo o diagnóstico:
+      aceso = o MIDI chega (culpa de roteamento/monitoramento da faixa), apagado = a
+      faixa não está recebendo o teclado.
 - [ ] Implementar o DRUMFORGE no host: automação dos 249 parâmetros, multi-out em DAW,
       bypass, preview sincronizado e arrasto de loop para a timeline; aqui não há DAW,
       então segue pendente como nos demais.

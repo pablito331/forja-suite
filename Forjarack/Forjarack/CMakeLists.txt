@@ -1,4 +1,13 @@
-forja_add_plugin(Forjarack "ForjaRack" Fjrk com.forja.rack ${CMAKE_CURRENT_SOURCE_DIR}/Source "Fx" "Forja - Rack")
+# O rack e hibrido: cadeia de FX (entrada de audio) E gavetas-instrumento (MIDI
+# do teclado). FORJA_WANTS_MIDI_INPUT liga a macro JucePlugin_WantsMidiInput do
+# wrapper VST3, que anuncia a fila de eventos e converte as notas em MidiBuffer;
+# sem ela o processBlock recebe MIDI vazio no VST3 e os slots-instrumento ficam
+# mudos. A categoria soma Instrument ao Fx de sempre para as DAWs que filtram
+# instrumento de efeito no navegador. O JUCE espera lista CMake (";") e monta o
+# "|" sozinho: passar "Instrument|Fx" sai duplicado ("Fx|Instrument|Fx").
+set(FORJA_WANTS_MIDI_INPUT TRUE)
+forja_add_plugin(Forjarack "ForjaRack" Fjrk com.forja.rack ${CMAKE_CURRENT_SOURCE_DIR}/Source "Instrument;Fx" "Forja - Rack")
+unset(FORJA_WANTS_MIDI_INPUT)
 
 target_sources(Forjarack PRIVATE
     Source/PluginProcessor.cpp

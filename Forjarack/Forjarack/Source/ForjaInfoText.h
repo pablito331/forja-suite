@@ -69,6 +69,9 @@ inline forja::ui::ForjaInfo makeForjaInfo()
                "como toca no plugin solto: coloque o ForjaRack numa faixa de "
                "instrumento e escolha o modulo na gaveta. Mantenha a entrada "
                "ligada apenas quando quiser encadear efeitos sobre audio."),
+            u ("Para as DAWs que separam efeito de instrumento, o ForjaRack aparece "
+               "nas duas listas: a cadeia de FX continua funcionando sobre o "
+               "audio da faixa e as gavetas de instrumento recebem o MIDI."),
             u ("O led MIDI na secao MASTER acende quando um bloco chega com MIDI "
                "(nota, CC ou pitch bend) para qualquer gaveta. Ele existe porque o "
                "medidor de ENTRADA so mostra audio: numa faixa de instrumento a "

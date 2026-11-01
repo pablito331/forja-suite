@@ -39,6 +39,14 @@ endfunction()
 # Efeito: recebe áudio do host, não aceita MIDI.
 # O host exibe "Produto (Fabricante)"; o fabricante carrega a família para
 # que a categoria apareça no navegador de plugins da DAW.
+#
+# NEEDS_MIDI_INPUT nao e decorativo: ela liga a macro JucePlugin_WantsMidiInput
+# do wrapper VST3, que (a) anuncia o barramento kEvent de entrada de MIDI ao
+# host e (b) guarda a conversao data.inputEvents -> MidiBuffer dentro de
+# process(). Com a macro em 0 o plugin recebe um MidiBuffer SEMPRE vazio, e o
+# acceptsMidi() do C++ nao tem efeito nenhum no VST3. Um hibrido (o ForjaRack:
+# cadeia de FX + gavetas-instrumento) precisa das duas entradas, entao seta
+# FORJA_WANTS_MIDI_INPUT antes de chamar o helper.
 function(forja_add_plugin target_name product_name plugin_code bundle_id source_dir)
     set(categories "Fx")
     if(ARGC GREATER 5 AND NOT "${ARGV5}" STREQUAL "")
@@ -50,6 +58,11 @@ function(forja_add_plugin target_name product_name plugin_code bundle_id source_
         set(company "${ARGV6}")
     endif()
 
+    set(wants_midi_input FALSE)
+    if(FORJA_WANTS_MIDI_INPUT)
+        set(wants_midi_input TRUE)
+    endif()
+
     set(formats VST3)
     if(FORJA_STANDALONE)
         list(APPEND formats Standalone)
@@ -59,7 +72,7 @@ function(forja_add_plugin target_name product_name plugin_code bundle_id source_
         COMPANY_NAME "${company}"
         BUNDLE_ID ${bundle_id}
         IS_SYNTH FALSE
-        NEEDS_MIDI_INPUT FALSE
+        NEEDS_MIDI_INPUT ${wants_midi_input}
         NEEDS_MIDI_OUTPUT FALSE
         IS_MIDI_EFFECT FALSE
         EDITOR_WANTS_KEYBOARD_FOCUS FALSE

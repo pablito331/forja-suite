@@ -280,6 +280,36 @@ target_link_libraries(forja_forjarack_processor PRIVATE
 
 add_test(NAME forjarack_processor COMMAND forja_forjarack_processor)
 
+# Costura do WRAPPER VST3: carrega o .vst3 real do build pelo formato VST3 do
+# JUCE (o caminho da DAW) e espera voz da gaveta CANIVETE so quando as notas
+# atravessam data.inputEvents. Nao compila nada do rack: o alvo e o bundle em disco, porque
+# o que se prova aqui e a declaracao de build (NEEDS_MIDI_INPUT -> macro
+# JucePlugin_WantsMidiInput), e o C++ do plugin nao tem como esconder esse erro.
+# Sem bundle ou sem soundfont na biblioteca, SKIP com exit 0.
+add_executable(forja_forjarack_vst3_midi
+    Source/forjarack_vst3_midi.cpp)
+
+target_compile_definitions(forja_forjarack_vst3_midi PRIVATE
+    _USE_MATH_DEFINES
+    JUCE_MODAL_LOOPS_PERMITTED=1
+    JUCE_PLUGINHOST_VST3=1)
+target_compile_options(forja_forjarack_vst3_midi PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+target_compile_features(forja_forjarack_vst3_midi PRIVATE cxx_std_20)
+
+target_link_libraries(forja_forjarack_vst3_midi PRIVATE
+    juce::juce_audio_processors
+    juce::juce_audio_basics
+    juce::juce_events
+    juce::juce_graphics
+    juce::juce_gui_basics
+    juce::juce_recommended_config_flags)
+
+if(TARGET Forjarack_VST3)
+    add_dependencies(forja_forjarack_vst3_midi Forjarack_VST3)
+endif()
+
+add_test(NAME forjarack_vst3_midi COMMAND forja_forjarack_vst3_midi)
+
 # MiniDrum: o wrapper que toca o engine do Drumforge em formato mini (pequeno
 # VST e gaveta do ForjaRack). Sem paridade (DSP proprio herdado, ja coberto
 # pelo teste do engine); cobre carga adocao, volume, premix do kit, latencia,

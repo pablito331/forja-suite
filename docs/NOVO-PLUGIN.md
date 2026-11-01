@@ -266,10 +266,19 @@ O gerador `tools/new_plugin.ps1`/`.py` é específico de Airwindows (vendor, ada
 paridade). Uma base nova escreve o próprio scaffold, ou começa copiando os templates e
 removendo a etapa de vendor.
 
-**Instrumentos e multi-out:** `forja_add_plugin` hoje fixa `IS_SYNTH FALSE`,
-`NEEDS_MIDI_INPUT FALSE` e `NEEDS_MIDI_OUTPUT FALSE`, e não expõe barramentos múltiplos.
-Uma base de instrumento (como o Drumforge) precisa dessas opções no helper antes do
-primeiro target.
+**Instrumentos e multi-out:** `forja_add_plugin` fixa `IS_SYNTH FALSE` e
+`NEEDS_MIDI_OUTPUT FALSE`, e não expõe barramentos múltiplos. A entrada de MIDI é
+opt-in: `set(FORJA_WANTS_MIDI_INPUT TRUE)` antes da chamada (e `unset(...)` depois,
+para não vaziar para o próximo target do mesmo diretório). Isso **não é decorativo**: a
+propriedade liga a macro `JucePlugin_WantsMidiInput` do wrapper VST3, que anuncia o
+barramento `kEvent` ao host e guarda a conversão `data.inputEvents` → `MidiBuffer`.
+Com a macro desligada o `processBlock` recebe um `MidiBuffer` sempre vazio e o
+`acceptsMidi()` do C++ não conserta isso — ele só vale para Standalone e hosting
+interno. Plugin híbrido (cadeia de FX **e** gavetas-instrumento, como o ForjaRack) usa
+o opt-in com a categoria `"Instrument;Fx"`: lista CMake separada por `;`, porque o JUCE
+monta o `|` sozinho — passar `"Instrument|Fx"` sai duplicado. Uma base de instrumento
+de verdade (como o Drumforge) continua usando `forja_add_instrument`, que já liga
+`IS_SYNTH` e a entrada de MIDI.
 
 O Drumforge é o exemplo vivo: o conceito em `drumforge/ideia para o plugin.md` é amplo,
 mas o protótipo de UI (`drumforge/Drum Forge_ protótipo de UI.html`) já o simplificou

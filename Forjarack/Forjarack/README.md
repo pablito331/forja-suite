@@ -190,6 +190,35 @@ Suporte a instrumentos já instalado:
   `getFloatVelocity()`). Reescalar isso por mais 127 estoura o `uint8` e
   devolve velocidade trocada (nota tocada de leve saía estourada).
 
+### A causa real do silêncio no host (declaração de build, não DSP)
+
+O rack ficava mudo com o teclado ao vivo **mesmo com todo o caminho de C++
+correto**. O motivo estava fora do C++: o wrapper VST3 gerado pelo JUCE dirige a
+entrada de MIDI pela macro `JucePlugin_WantsMidiInput`, que vem da propriedade
+`NEEDS_MIDI_INPUT` do `juce_add_plugin`. Com a macro em `0` o wrapper (a) **não
+anuncia o barramento `kEvent`** de entrada ao host e (b) **pula a conversão
+`data.inputEvents` → `MidiBuffer`** dentro de `process()` — o `processBlock`
+recebe um `MidiBuffer` sempre vazio. O `acceptsMidi() { return true; }` do C++
+**não tem efeito nenhum no VST3**; ele só vale para o Standalone e para o
+hosting interno.
+
+Como o `forja_add_plugin` declara efeito puro (`NEEDS_MIDI_INPUT FALSE`), o rack
+herdou a omissão — e os testes não pegavam porque todos chamam `processBlock`
+no objeto C++, sem passar pelo wrapper. O helper agora aceita a opt-in
+`FORJA_WANTS_MIDI_INPUT`, e o rack o chama com a categoria `Instrument;Fx` (a
+lista é separada por `;`; o `|` o JUCE monta sozinho — passar `"Instrument|Fx"`
+sai duplicado). O MINIDRUM, o CANIVETE e o DRUMFORGE já vinham por
+`forja_add_instrument`, que liga a entrada de MIDI.
+
+Validação da costura: `Tests/Source/forjarack_vst3_midi.cpp`
+(`ctest: forjarack_vst3_midi`) **carrega o `.vst3` real do build pelo formato
+VST3 do JUCE**, como uma DAW faz, e verifica que o wrapper anuncia a entrada de
+MIDI, que o layout de instrumento é aceito e aplicado, que sem nota a saída é
+silêncio e que a nota atravessa `data.inputEvents` e faz o CANIVETE soar. Sem
+bundle ou sem soundfont na biblioteca, o teste se declara SKIP (exit 0). Ele foi
+validado por mutação: com a flag desligada, as duas últimas asserções falham e
+o pico cai a `0.0000` — o sintoma exato do host.
+
 Validação ponta a ponta: `Tests/Source/forjarack_processor.cpp`
 (`ctest: forjarack_processor`) compila o **processador real** do rack e o
 dirige pela API do `AudioProcessor`, como faz a DAW: layout de instrumento

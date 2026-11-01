@@ -32,6 +32,9 @@ private:
     std::array<std::unique_ptr<forjarackui::SlotComponent>, forjarack::kNumSlots> slots {};
     std::unique_ptr<forjarackui::MasterSection> master;
     std::array<int, forjarack::kNumSlots> lastType {};
+    // A carga de um plugin hospedado termina no timer do processor; quando o
+    // numero de params aparece, reloidamos a gaveta para desenhar os knobs.
+    std::array<int, forjarack::kNumSlots> lastHostedParams {};
     double clipHoldUntilMs = 0.0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ForjarackAudioProcessorEditor)

@@ -198,6 +198,35 @@ target_compile_features(forja_forjarack_engine PRIVATE cxx_std_20)
 
 add_test(NAME forjarack_engine COMMAND forja_forjarack_engine)
 
+# Gaveta HOSPEDADA: hosting dinamico de plugins de Documents/Forja/Rack. Sem
+# paridade (o DSP vem de fora); um stub de AudioPluginInstance cobre adocao de
+# efeito/instrumento, deteccao de papel por bus, mapa dinamico de params, trava
+# da UI nativa, MIDI nativo (void* do core) e propagacao de latencia no engine.
+# Liga juce_audio_processors: HostedModule so existe no mundo JUCE.
+add_executable(forja_forjarack_hosted
+    Source/forjarack_hosted.cpp
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source/rack/HostedModule.cpp
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source/rack/RackEngine.cpp
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source/rack/ModuleCatalog.cpp)
+
+target_include_directories(forja_forjarack_hosted PRIVATE
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source
+    ${CMAKE_SOURCE_DIR}/Forja/Source)
+
+target_compile_definitions(forja_forjarack_hosted PRIVATE _USE_MATH_DEFINES)
+target_compile_options(forja_forjarack_hosted PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+target_compile_features(forja_forjarack_hosted PRIVATE cxx_std_20)
+
+target_link_libraries(forja_forjarack_hosted PRIVATE
+    juce::juce_audio_processors
+    juce::juce_audio_basics
+    juce::juce_events
+    juce::juce_graphics
+    juce::juce_gui_basics
+    juce::juce_recommended_config_flags)
+
+add_test(NAME forjarack_hosted COMMAND forja_forjarack_hosted)
+
 # MiniDrum: o wrapper que toca o engine do Drumforge em formato mini (pequeno
 # VST e gaveta do ForjaRack). Sem paridade (DSP proprio herdado, ja coberto
 # pelo teste do engine); cobre carga adocao, volume, premix do kit, latencia,

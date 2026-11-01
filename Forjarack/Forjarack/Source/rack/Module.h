@@ -48,6 +48,11 @@ public:
     virtual float readOutputPeak() = 0;
     virtual int latencySamples() const = 0;
 
+    // Tamanho de bloco maxima com que o engine vai rodar (dado antes de prepare).
+    // So quem monta um grafo de edicao interno (modulo hospedado) precisa; os
+    // adaptadores de um buffer fixo ignoram. Nao aloca no caminho de audio.
+    virtual void setBlockSize (int maxSamples) noexcept { (void) maxSamples; }
+
     // Reducao de ganho do ultimo bloco em dB (negativa; 0 = comprimir nada).
     // Compressores/limitadores sobrescrevem pelo MeterFrame do adaptador;
     // modulos sem deteccao de nivel devolvem 0 e a gaveta nao mostra a barra.

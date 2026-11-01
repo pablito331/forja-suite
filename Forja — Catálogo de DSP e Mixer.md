@@ -394,12 +394,24 @@ hospedando um adaptador Airwindows já validado por paridade (CERA, MEL, LIXA, �
 TÊMPERA, MURALHA, CINZÉL, FÔLEGO, SALÃO e mais, conforme as fatias avançarem). O DSP é o
 dos módulos; o FORJARACK acrescenta apenas o encadeamento, a chave on/off e de escuta por
 gaveta e a seção master de trim e fase. O `ModuleCatalog` é append-only: minis como o
-MINIDRUM registram-se como gaveta `instrument` sem alterar o rack. Teste próprio:
-`forja_forjarack_engine` no `ctest` (catálogo, encadeamento, bypass/solo e zero alocação).
+MINIDRUM registram-se como gaveta `instrument` sem alterar o rack. Desde a gaveta
+**HOSPEDADO**, o registro também aceita hosting dinâmico: qualquer `.vst3` (AU no macOS)
+solto em `Documentos/Forja/Rack` vira gaveta em tempo de execução, com knobs vindos do
+próprio plugin, editor nativo em janela separada (travando os knobs do rack enquanto
+aberto), MIDI completo para instrumentos e latência/PDC propagados — plugins hospedados
+mantêm a própria licença (carregados em runtime, modelo de DAW; nada entra na suíte).
+Manual: `docs/MANUAL-GAVETA.md`. Testes próprios: `forja_forjarack_engine` (catálogo,
+encadeamento, bypass/solo e zero alocação) e `forja_forjarack_hosted` (stub de
+`AudioPluginInstance`: adoção efeito/instrumento, params dinâmicos, trava da UI nativa,
+MIDI nativo e latência) no `ctest`.
 
 **Pendências, em ordem:**
 
 - [ ] Rodar os 31 plugins no host: bypass da DAW, automação, mono, SR 96 kHz.
+- [ ] Validar a gaveta HOSPEDADO no host: carregar `.vst3` reais de
+      `Documentos/Forja/Rack` (efeito e instrumento), abrir editor nativo em janela
+      separada e conferir o PDC com a DAW — o bridge já tem teste próprio
+      (`forja_forjarack_hosted`), mas a carga de formato real depende do ambiente.
 - [ ] Implementar o DRUMFORGE no host: automação dos 249 parâmetros, multi-out em DAW,
       bypass, preview sincronizado e arrasto de loop para a timeline; aqui não há DAW,
       então segue pendente como nos demais.

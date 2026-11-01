@@ -38,6 +38,23 @@ public:
     void setSlotModule (int slot, int moduleIndex);
     int slotModuleIndex (int slot) const noexcept { return slotIndices[(size_t) slot]; }
 
+    // Thread de mensagens, sob suspendProcessing: adota um modulo ja construido
+    // (a gaveta HOSPEDADA monta um HostedModule a partir de um plugin carregado
+    // em runtime, que o catalogo nao conhece).module e a ficha de indice
+    // gravada no APVTS para o slot. Modulo nulo equivale a vazio (pass-through).
+    void adoptSlotModule (int slot, int moduleIndex, std::unique_ptr<ModuleBase> module);
+
+    // Ponteiro vivo do slot para a thread de mensagens (UI do slot hospedado
+    // consulta knobs/latencia do plugin carregado). Nulo se o slot esta vazio.
+    ModuleBase* moduleAt (int slot) noexcept
+    {
+        return (slot >= 0 && slot < kNumSlots) ? modules[(size_t) slot].get() : nullptr;
+    }
+    const ModuleBase* moduleAt (int slot) const noexcept
+    {
+        return (slot >= 0 && slot < kNumSlots) ? modules[(size_t) slot].get() : nullptr;
+    }
+
     // Consome o snapshot e escreve a saida 'wet' in place (ja com trims e fase).
     // Instrumentos geram em scratch pre-alocado e somam na cadeia; MIDI e
     // entregue aos slots instrument antes do process do mesmo bloco.
@@ -55,12 +72,13 @@ public:
     // em desuso (kits substituidos do mini drum). Nao toca no caminho de audio.
     void idleModules();
 
-    int latencySamples() const noexcept { return 0; }   // ambiente/reverb: PDC 0
+    int latencySamples() const;   // maximo entre modulos vivos (hospedado pode reportar)
 
 private:
     static float trimGain (float normalized) noexcept;
 
     double sampleRate = 44100.0;
+    int maxBlockSamples = 0;   // capacidade do scratch, definida em prepare
     std::array<std::unique_ptr<ModuleBase>, kNumSlots> modules {};
     std::array<int, kNumSlots> slotIndices {};
 

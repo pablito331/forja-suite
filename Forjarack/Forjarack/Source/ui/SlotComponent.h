@@ -8,6 +8,7 @@
 
 #include "rack/ModuleCatalog.h"
 #include "rack/RackState.h"
+#include "ui/HostedSlot.h"
 #include "ui/RackKnob.h"
 
 namespace forjarackui
@@ -20,7 +21,10 @@ namespace forjarackui
 class SlotComponent : public juce::Component
 {
 public:
-    SlotComponent (juce::AudioProcessorValueTreeState& state, int slotIndex);
+    // hosted fornece os controles dinamicos da gaveta HOSPEDADO (nada de knobs
+    // do ModuleSpec); e null para um SlotComponent sem hosting (testes, futuro).
+    SlotComponent (juce::AudioProcessorValueTreeState& state, int slotIndex,
+                   IHostedSlot* hosted);
     ~SlotComponent() override;
 
     // Reloa fachada/labels/visibilidade a partir dos params atuais.
@@ -71,6 +75,13 @@ private:
     juce::ComboBox selector;
     juce::TextButton bypassButton { "Bypass" };
     juce::TextButton soloButton { "Solo" };
+
+    // Gaveta hospedada: seletor de arquivo + botao PROCURAR (revarre a pasta)
+    // + botao EDITAR (abre a UI nativa/gerica do plugin em janela propria).
+    IHostedSlot* hosted = nullptr;
+    juce::ComboBox fileSelector;
+    juce::TextButton procurarButton;
+    juce::TextButton editarButton;
 
     std::array<std::unique_ptr<RackKnob>, forjarack::kMaxModuleParams> knobs {};
     std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>,

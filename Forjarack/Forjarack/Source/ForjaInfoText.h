@@ -56,6 +56,26 @@ inline forja::ui::ForjaInfo makeForjaInfo()
     });
 
     info.sections.push_back ({
+        u ("Gaveta HOSPEDADA"),
+        {
+            u ("A ficha HOSPEDADO no seletor abre a gaveta din\u00e2mica: qualquer "
+               "plug-in VST3 (Audio Unit no macOS) solto na pasta "
+               "Documentos/Forja/Rack aparece no menu ARQUIVO da gaveta e roda ali "
+               "dentro, sem recompilar a su\u00edte. O bot\u00e3o BUSCAR revarre a pasta."),
+            u ("O rack exp\u00f5e os knobs do plugin vivo: nome, quantidade e valor "
+               "v\u00eam do pr\u00f3prio plugin. Se o plugin traz editor, EDITAR abre essa "
+               "UI em janela separada; enquanto ela estiver aberta o rack n\u00e3o "
+               "escreve nos par\u00e2metros. Sem editor, EDITAR abre a lista gen\u00e9rica "
+               "de par\u00e2metros."),
+            u ("Plugins hospedados mant\u00eam a pr\u00f3pria licen\u00e7a: n\u00e3o s\u00e3o copiados, "
+               "nem compilados, nem ligados \u00e0 su\u00edte; s\u00e3o carregados em tempo de "
+               "execu\u00e7\u00e3o, como em qualquer DAW. Efeitos processam o barramento; "
+               "instrumentos recebem o MIDI da faixa e somam sua voz; a lat\u00eancia "
+               "reportada pelo plugin sobe para o host (PDC).")
+        }
+    });
+
+    info.sections.push_back ({
         u ("Modulos e origem"),
         {
             u ("COR \u00b7 CERA (PurestWarm): calor suave de um knob. MEL (Sweeten): "
@@ -96,8 +116,9 @@ inline forja::ui::ForjaInfo makeForjaInfo()
         }
     });
 
-    info.controls.push_back ({ u ("Seletor de modulo"), u ("vazio, CERA ... ECO"),
-                               u ("Escolhe o adaptador do slot e aplica seus defaults.") });
+    info.controls.push_back ({ u ("Seletor de modulo"), u ("vazio, CERA ... ECO, HOSPEDADO"),
+                               u ("Escolhe o adaptador do slot e aplica seus defaults. "
+                                  "HOSPEDADO carrega um plugin da pasta Rack.") });
     info.controls.push_back ({ u ("Bypass da gaveta"), u ("ligado/desligado"),
                                u ("Unica chave de on/off do slot: ligada, a gaveta e "
                                   "pass-through exato.") });
@@ -106,6 +127,13 @@ inline forja::ui::ForjaInfo makeForjaInfo()
                                   "propria gaveta estiver em bypass.") });
     info.controls.push_back ({ u ("Knobs do modulo"), u ("0,00 a 1,00"),
                                u ("Escalonamento no DSP de cada modelo.") });
+    info.controls.push_back ({ u ("Arquivo hospedado"), u ("nenhum / plugin listado"),
+                               u ("Escolhe o plug-in carregado na gaveta HOSPEDADO.") });
+    info.controls.push_back ({ u ("BUSCAR"), u ("bot\u00e3o"),
+                               u ("Revarre a pasta Documentos/Forja/Rack.") });
+    info.controls.push_back ({ u ("EDITAR"), u ("bot\u00e3o"),
+                               u ("Abre a UI nativa do plugin (ou a lista gen\u00e9rica de "
+                                  "par\u00e2metros) em janela separada.") });
     info.controls.push_back ({ u ("Entrada / Saida"), u ("0,00 a 1,00 \u00b7 padr\u00e3o 0,50"),
                                u ("Trim de +-24 dB do barramento.") });
     info.controls.push_back ({ u ("Inverter fase \u00d8 R"), u ("ligado/desligado"),

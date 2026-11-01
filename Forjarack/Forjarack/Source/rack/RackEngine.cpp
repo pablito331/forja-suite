@@ -21,12 +21,16 @@ void RackEngine::prepare (double newSampleRate, int maxBlockSamples)
 
     // Capacidade fixa do scratch de instrumentos, decidida aqui (nunca no audio).
     const int capacity = std::max (1, maxBlockSamples);
+    this->maxBlockSamples = capacity;   // o parametro esconde o membro
     scratchL.resize (static_cast<size_t> (capacity));
     scratchR.resize (static_cast<size_t> (capacity));
 
     for (auto& module : modules)
         if (module != nullptr)
+        {
+            module->setBlockSize (capacity);
             module->prepare (sampleRate);
+        }
 
     inPeakL.store (0.0f);
     inPeakR.store (0.0f);
@@ -82,7 +86,45 @@ void RackEngine::setSlotModule (int slot, int moduleIndex)
         return;
     }
 
+    target->setBlockSize (maxBlockSamples);
     target->prepare (sampleRate);
+}
+
+void RackEngine::adoptSlotModule (int slot, int moduleIndex, std::unique_ptr<ModuleBase> module)
+{
+    if (slot < 0 || slot >= kNumSlots)
+        return;
+
+    slotIndices[(size_t) slot] = moduleIndex;
+    auto& target = modules[(size_t) slot];
+
+    target = std::move (module);
+
+    if (target == nullptr)
+    {
+        slotIndices[(size_t) slot] = 0;
+        slotPeaks[(size_t) slot].store (0.0f);
+        slotGrDb[(size_t) slot].store (0.0f);
+        return;
+    }
+
+    target->setBlockSize (maxBlockSamples);
+    target->prepare (sampleRate);
+}
+
+int RackEngine::latencySamples() const
+{
+    // A corrente e em serie: a latencia percebida do rack e o maior atraso
+    // reportado por um modulo vivo. Os adaptadores Airwindows devolvem 0 (o
+    // atraso de delay/reverb e musical, PDC fica em 0); um plugin hospedado pode
+    // reportar latencia real, que entao subi para o host compensar.
+    int maxLatency = 0;
+
+    for (const auto& module : modules)
+        if (module != nullptr)
+            maxLatency = std::max (maxLatency, module->latencySamples ());
+
+    return maxLatency;
 }
 
 void RackEngine::process (const RackSnapshot& snapshot, float* left, float* right,

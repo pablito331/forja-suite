@@ -1,5 +1,7 @@
 #include "PluginProcessor.h"
 
+#include <functional>
+
 #include "PluginEditor.h"
 #include "rack/ModuleCatalog.h"
 #include "minidrum/MiniDrumRackModule.h"
@@ -13,6 +15,35 @@ juce::String dbText (float normalized)
     const double db = (static_cast<double> (normalized) - 0.5) * 48.0;
     return (db > 0.0 ? "+" : "") + juce::String (db, 1) + " dB";
 }
+
+// Janela onde a UI nativa de um plugin hospedado (ou a lista generica de
+// parametros) e montada quando o usuario aperta EDITAR. E o "abrir em aba
+// separada" para quem nao segue o padrao visual do ForjaRack. Ao fechar, roda
+// o callback (o processor destrava os params para o rack voltar a comandar).
+class HostedEditorWindow : public juce::DocumentWindow
+{
+public:
+    HostedEditorWindow (const juce::String& title, std::function<void()> closed)
+        : juce::DocumentWindow (title,
+                                juce::Colours::black,
+                                juce::DocumentWindow::allButtons,
+                                /*useNativeTitleBar=*/ true),
+          onClosed (std::move (closed))
+    {
+        setResizable (true, true);
+    }
+
+    void closeButtonPressed() override
+    {
+        if (onClosed)
+            onClosed();
+
+        setVisible (false);
+    }
+
+private:
+    std::function<void()> onClosed;
+};
 } // namespace
 
 ForjarackAudioProcessor::ForjarackAudioProcessor()
@@ -22,6 +53,12 @@ ForjarackAudioProcessor::ForjarackAudioProcessor()
       apvts (*this, nullptr, "PARAMETERS", createParameterLayout())
 {
     cacheParameterPointers();
+
+    // Gaveta hospedada: resolve a ficha publicada no catalogo e varre a pasta
+    // uma vez (scan barato quando a pasta esta vazia; o botao PROCURAR revarre).
+    hostedIndex = ModuleCatalog::indexOf ("hospedado");
+    hostedLibrary.refresh();
+
     startTimerHz (20);
 }
 
@@ -49,6 +86,24 @@ juce::AudioProcessorValueTreeState::ParameterLayout ForjarackAudioProcessor::cre
     forja::minidrum::registerMinidrumModule();
     forja::minisat::registerMinisatModule();
     forja::canivete::registerCaniveteModule();
+
+    // Gaveta HOSPEDADO: entrada unica no catalogo para plugins carregados em
+    // runtime. Fabrica nula (o processor adota um HostedModule no slot, o
+    // catalogo nao cria) e numParams 0 (os knobs sao dinamicos via IHostedSlot).
+    // O papel real (efeito/instrumento) vem do plugin, nao desta ficha.
+    if (ModuleCatalog::indexOf ("hospedado") < 0)
+    {
+        ModuleSpec hosted;
+        hosted.id = "hospedado";
+        hosted.name = "HOSPEDADO";
+        hosted.category = ModuleCategory::hosted;
+        hosted.accent = 0xff5ac8c0;   // azul aco, distinto das familias Airwindows
+        hosted.role = ModuleRole::effect;
+        hosted.numParams = 0;
+        hosted.factory = nullptr;
+        hosted.face = ModuleFace::generic;
+        ModuleCatalog::registerModule (hosted);
+    }
 
     juce::StringArray choices;
 
@@ -172,8 +227,10 @@ MidiEventSpan ForjarackAudioProcessor::collectMidi (
     std::array<MidiEvent, kMaxRackMidiEvents>& storage) const
 {
     // Copia curta e deterministica de notas para o span POD do nucleo
-    // JUCE-free. Outros eventos curtos (CC, pitch bend) ficam fora ate existir
-    // modulo que os consuma. Excedentes de kMaxRackMidiEvents sao descartados.
+    // JUCE-free (modulos embutidos: mini drum, canivete). Alem disso expoe o
+    // MidiBuffer nativo do host em `native` (void* opaco) para o plugin
+    // hospedado ler a trilha completa (nota + CC + pitch bend + program). NAO
+    // se limpa aqui: o clear acontece em processBlock, depois do engine consumir.
     int count = 0;
 
     for (const auto metadata : midiMessages)
@@ -197,9 +254,7 @@ MidiEventSpan ForjarackAudioProcessor::collectMidi (
             break;
     }
 
-    midiMessages.clear();
-
-    return MidiEventSpan { storage.data(), count };
+    return MidiEventSpan { storage.data(), count, const_cast<juce::MidiBuffer*> (&midiMessages) };
 }
 
 void ForjarackAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
@@ -225,6 +280,10 @@ void ForjarackAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     const auto midiSpan = collectMidi (midiMessages, midiStorage);
 
     engine.process (buildSnapshot(), left, right, numSamples, midiSpan);
+
+    // Rack consumiu o MIDI do bloco (POD para os embutidos, nativo para os
+    // hospedados). Marca como tratado so agora, apos o consumo.
+    midiMessages.clear();
 
     // Bypass global com rampa de 10 ms entre wet (saida do rack) e dry (input).
     bypassSmoother.setTarget (isBypassed() ? 0.0 : 1.0);
@@ -258,9 +317,24 @@ void ForjarackAudioProcessor::syncGraphFromParams (bool applyDefaults)
 
         const int index = juce::jlimit (0, ModuleCatalog::count() - 1, raw);
 
+        if (hostedIndex >= 0 && index == hostedIndex)
+        {
+            // Gaveta hospedada: o modulo vem do arquivo escolhido, nao do
+            // catalogo. adoptHosted suspende, carrega, adota e semear knobs.
+            adoptHosted (slot);
+            continue;
+        }
+
+        // Saiu de HOSPEDADO: destroi qualquer editor nativo aberto antes de
+        // trocar o modulo (a janela e dona do editor do plugin antigo).
+        hostedWindows[(size_t) slot].reset();
+
         suspendProcessing (true);
         engine.setSlotModule (slot, index);
         suspendProcessing (false);
+
+        // Airwindows reportam 0; ao remover um hospedado a latencia pode cair.
+        setLatencySamples (engine.latencySamples());
 
         if (applyDefaults)
         {
@@ -309,6 +383,13 @@ void ForjarackAudioProcessor::setStateInformation (const void* data, int sizeInB
         if (xml->hasTagName (apvts.state.getType()))
         {
             apvts.replaceState (juce::ValueTree::fromXml (*xml));
+
+            // A escolha de arquivo hospedado vive em propriedade do estado (o
+            // AudioParameterChoice congela as opcoes na construcao, nao serve
+            // para uma lista dinamica). Le de volta antes de realinhar o grafo.
+            for (int slot = 0; slot < kNumSlots; ++slot)
+                hostedFile[(size_t) slot] = apvts.state.getProperty (hostedStateKey (slot)).toString();
+
             syncGraphFromParams (false);
         }
     }
@@ -317,6 +398,185 @@ void ForjarackAudioProcessor::setStateInformation (const void* data, int sizeInB
 juce::AudioProcessorEditor* ForjarackAudioProcessor::createEditor()
 {
     return new ForjarackAudioProcessorEditor (*this);
+}
+
+// ---------------------------------------------------------------------------
+// Gaveta hospedada (forjarackui::IHostedSlot). Tudo aqui roda na thread de
+// mensagens; a carga/recaega de plugin acontece sob suspendProcessing.
+
+juce::String ForjarackAudioProcessor::hostedStateKey (int slot)
+{
+    return "hosted_slot" + juce::String (slot + 1);
+}
+
+HostedModule* ForjarackAudioProcessor::hostedModuleAt (int slot) const noexcept
+{
+    if (slot < 0 || slot >= kNumSlots)
+        return nullptr;
+
+    // moduleAt const devolve ModuleBase* const; o modulo de um slot hospedado e
+    // sempre um HostedModule. A pontaria mutavel volta via const_cast pois
+    // engine e o unico dono e estas operacoes sao de configuracao (msg thread).
+    const auto* base = engine.moduleAt (slot);
+    return const_cast<HostedModule*> (dynamic_cast<const HostedModule*> (base));
+}
+
+void ForjarackAudioProcessor::seedHostedKnobs (int slot, HostedModule& module)
+{
+    // Semeia os knobs do rack com os valores atuais do plugin, para a primeira
+    // empurrada do engine (knob -> setParam) nao chutar o plugin para 0,5.
+    const int n = juce::jmin (module.numHostedParams(), kMaxModuleParams);
+
+    for (int k = 0; k < n; ++k)
+        if (auto* param = apvts.getParameter (knobId (slot, k)))
+            param->setValueNotifyingHost (module.hostedParamValue (k));
+}
+
+void ForjarackAudioProcessor::adoptHosted (int slot)
+{
+    if (hostedIndex < 0 || slot < 0 || slot >= kNumSlots)
+        return;
+
+    // Editor nativo antigo morre antes do modulo antigo (a janela e dona do
+    // editor do plugin; depois o engine destroi o HostedModule).
+    hostedWindows[(size_t) slot].reset();
+
+    const double rate = getSampleRate() > 0.0 ? getSampleRate() : 44100.0;
+    const int block = getBlockSize() > 0 ? getBlockSize() : 512;
+
+    suspendProcessing (true);
+
+    juce::String error;
+    std::unique_ptr<ModuleBase> module;
+
+    if (! hostedFile[(size_t) slot].isEmpty())
+        module = hostedLibrary.load (hostedFile[(size_t) slot], rate, block, error);
+
+    engine.adoptSlotModule (slot, hostedIndex, std::move (module));
+    suspendProcessing (false);
+
+    // Latencia/PDC do plugin hospedado sobe para o host (setLatencySamples ja
+    // notifica o host quando o valor muda).
+    setLatencySamples (engine.latencySamples());
+
+    if (auto* hosted = hostedModuleAt (slot))
+        seedHostedKnobs (slot, *hosted);
+}
+
+bool ForjarackAudioProcessor::isHosted (int slot) const
+{
+    if (hostedIndex < 0 || slot < 0 || slot >= kNumSlots)
+        return false;
+
+    // Fonte de verdade imediata: o parametro 'type' (reflete o seletor na hora,
+    // sem esperar o proximo tick de syncGraphFromParams).
+    const int raw = typePtr[(size_t) slot] != nullptr
+                      ? juce::roundToInt (typePtr[(size_t) slot]->load()) : 0;
+
+    return raw == hostedIndex;
+}
+
+juce::StringArray ForjarackAudioProcessor::fileList() const
+{
+    return hostedLibrary.fileNames();
+}
+
+juce::String ForjarackAudioProcessor::fileName (int slot) const
+{
+    return (slot >= 0 && slot < kNumSlots) ? hostedFile[(size_t) slot] : juce::String();
+}
+
+void ForjarackAudioProcessor::chooseFile (int slot, const juce::String& name)
+{
+    if (slot < 0 || slot >= kNumSlots || hostedIndex < 0)
+        return;
+
+    hostedFile[(size_t) slot] = name;
+    apvts.state.setProperty (hostedStateKey (slot), name, nullptr);
+
+    // Leva a gaveta para HOSPEDADO (se ainda nao estiver) e carrega o arquivo.
+    if (auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+            apvts.getParameter (slotId (slot, "type"))))
+    {
+        const int last = juce::jmax (1, ModuleCatalog::count() - 1);
+        choice->setValueNotifyingHost (static_cast<float> (hostedIndex) / static_cast<float> (last));
+    }
+
+    cachedTypes[(size_t) slot] = hostedIndex;
+    adoptHosted (slot);
+}
+
+int ForjarackAudioProcessor::paramCount (int slot) const
+{
+    auto* module = hostedModuleAt (slot);
+    return module != nullptr ? juce::jmin (module->numHostedParams(), kMaxModuleParams) : 0;
+}
+
+juce::String ForjarackAudioProcessor::paramLabel (int slot, int index) const
+{
+    auto* module = hostedModuleAt (slot);
+    return module != nullptr ? module->hostedParamLabel (index) : juce::String();
+}
+
+bool ForjarackAudioProcessor::canOpenEditor (int slot) const
+{
+    return hostedModuleAt (slot) != nullptr;
+}
+
+void ForjarackAudioProcessor::openEditor (int slot)
+{
+    auto* module = hostedModuleAt (slot);
+
+    if (module == nullptr)
+        return;
+
+    // Ao fechar, destrava os params: o rack volta a manda neles pelo knob.
+    // A janela apenas se esconde: o editor e do plugin, nao nosso.
+    auto unlock = [this, slot]
+    {
+        if (auto* m = hostedModuleAt (slot))
+            m->setParamsLockedFromHost (false);
+    };
+
+    auto* content = module->createNativeEditor();
+
+    if (content == nullptr)
+        return;
+
+    auto* window = static_cast<HostedEditorWindow*> (hostedWindows[(size_t) slot].get());
+
+    if (window == nullptr)
+    {
+        window = new HostedEditorWindow (module->pluginName(), unlock);
+        window->setUsingNativeTitleBar (true);
+        window->setResizable (true, true);
+        hostedWindows[(size_t) slot].reset (window);
+
+        // Anexa primeiro, dimensiona depois: centreWithSize usa o tamanho que
+        // a janela assume ao receber o content.
+        window->setContentNonOwned (content, /*deleteWhenDismissed=*/ false);
+        window->centreWithSize (juce::jmax (content->getWidth(), 320),
+                                juce::jmax (content->getHeight(), 240));
+    }
+    else if (window->getContentComponent() != content)
+    {
+        // O plugin trocou de editor (recriacao permitida pelo JUCE): reanexa.
+        window->setContentNonOwned (content, false);
+    }
+
+    module->setParamsLockedFromHost (true);
+    window->setVisible (true);
+    window->toFront (true);
+}
+
+int ForjarackAudioProcessor::rescanFiles()
+{
+    return hostedLibrary.refresh();
+}
+
+int ForjarackAudioProcessor::rescan()
+{
+    return hostedLibrary.refresh();
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

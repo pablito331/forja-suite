@@ -73,7 +73,7 @@ silenciar o rack inteiro.
 
 | Parâmetro | Faixa | Padrão | Função |
 | --- | --- | --- | --- |
-| `slot{1..8}_type` | escolha (23) | vazio | Módulo da gaveta; ao trocar, knobs assumem os defaults da tabela |
+| `slot{1..8}_type` | escolha (24) | vazio | Módulo da gaveta; ao trocar, knobs assumem os defaults da tabela (HOSPEDADO usa knobs dinâmicos do plugin) |
 | `slot{N}_bypass` | ligado/desligado | desligado | Chave de on/off da gaveta; ligada = pass-through |
 | `slot{N}_solo` | ligado/desligado | desligado | Tira as demais gavetas da cadeia |
 | `slot{N}_knob{0..9}` | 0,00–1,00 (passo 0,01) | 0,50 | Parâmetros do módulo; o escalonamento mora no DSP |
@@ -181,6 +181,41 @@ Candidatos conscientes dessa porta (por enquanto, apenas intenção registrada):
 - **Mini drum** — lê os kits `.dfkit` do Drumforge, sem o mixer completo.
 - **Outros mini plugins** — qualquer adaptador Forja vira módulo com uma ficha.
 
+## Gaveta HOSPEDADO — hosting dinâmico (sem recompilar, qualquer licença)
+
+A ficha **HOSPEDADO** no seletor abre a única gaveta dinâmica do rack: qualquer
+pessoa solta um `.vst3` (ou `.component` no macOS) em
+`Documentos/Forja/Rack/` e o plugin roda ali dentro, sem tocar no código da
+suíte.
+
+- **Menu ARQUIVO** lista os plugins encontrados; **BUSCAR** revarre a pasta.
+- Os **knobs da gaveta são os parâmetros do plugin** (nome, quantidade e valor
+  vêm do plugin vivo; os 8 primeiros na frente da gaveta).
+- **EDITAR** abre a UI nativa do plugin **em janela separada**; sem editor,
+  abre a lista genérica de parâmetros. Com a janela aberta, o rack trava seus
+  knobs e não briga com o editor; ao fechar, volta a comandar.
+- **Efeito e instrumento**: o papel é detectado pelo layout de buses. O
+  instrumento recebe o MIDI completo da faixa (nota, CC, pitch bend, program)
+  pelo caminho nativo e soma sua voz à cadeia.
+- **Latência/PDC**: a latência reportada pelo plugin propaga para o host (o
+  rack adota o máximo entre as gavetas vivas).
+- **Licença**: plugins hospedados são obras separadas carregadas em runtime
+  (modelo de qualquer DAW). Mantêm a própria licença; nada entra na suíte, que
+  continua MIT, e os módulos compilados (paridade) continuam intactos.
+- A escolha do arquivo vive no preset do rack (propriedade de estado, pois a
+  lista é dinâmica).
+
+Manual completo — uso, criação de plugins para gaveta, estratégia "duas UIs",
+boas práticas e troubleshooting — em [`docs/MANUAL-GAVETA.md`](../../docs/MANUAL-GAVETA.md).
+
+Validação: `Tests/Source/forjarack_hosted.cpp` (`ctest: forjarack_hosted`) com
+stub de `AudioPluginInstance` — 20 checagens: adoção de efeito/instrumento,
+rejeição de instância sem saída, knobs end-to-end, mapa dinâmico de parâmetros,
+leitura de valor, trava da UI nativa, MIDI nativo (CC pass-through), pico e
+propagação/restauração de latência. **PASS**. A carga de arquivos VST3 reais
+depende do ambiente (não há DAW/plugins na máquina de dev) e fica registrada
+como pendência de validação manual.
+
 ## Licença
 
 DSP dos módulos: Airwindows (PurestWarm, Sweeten, PurestDrive, IronOxide5,
@@ -189,4 +224,5 @@ Slew3, FinalClip, Baxandall3, SmoothEQ2, Pop2, Pressure5, DeBess, ToTape9,
 DeRez5, Echojam), © Chris Johnson, MIT — referência vendorizada em
 `Forja/Source/forja/vendor/airwindows/` com `PROVENANCE.md` por modelo
 (commit `b110fac3991fff7c4655cc2d25d6a3e221f9799c`). Rack, engine e interface:
-Forja, MIT.
+Forja, MIT. Plugins hospedados na gaveta HOSPEDADO mantêm a licença do próprio
+autor — o ForjaRack apenas os carrega em tempo de execução.

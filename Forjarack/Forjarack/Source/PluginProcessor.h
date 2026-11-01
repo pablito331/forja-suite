@@ -2,16 +2,21 @@
 
 #include <array>
 #include <atomic>
+#include <memory>
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_gui_basics/juce_gui_basics.h>
 
 #include "forja/dsp/ForjaDspCommon.h"
 #include "rack/RackEngine.h"
 #include "rack/RackState.h"
+#include "rack/HostedLibrary.h"
+#include "ui/HostedSlot.h"
 
 using namespace forjarack;
 
 class ForjarackAudioProcessor final : public juce::AudioProcessor,
+                                      public forjarackui::IHostedSlot,
                                       private juce::Timer
 {
 public:
@@ -48,6 +53,22 @@ public:
     RackEngine& getEngine() noexcept { return engine; }
     double getSampleRateOrCurrent() const noexcept { return getSampleRate(); }
 
+    // forjarackui::IHostedSlot ------------------------------------------------
+    // A gaveta HOSPEDADA expoe seus controles pelo plugin vivo (nao pelo
+    // ModuleSpec fixo). A UI so pergunta; o processor faz (thread de mensagens).
+    bool isHosted (int slot) const override;
+    juce::StringArray fileList() const override;
+    juce::String fileName (int slot) const override;
+    void chooseFile (int slot, const juce::String& name) override;
+    int rescan() override;
+    int paramCount (int slot) const override;
+    juce::String paramLabel (int slot, int index) const override;
+    bool canOpenEditor (int slot) const override;
+    void openEditor (int slot) override;
+
+    // Reescaneia Documents/Forja/Rack (botao PROCURAR). Devolve quantos achou.
+    int rescanFiles();
+
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     static juce::String slotId (int slot, const juce::String& suffix);
@@ -62,6 +83,19 @@ private:
     bool isBypassed() const;
 
     RackEngine engine;
+
+    // Gaveta hospedada: biblioteca de scan + estado por slot. O plugin vivo de
+    // um slot e um HostedModule adotado no engine (moduleAt); aqui guardamos
+    // apenas o nome do arquivo escolhido e a janela do editor nativo aberta.
+    HostedLibrary hostedLibrary;
+    std::array<juce::String, kNumSlots> hostedFile {};
+    std::array<std::unique_ptr<juce::Component>, kNumSlots> hostedWindows {};
+    int hostedIndex = -1;   // indice do catalogo para a gaveta HOSPEDADO
+
+    HostedModule* hostedModuleAt (int slot) const noexcept;
+    void adoptHosted (int slot);
+    void seedHostedKnobs (int slot, HostedModule& module);
+    static juce::String hostedStateKey (int slot);
 
     std::array<std::atomic<float>*, kNumSlots> typePtr {};
     std::array<std::atomic<float>*, kNumSlots> bypassPtr {};

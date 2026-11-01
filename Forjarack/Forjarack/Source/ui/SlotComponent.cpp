@@ -22,6 +22,13 @@ constexpr int toggleH = 28;
 constexpr int toggleGap = 4;
 constexpr int knobsTop = toggleY + toggleH + toggleGap + 6;
 constexpr int meterH = 12;
+// Gaveta hospedada: abaixo das chaves vao o seletor de arquivo e a fileira de
+// botoes (BUSCAR revarre a pasta, EDITAR abre a UI nativa/gerica). Os knobs
+// comecam mais abaixo que nos modulos fixos.
+constexpr int hostedFileH = 20;
+constexpr int hostedBtnH = 20;
+constexpr int hostedGap = 3;
+constexpr int hostedKnobsTop = knobsTop + hostedFileH + hostedGap + hostedBtnH + 4;
 // Barra de reducao de ganho (compressores/limitadores): fica acima do led de
 // saida e so entra no layout quando o modulo atual mede GR real.
 constexpr int grH = 14;
@@ -43,6 +50,8 @@ juce::String categoryLabel (forjarack::ModuleCategory category)
     case forjarack::ModuleCategory::lofi:      return forja::ui::utf8 ("Lo-fi");
     case forjarack::ModuleCategory::instrument:
         return forja::ui::utf8 ("Instrumento");
+    case forjarack::ModuleCategory::hosted:
+        return forja::ui::utf8 ("Hospedado");
     case forjarack::ModuleCategory::numCategories:
         break;
     }
@@ -382,8 +391,11 @@ void SlotComponent::syncCategoryChoice()
                                         juce::dontSendNotification);
 }
 
-SlotComponent::SlotComponent (juce::AudioProcessorValueTreeState& state, int slotIndex)
-    : apvts (state), slot (slotIndex), slotLabel (juce::String (slotIndex + 1).paddedLeft ('0', 2))
+SlotComponent::SlotComponent (juce::AudioProcessorValueTreeState& state, int slotIndex,
+                              IHostedSlot* hostedSlot)
+    : apvts (state), slot (slotIndex),
+      slotLabel (juce::String (slotIndex + 1).paddedLeft ('0', 2)),
+      hosted (hostedSlot)
 {
     // Filtro visual da gaveta: lista as categorias do catalogo e refiltra o
     // seletor de modulos. Nunca toca no parametro 'type' diretamente.
@@ -469,6 +481,44 @@ SlotComponent::SlotComponent (juce::AudioProcessorValueTreeState& state, int slo
 
         addChildComponent (*knobs[(size_t) knob]);
     }
+
+    // Controles da gaveta hospedada: so aparecem quando o modulo e HOSPEDADO.
+    // O seletor de arquivo escreve via IHostedSlot::chooseFile (carrega o
+    // plugin); BUSCAR revarre a pasta; EDITAR abre a UI nativa em janela nova.
+    fileSelector.setWantsKeyboardFocus (false);
+    fileSelector.setTooltip (forja::ui::utf8 ("Plugin em Documents/Forja/Rack"));
+    fileSelector.onChange = [this]
+    {
+        if (hosted == nullptr)
+            return;
+
+        const int id = fileSelector.getSelectedId();
+        hosted->chooseFile (slot, id <= 1 ? juce::String() : fileSelector.getText());
+        refresh();
+    };
+    addChildComponent (fileSelector);
+
+    procurarButton.setButtonText ("BUSCAR");
+    procurarButton.setWantsKeyboardFocus (false);
+    procurarButton.setTooltip (forja::ui::utf8 ("Reescanear a pasta de plugins"));
+    procurarButton.onClick = [this]
+    {
+        if (hosted != nullptr)
+            hosted->rescan();
+
+        refresh();
+    };
+    addChildComponent (procurarButton);
+
+    editarButton.setButtonText ("EDITAR");
+    editarButton.setWantsKeyboardFocus (false);
+    editarButton.setTooltip (forja::ui::utf8 ("Abrir a UI do plugin em janela separada"));
+    editarButton.onClick = [this]
+    {
+        if (hosted != nullptr)
+            hosted->openEditor (slot);
+    };
+    addChildComponent (editarButton);
 }
 
 SlotComponent::~SlotComponent() = default;
@@ -487,8 +537,11 @@ void SlotComponent::refresh()
 
     accentColour = juce::Colour (spec.accent);
 
+    const bool isHost = hosted != nullptr && hosted->isHosted (slot);
+
     // Barra de GR so aparece em compressor/limitador que mede reducao real.
-    const bool grNow = spec.showsGainReduction;
+    // Gaveta hospedada nunca mostra GR: nao medimos a reducao de um plugin alheio.
+    const bool grNow = ! isHost && spec.showsGainReduction;
 
     if (grNow != showsGr)
     {
@@ -507,16 +560,51 @@ void SlotComponent::refresh()
     syncCategoryChoice();
     populateModuleChoices();
 
+    // Controles da gaveta hospedada: seletor de arquivo + BUSCAR/EDITAR.
+    fileSelector.setVisible (isHost);
+    procurarButton.setVisible (isHost);
+    editarButton.setVisible (isHost);
+
+    int knobCount = spec.numParams;
+
+    if (isHost)
+    {
+        fileSelector.clear (juce::dontSendNotification);
+        fileSelector.addItem (forja::ui::utf8 ("(nenhum)"), 1);
+
+        const auto files = hosted->fileList();
+
+        for (int i = 0; i < files.size(); ++i)
+            fileSelector.addItem (files[i], i + 2);
+
+        const auto current = hosted->fileName (slot);
+        fileSelector.setSelectedId (1, juce::dontSendNotification);
+
+        for (int i = 0; i < files.size(); ++i)
+            if (files[i] == current)
+                fileSelector.setSelectedId (i + 2, juce::dontSendNotification);
+
+        editarButton.setEnabled (hosted->canOpenEditor (slot));
+
+        knobCount = hosted->paramCount (slot);
+    }
+
+    const int knobsShown = std::clamp (knobCount, 0, forjarack::kMaxModuleParams);
+
     for (int knob = 0; knob < forjarack::kMaxModuleParams; ++knob)
     {
         auto& target = knobs[(size_t) knob];
-        const bool visible = knob < spec.numParams;
+        const bool visible = knob < knobsShown;
 
         target->setVisible (visible);
 
         if (visible)
         {
-            target->setLabelText (spec.knobs[(size_t) knob].label);
+            const juce::String label = isHost
+                ? hosted->paramLabel (slot, knob)
+                : juce::String (spec.knobs[(size_t) knob].label);
+
+            target->setLabelText (label);
             target->setAccent (accentColour);
         }
     }
@@ -679,12 +767,32 @@ void SlotComponent::resized()
     soloButton.setBounds (toggles.withX (toggles.getX() + each + toggleGap)
                                 .withWidth (toggles.getWidth() - each - toggleGap));
 
-    // A coluna de knobs usa o tanto de knobs que o modulo tem: um modulo de um
-    // knob nao espreme oito fileiras, e um de sete nao deixa rotulo sobre knob.
-    const auto& spec = forjarack::ModuleCatalog::specByIndex (currentTypeIndex());
-    const int rows = juce::jlimit (1, forjarack::kMaxModuleParams,
-                                   static_cast<int> (spec.numParams));
-    const int areaHeight = getHeight() - knobsTop - bottomReserved() - 4;
+    const bool isHost = hosted != nullptr && hosted->isHosted (slot);
+
+    // Gaveta hospedada: seletor de arquivo + fileira BUSCAR/EDITAR ocupam a
+    // faixa que nos modulos fixos seria dos knobs; os knobs comecam mais abaixo.
+    if (isHost)
+    {
+        auto hostArea = getLocalBounds().withY (knobsTop).reduced (6, 0);
+        fileSelector.setBounds (hostArea.withHeight (hostedFileH));
+
+        auto btnRow = hostArea.withY (knobsTop + hostedFileH + hostedGap).withHeight (hostedBtnH);
+        const int bEach = (btnRow.getWidth() - toggleGap) / 2;
+
+        procurarButton.setBounds (btnRow.withX (btnRow.getX()).withWidth (bEach));
+        editarButton.setBounds (btnRow.withX (btnRow.getX() + bEach + toggleGap)
+                                     .withWidth (btnRow.getWidth() - bEach - toggleGap));
+    }
+
+    const int knobTop = isHost ? hostedKnobsTop : knobsTop;
+
+    // A coluna de knobs usa o tanto de knobs que o modulo tem (no hospedado,
+    // quantos params o plugin vivo expoe): um de um knob nao espreme oito
+    // fileiras, e um de sete nao deixa rotulo sobre knob.
+    const int knobCount = isHost ? hosted->paramCount (slot)
+                                 : static_cast<int> (forjarack::ModuleCatalog::specByIndex (currentTypeIndex()).numParams);
+    const int rows = juce::jlimit (1, forjarack::kMaxModuleParams, knobCount);
+    const int areaHeight = getHeight() - knobTop - bottomReserved() - 4;
 
     // Modulo denso (mais de seis knobs) nao cabe em coluna unica: o rotulo
     // passaria a invadir o knob da fileira de baixo. Vira duas colunas.
@@ -692,7 +800,7 @@ void SlotComponent::resized()
     const int gridRows = twoCols ? (rows + 1) / 2 : rows;
 
     const int rowH = std::max (1, std::min (areaHeight / gridRows, 46));
-    const int startY = knobsTop + std::max (0, (areaHeight - gridRows * rowH) / 2);
+    const int startY = knobTop + std::max (0, (areaHeight - gridRows * rowH) / 2);
     const int labelH = std::min (11, rowH / 3);
     const int diameter = juce::jlimit (16, 34, rowH - labelH - 2);
     const int colW = getWidth() / 2;

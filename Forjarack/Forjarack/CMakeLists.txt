@@ -15,7 +15,16 @@ target_sources(Forjarack PRIVATE
     Source/rack/RackEngine.h
     Source/rack/RackEngine.cpp
 
+    # Gaveta hospedada: carrega plugins de Documents/Forja/Rack em runtime
+    # (efeito + instrumento) via AudioPluginFormatManager. Puxa JUCE de
+    # processors; fica fora do core headless do rack (teste engine nao linka).
+    Source/rack/HostedModule.h
+    Source/rack/HostedModule.cpp
+    Source/rack/HostedLibrary.h
+    Source/rack/HostedLibrary.cpp
+
     Source/ui/RackKnob.h
+    Source/ui/HostedSlot.h
     Source/ui/SlotComponent.h
     Source/ui/SlotComponent.cpp
 
@@ -50,6 +59,14 @@ target_include_directories(Forjarack PRIVATE
     ${CMAKE_SOURCE_DIR}/Minis/Minisat/Source
     ${CMAKE_SOURCE_DIR}/Minis/Canivete/Source
     ${CMAKE_SOURCE_DIR}/drumforge/Drumforge/Source
+)
+
+# Hosting de plugins de terceiros nas gavetas HOSPEDADO. Liga os formatos que o
+# AudioPluginFormatManager reconhece (VST3 em todo SO; AU no macOS). Sem isto o
+# scan da pasta nao acha nada e a Gaveta fica muda.
+target_compile_definitions(Forjarack PRIVATE
+    JUCE_PLUGINHOST_VST3=1
+    $<$<PLATFORM_ID:Darwin>:JUCE_PLUGINHOST_AU=1>
 )
 
 forja_link_soundfont_vendor(Forjarack)

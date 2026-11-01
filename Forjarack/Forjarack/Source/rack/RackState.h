@@ -38,6 +38,7 @@ enum class ModuleCategory : std::uint8_t
     space,         // ambiente / delay
     lofi,          // degradacao intencional (bits, taxa, forma)
     instrument,    // gera audio (sf2/sf3, mini drum, futuros modulos expansiveis)
+    hosted,        // plugin externo carregado em runtime de Documents/Forja/Rack
     numCategories
 };
 
@@ -76,6 +77,12 @@ struct MidiEventSpan
 {
     const MidiEvent* events = nullptr;
     int numEvents = 0;
+
+    // Ponteiro opaco para o buffer MIDI nativo do host (juce::MidiBuffer*) quando
+    // um modulo hospedado precisa da trilha completa (CC/pitch bend/program). O
+    // nucleo e compilavel sem JUCE entao ve apenas void*; os modulos POD-propri
+    // (minidrum, canivete) e os testes headless o deixam em nullptr.
+    void* native = nullptr;
 };
 
 // Instantaneo por slot lido pelo audio. POD, sem alocar no caminho de audio.

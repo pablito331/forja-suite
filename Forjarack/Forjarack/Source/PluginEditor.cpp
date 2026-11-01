@@ -168,10 +168,11 @@ ForjarackAudioProcessorEditor::ForjarackAudioProcessorEditor (ForjarackAudioProc
 {
     for (int slot = 0; slot < forjarack::kNumSlots; ++slot)
     {
-        slots[(size_t) slot] = std::make_unique<forjarackui::SlotComponent> (owner.apvts, slot);
+        slots[(size_t) slot] = std::make_unique<forjarackui::SlotComponent> (owner.apvts, slot, &owner);
         addAndMakeVisible (*slots[(size_t) slot]);
         slots[(size_t) slot]->refresh();
         lastType[(size_t) slot] = slots[(size_t) slot]->currentTypeIndex();
+        lastHostedParams[(size_t) slot] = owner.paramCount (slot);
     }
 
     master = std::make_unique<forjarackui::MasterSection> (owner.apvts);
@@ -217,6 +218,19 @@ void ForjarackAudioProcessorEditor::updateTelemetry()
         {
             lastType[(size_t) slot] = target.currentTypeIndex();
             target.refresh();
+        }
+
+        // Gaveta hospedada: a carga do plugin acaba no timer do processor. Quando
+        // o numero de params do plugin vivo muda (carregou/esvaziou), relayouta.
+        if (processor.isHosted (slot))
+        {
+            const int params = processor.paramCount (slot);
+
+            if (params != lastHostedParams[(size_t) slot])
+            {
+                lastHostedParams[(size_t) slot] = params;
+                target.refresh();
+            }
         }
 
         target.setOutputPeak (engine.readSlotPeak (slot));

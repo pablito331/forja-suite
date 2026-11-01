@@ -1,8 +1,9 @@
 # Forja — suíte de plugins
 
-35 plugins VST3 em JUCE 9: 31 com DSP adaptado do **Airwindows** (MIT, Chris Johnson) e
-quatro entregas da Forja — o sampler original **DRUMFORGE**, o rack **FORJARACK** e os minis
-**MINIDRUM** (engine do Drumforge) e **MINISAT** (adaptador do BRASA) — com interface nativa
+36 plugins VST3 em JUCE 9: 31 com DSP adaptado do **Airwindows** (MIT, Chris Johnson) e
+cinco entregas da Forja — o sampler original **DRUMFORGE**, o rack **FORJARACK** e os minis
+**MINIDRUM** (engine do Drumforge), **MINISAT** (adaptador do BRASA) e **CANIVETE** (player
+SoundFont SF2/SF3) — com interface nativa
 do padrão Forja (sem WebView), painel FUNDAMENTOS em português e validação de paridade amostra
 a amostra contra o código original nas adaptações Airwindows. A suíte entrega o VST3;
 o build é VST3-only por padrão (o Standalone só aparece se você ligar `FORJA_STANDALONE=ON`).
@@ -19,7 +20,10 @@ de bateria com engine própria, mesa de 16 canais e multi-out, já compilado jun
 gavetas com os adaptadores MIT já validados; `Minis/` é a base dos minis originais da Forja,
 começando pelo **MINIDRUM** — leitor de kits do Drumforge em formato compacto, que reutiliza
 o engine do DRUMFORGE como bloco próprio — e pelo **MINISAT**, saturador de um knob que toca
-o adaptador do BRASA (Tube2) através de um mapa de drive documentado.
+o adaptador do BRASA (Tube2) através de um mapa de drive documentado; e pelo **CANIVETE SUÍÇO**,
+player SoundFont multi-timbral (16 canais MIDI) que lê `.sf2`/`.sf3` de `Documentos/Forja/Canivete`
+sobre o TinySoundFont (MIT, Bernhard Schelling), com suporte a SF3 ligado só quando o decodificador
+Ogg está presente no vendor.
 
 Fora dessas bases convive no mesmo working tree o **`pianoforge/`**: um projeto irmão
 **autônomo e non-JUCE** (SDK VST3 cru + backend de janela próprio, engine de soundfont),
@@ -48,14 +52,14 @@ desenvolvimento.
 
 | Item | Estado |
 | --- | --- |
-| Targets locais (`<Nome>_VST3`) | 35 plugins · 35 binários VST3 |
+| Targets locais (`<Nome>_VST3`) | 36 plugins · 36 binários VST3 |
 | Paridade com os originais Airwindows | Verde em todos os executáveis |
-| Guarda de alocação em `process()` | PASS (adaptadores; DRUMFORGE, FORJARACK, MINIDRUM e MINISAT cobertos por testes de engine próprios) |
+| Guarda de alocação em `process()` | PASS (adaptadores; DRUMFORGE, FORJARACK, MINIDRUM, MINISAT e CANIVETE cobertos por testes de engine próprios) |
 | Latência por impulso | Medida em todos os modelos |
 | Interface e FUNDAMENTOS | Conferidos por captura DPI-aware nas 31 adaptações; capturas dos produtos Forja pendentes |
-| UIs redimensionáveis | 35 editores com aspecto fixo; os 31 da Airwindows conferidos em 100% e 150% |
+| UIs redimensionáveis | 36 editores com aspecto fixo; os 31 da Airwindows conferidos em 100% e 150% |
 | Builds Windows/macOS/Linux | GitHub Actions em tags `v*` |
-| Artefatos em `Documents/prototipos` | 35 `.vst3` espelhados (31 Airwindows + DRUMFORGE + FORJARACK + MINIDRUM + MINISAT) |
+| Artefatos em `Documents/prototipos` | 36 `.vst3` espelhados (31 Airwindows + DRUMFORGE + FORJARACK + MINIDRUM + MINISAT + CANIVETE) |
 | Capturas da interface | 35 imagens em `docs/images/` |
 | Gerador de plugins | `new_plugin.ps1` gera plugin que compila de imediato |
 | DRUMFORGE (sampler) | Engine, mesa, multi-out e abas KITS/MIXER/LOOPS prontos |
@@ -63,6 +67,7 @@ desenvolvimento.
 | FORJARACK (rack) | Oito gavetas em série, bypass/solo, master e barra de redução de ganho |
 | MINIDRUM (mini) | Leitor de kits do Drumforge: puxar kit, foto e volume |
 | MINISAT (mini) | Saturador de um knob: drive sobre o adaptador do BRASA, gaveta no rack |
+| CANIVETE (mini) | Player SoundFont SF2/SF3 multi-timbral: pasta de banks, knob de banco e volume |
 | Validação em host (DAW) | Pendente · não há DAW no ambiente |
 
 ## Famílias
@@ -80,7 +85,7 @@ desenvolvimento.
 | Amp | `Airwindows/Amps/` | GABINETE, PONTA, CHIME, CRICK, LOBO, DELUXE | amps, baixo e DI |
 | Bateria | `drumforge/Drumforge/` | DRUMFORGE | sampler de bateria com mesa e multi-out |
 | Rack | `Forjarack/Forjarack/` | FORJARACK | rack em cadeia com módulos Airwindows MIT |
-| Minis | `Minis/Minidrum/` e `Minis/Minisat/` | MINIDRUM, MINISAT | minis Forja: leitor de kits e saturador de um knob |
+| Minis | `Minis/Minidrum/`, `Minis/Minisat/` e `Minis/Canivete/` | MINIDRUM, MINISAT, CANIVETE | minis Forja: leitor de kits, saturador de um knob e player SoundFont |
 
 ## Plugins
 
@@ -121,6 +126,7 @@ desenvolvimento.
 | FORJARACK | Rack | 22 adaptadores MIT como módulos | gavetas + master | 0 (PDC) |
 | MINIDRUM | Minis | engine DRUMFORGE (bloco próprio) | volume + kit | 0 |
 | MINISAT | Minis | BRASA (Tube2) como bloco | 1 (drive) | 0 |
+| CANIVETE | Minis | TinySoundFont (MIT, player SF2/SF3) | volume + banco | 0 |
 
 Contagens não incluem o bypass Forja, presente em todos e exposto por
 `getBypassParameter()`. Em REPIQUE, ECO, SALÃO e FÔLEGO o atraso interno é musical e não
@@ -191,9 +197,24 @@ cobra o mapa (bit a bit igual ao adaptador nos drives 0, 0,25, 0,50, 0,75 e 1), 
 do timbre com o drive, a rampa de bypass, latência 0 medida por impulso, zero alocação e o
 registro da gaveta `minisat` no FORJARACK — a primeira a usar a fachada valve.
 
+### CANIVETE
+
+O **CANIVETE SUÍÇO** (base `Minis/`) é o terceiro mini Forja: um player SoundFont genérico e
+multi-timbral (16 canais MIDI) que toca banks `.sf2`/`.sf3` depositados em
+`Documentos/Forja/Canivete`. Diferente das outras bases, aqui o DSP **não é nosso** — é o
+[TinySoundFont](https://github.com/schellingb/TinySoundFont) de Bernhard Schelling (MIT),
+vendorizado byte a byte em `Forja/Source/forja/vendor/soundfont/tsf.h`. A Forja acrescenta só o
+wrapper em tempo real (`SoundFontEngine`): carga assíncrona do bank, adoção por token sem alocar
+no áudio, reap do bank substituído, medidor por bloco e a camada de bypass de 10 ms. Sem teste de
+paridade (o timbre vem do original); o teste próprio (`forja_canivete`) gera um SF2 mínimo válido
+no harness e cobre silêncio sem bank, carga/adoção, trim de volume, latência 0, velocidade,
+bypass, medidor, troca com reap, bank inválido, CC/program change multi-timbral, ausência de
+alocação e a gaveta `canivete` no FORJARACK. O SF3 (amostras Ogg) acende automaticamente quando
+`stb_vorbis.c`/`stb_vorbis.h` entram na pasta de vendor.
+
 ## Interface
 
-- Janela completa de 1000 × 540 px ou compacta de 560 × 260 px (LOBO, DIQUE, MINIDRUM e MINISAT).
+- Janela completa de 1000 × 540 px ou compacta de 560 × 260 px (LOBO, DIQUE, MINIDRUM, MINISAT e CANIVETE).
 - Redimensionável com aspecto fixo: o layout é desenhado no canvas de projeto e escalado
   de 70% a 200% por `ForjaCanvas.h`, sem reflow nem perda de nitidez.
 - Topo com produto, família, chip da fonte Airwindows, chip MIT, chip REDES e FUNDAMENTOS.
@@ -295,7 +316,7 @@ DRUMFORGE fica fora dessa árvore, em `build/drumforge/Drumforge/Drumforge_artef
 o FORJARACK e os minis seguem o mesmo esquema sob `build/Forjarack/` e `build/Minis/`.
 Os testes ficam em `build/Tests/Release/` (`forja_parity_<modelo>.exe`,
 `forja_alloc_guard.exe`, `forja_drumforge_engine.exe`, `forja_forjarack_engine.exe`,
-`forja_minidrum.exe` e `forja_minisat.exe`).
+`forja_minidrum.exe`, `forja_minisat.exe` e `forja_canivete.exe`).
 
 LTO é o padrão local (`-DFORJA_LTO=OFF` desliga). A CI usa `FORJA_LTO=OFF` para os três
 SOs caberem no tempo do runner; o código e os testes são os mesmos.

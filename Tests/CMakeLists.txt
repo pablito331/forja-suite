@@ -256,6 +256,38 @@ target_link_libraries(forja_minisat PRIVATE
 
 add_test(NAME minisat COMMAND forja_minisat)
 
+# Canivete Suico: player SoundFont (TinySoundFont MIT) multi-timbral. Sem
+# paridade (DSP nao e nosso; o wrapper so envolve a API publica do tsf). O
+# SoundFontEngine.cpp e o unico TU com TSF_IMPLEMENTATION; o teste gera um SF2
+# minimo em disco e cobre carga/adocao, volume, latencia, bypass, medidor por
+# bloco, program change/CC multi-timbral, troca com reap e ausencia de alocacao.
+add_executable(forja_canivete
+    Source/canivete.cpp
+    ${CMAKE_SOURCE_DIR}/Minis/Canivete/Source/canivete/SoundFontEngine.cpp
+    ${CMAKE_SOURCE_DIR}/Minis/Canivete/Source/canivete/CaniveteRackModule.cpp
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source/rack/ModuleCatalog.cpp)
+
+target_include_directories(forja_canivete PRIVATE
+    ${CMAKE_SOURCE_DIR}/Minis/Canivete/Source
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source
+    ${CMAKE_SOURCE_DIR}/Forja/Source)
+
+forja_link_soundfont_vendor(forja_canivete)
+
+target_compile_definitions(forja_canivete PRIVATE _USE_MATH_DEFINES JUCE_MODAL_LOOPS_PERMITTED=1)
+target_compile_options(forja_canivete PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+target_compile_features(forja_canivete PRIVATE cxx_std_20)
+
+target_link_libraries(forja_canivete PRIVATE
+    juce::juce_audio_basics
+    juce::juce_audio_formats
+    juce::juce_events
+    juce::juce_graphics
+    juce::juce_gui_basics
+    juce::juce_recommended_config_flags)
+
+add_test(NAME canivete COMMAND forja_canivete)
+
 # One parity executable per model: each compiles only its own vendored sources,
 # so a failure in one model never masks another.
 function(forja_add_parity_model slug model_name vendor_dir)

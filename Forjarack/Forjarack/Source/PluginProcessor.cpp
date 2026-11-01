@@ -4,6 +4,7 @@
 #include "rack/ModuleCatalog.h"
 #include "minidrum/MiniDrumRackModule.h"
 #include "minisat/MiniSatRackModule.h"
+#include "canivete/CaniveteRackModule.h"
 
 namespace
 {
@@ -47,6 +48,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ForjarackAudioProcessor::cre
     // de slots e montada a partir dele.
     forja::minidrum::registerMinidrumModule();
     forja::minisat::registerMinisatModule();
+    forja::canivete::registerCaniveteModule();
 
     juce::StringArray choices;
 

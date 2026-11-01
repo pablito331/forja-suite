@@ -3,3 +3,4 @@
 # proprios da suite (o MINIDRUM toca o engine do Drumforge).
 add_subdirectory(Minidrum)
 add_subdirectory(Minisat)
+add_subdirectory(Canivete)

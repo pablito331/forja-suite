@@ -112,15 +112,16 @@ endfunction()
 
 # Vendor do TinySoundFont (CANIVETE). A SoundFontEngine.cpp e o unico TU com
 # TSF_IMPLEMENTATION e precisa da pasta de vendor no include path. SF3
-# (amostras Ogg) so acende quando stb_vorbis.c/.h estao na pasta: o CMake
-# detecta e define FORJA_CANIVETE_SF3. ForjaRack e os testes compilam a mesma
-# engine por caminho, entao todos passam por aqui.
+# (amostras Ogg) so acende quando stb_vorbis.c esta na pasta: o CMake detecta
+# e define FORJA_CANIVETE_SF3. Nao existe stb_vorbis.h no upstream: o .c e o
+# header e a implementacao no mesmo arquivo. ForjaRack e os testes compilam a
+# mesma engine por caminho, entao todos passam por aqui.
 set(FORJA_SOUNDFONT_VENDOR_DIR ${CMAKE_SOURCE_DIR}/Forja/Source/forja/vendor/soundfont)
 
 function(forja_link_soundfont_vendor target_name)
     target_include_directories(${target_name} PRIVATE ${FORJA_SOUNDFONT_VENDOR_DIR})
 
-    if(EXISTS ${FORJA_SOUNDFONT_VENDOR_DIR}/stb_vorbis.c AND EXISTS ${FORJA_SOUNDFONT_VENDOR_DIR}/stb_vorbis.h)
+    if(EXISTS ${FORJA_SOUNDFONT_VENDOR_DIR}/stb_vorbis.c)
         target_compile_definitions(${target_name} PRIVATE FORJA_CANIVETE_SF3=1)
         message(STATUS "CANIVETE: SF3 habilitado (stb_vorbis encontrado)")
     else()

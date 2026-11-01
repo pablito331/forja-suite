@@ -210,7 +210,7 @@ paridade (o timbre vem do original); o teste próprio (`forja_canivete`) gera um
 no harness e cobre silêncio sem bank, carga/adoção, trim de volume, latência 0, velocidade,
 bypass, medidor, troca com reap, bank inválido, CC/program change multi-timbral, ausência de
 alocação e a gaveta `canivete` no FORJARACK. O SF3 (amostras Ogg) acende automaticamente quando
-`stb_vorbis.c`/`stb_vorbis.h` entram na pasta de vendor.
+`stb_vorbis.c` está na pasta de vendor (hoje presente: o build lê `.sf3` de fábrica).
 
 ## Interface
 

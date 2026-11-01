@@ -29,11 +29,27 @@ modificado. O plugin só usa a API pública (load, canais, render).
 O `tsf.h` já traz o decodificador SF3 (`tsf_decode_sf3_samples` /
 `tsf_decode_ogg`), mas ele fica atrás de `#ifdef STB_VORBIS_INCLUDE_STB_VORBIS_H`
 — ou seja, só compila com **stb_vorbis** presente. Enquanto o
-`Forja/Source/forja/vendor/soundfont/` não contiver `stb_vorbis.c`/`.h`, o build
-é **SF2**. Ao soltar os dois arquivos do stb (domínio público, repo
-`nothings/stb`) nesta pasta, o CMake detecta, define `FORJA_CANIVETE_SF3`, inclui
-o `stb_vorbis.c` em modo header-only no TU da engine e compila a implementação
-uma vez — acendendo o SF3 sem tocar no código da engine.
+`Forja/Source/forja/vendor/soundfont/` não contiver `stb_vorbis.c`, o build é
+**SF2**. O `stb_vorbis.c` está vendorizado aqui (v1.22, domínio público, repo
+`nothings/stb`):
+
+- **Upstream:** https://github.com/nothings/stb/blob/master/stb_vorbis.c
+- **Versão:** stb_vorbis **v1.22** ("Ogg Vorbis audio decoder - v1.22 - public
+  domain", Sean Barrett).
+- **Licença:** domínio público (o arquivo também oferece MIT como alternativa;
+  registramos como public domain).
+- **Arquivo:** `stb_vorbis.c`
+  - Tamanho: 192790 bytes
+  - SHA-256: `4C7CB2FF1F7011E9D67950446B7EB9CA044F2E464D76BFBB0B84DD2E23E65636`
+- **Aquisição:** baixado byte-exato do `master` do repo `nothings/stb` em
+  2026-11-01. Não existe `stb_vorbis.h` no upstream: o `.c` é header e
+  implementação no mesmo arquivo.
+
+Com o `.c` presente, o CMake define `FORJA_CANIVETE_SF3` e a engine inclui o
+`stb_vorbis.c` no mesmo TU, **antes** do `tsf.h` — o próprio arquivo do stb
+define o macro-gancho `STB_VORBIS_INCLUDE_STB_VORBIS_H` ao processar o
+ cabeçalho, que é exatamente o que acende o `tsf_decode_ogg`. Não se
+predefine esse macro, senão o stb salta as declarações.
 
 **Nunca** usar FluidSynth (LGPL): a regra da suíte é manter o binário livre de
 GPL. TinySoundFont (MIT) + stb_vorbis (public domain) cobrem SF2 e SF3.

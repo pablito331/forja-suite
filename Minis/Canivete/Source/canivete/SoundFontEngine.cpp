@@ -4,9 +4,11 @@
 //
 // SF3: o decodificador Ogg do tsf acende quando FORJA_CANIVETE_SF3 esta
 // definido (CMake detecta stb_vorbis na pasta de vendor). O stb_vorbis entra
-// neste mesmo TU em modo completo (declaracoes + implementacao) ANTES do tsf,
-// e o macro STB_VORBIS_INCLUDE_STB_VORBIS_H e o gancho que o tsf.h le para
-// ligar o tsf_decode_ogg.
+// neste mesmo TU ANTES do tsf, em modo completo: o arquivo do stb e header e
+// implementacao no mesmo .c, e ele proprio define STB_VORBIS_INCLUDE_STB_VORBIS_H
+// (guard do cabecalho) ao incluir — que e exatamente o gancho que o tsf.h le
+// para ligar o tsf_decode_ogg. Nao pre-definir o macro, senao o stb pula as
+// declaracoes.
 
 #include "SoundFontEngine.h"
 
@@ -14,7 +16,6 @@
 #include <cmath>
 
 #if defined (FORJA_CANIVETE_SF3)
-  #define STB_VORBIS_INCLUDE_STB_VORBIS_H
   #include "stb_vorbis.c"
 #endif
 

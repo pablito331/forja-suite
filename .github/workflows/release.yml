@@ -50,8 +50,12 @@ jobs:
           # O produto e a chave cujo tagPrefix casa com a tag; o mais longo
           # ganha (vcanivete- casa antes de qualquer v- futuro). A suite e o
           # fallback: kind != product e tagPrefix ignorado.
+          # O filtro por type antes de olhar .value.kind nao e decorativo: a
+          # chave "_" do registro carrega um texto, e o jq ERRA ao indexar um
+          # string (.value.kind) -- com set -e isso derruba o job.
           SLUG=$(jq -r --arg tag "$TAG" '
             to_entries
+            | map(select(.value | type == "object"))
             | map(select(.value.kind == "product"))
             | map(select(.value.tagPrefix as $p | $tag | startswith($p)))
             | sort_by(.value.tagPrefix | length)

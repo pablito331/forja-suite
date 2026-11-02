@@ -53,6 +53,27 @@ foreach ($case in $esperado) {
     }
 }
 
+# Forma do registro: o job resolve da CI faz .value.kind em TODA chave, e o jq
+# ERRA (exit != 0, set -e derruba o job) se alguma chave carregar um valor que
+# nao seja objeto. As chaves de comentario comecam com "_" e sao texto.
+foreach ($prop in $products.PSObject.Properties) {
+    if ($prop.Name -match '^_') {
+        if ($prop.Value -isnot [string]) {
+            $fail++; Write-Host "FAIL $($prop.Name): chave de comentario deve ser texto" -ForegroundColor Red
+        }
+        continue
+    }
+    if ($prop.Value -isnot [pscustomobject]) {
+        $fail++; Write-Host "FAIL $($prop.Name): valor precisa ser objeto (o resolve indexa .value.kind em toda chave)" -ForegroundColor Red
+        continue
+    }
+    foreach ($campo in 'display', 'kind', 'artifactBase', 'tagPrefix', 'versionFrom', 'readme') {
+        if (-not ($prop.Value.PSObject.Properties.Name -contains $campo)) {
+            $fail++; Write-Host "FAIL $($prop.Name): falta campo '$campo'" -ForegroundColor Red
+        }
+    }
+}
+
 # Toda linha de products.json precisa ser utilizavel pelo coletor e pelo .iss:
 # pathFilters nao vazios para produto, readme existente, artifactBase sem espaco.
 $iss = Get-Content (Join-Path $PSScriptRoot "..\installer\forja.iss") -Raw

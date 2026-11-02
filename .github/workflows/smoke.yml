@@ -65,17 +65,21 @@ jobs:
         shell: bash
         run: |
           set -uo pipefail
-          erros=$(grep -E 'error:|fatal error:|FAILED:|CMake Error|ninja: build stopped' build-smoke.log | head -n 40 || true)
-          if [ -z "$erros" ]; then
-            erros=$(tail -n 30 build-smoke.log)
-          fi
+          # Num repositorio publico o log bruto so aparece para quem tem sessao
+          # (a pagina mostra "Sign in to view logs" e a API responde 403), entao o
+          # unico canal que sobra para diagnosticar sao as anotacoes do check-run.
+          # Do `FAILED:` para o fim do log vem o comando completo e a mensagem do
+          # toolchain (o `ld` fala em linhas que nao contém "error:", entao só o
+          # grep de padrão perderia a causa).
+          bloco=$(sed -n '/FAILED:/,$p' build-smoke.log | head -n 60)
+          if [ -z "$bloco" ]; then bloco=$(tail -n 40 build-smoke.log); fi
           {
-            echo '### Smoke falhou no GCC -- erros do compilador'
+            echo '### Smoke falhou no GCC -- do primeiro FAILED ao fim do log'
             echo '```'
-            printf '%s\n' "$erros"
+            printf '%s\n' "$bloco"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          printf '%s\n' "$erros" | head -n 12 | while IFS= read -r linha; do
+          printf '%s\n' "$bloco" | head -n 25 | cut -c1-500 | sed 's/%/%25/g; s/\r//g' | while IFS= read -r linha; do
             echo "::error::${linha}"
           done
 

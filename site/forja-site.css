@@ -3,7 +3,7 @@
    fontes vem do tema compartilhado dos plugins (forja-ui-theme.css), copiado para
    dentro de site/ por tools/build_site.ps1 para funcionar no GitHub Pages. */
 
-@import url("forja-ui-theme.css");
+@import url("forja-ui-theme.css?v=2");
 
 *,
 *::before,

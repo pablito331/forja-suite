@@ -140,7 +140,9 @@ No `PluginProcessor.cpp` gerado:
   - 4 cards: 190/236/294/236.
   - compacto: topo `{7,7,546,44}`, card `{7,59,546,148}`, status `{7,215,546,38}`.
 - Knobs: `ForjaKnob { rótulo, dica, diâmetro, min, max, passo, padrão, formatador,
-  Options { minWidth, showHint, showValue, showLabel } }`.
+  Options { minWidth, showHint, showLabel, showValue } }`. O `Options` é o alias de
+  `ForjaKnobOptions` (aggregate em namespace, ordem acima): listas parciais como
+  `{ 130, true }` são o jeito normal, e declarar construtor no lugar quebra os editores.
 - `ForjaKnob` com `minWidth = 138` em colunas duplas; 80 para três colunas.
 - Textos acentuados **sempre** por `forja::ui::utf8("...")` ou `\u00XX`.
 - Nomes em português vêm do papel musical; o rótulo original fica no FUNDAMENTOS.

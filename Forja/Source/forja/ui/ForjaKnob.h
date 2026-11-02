@@ -7,24 +7,28 @@
 namespace forja::ui
 {
 
+// Opcoes de layout do knob. Moram em namespace e nao dentro de ForjaKnob porque o
+// GCC do runner de Linux (C++20) nao aceita um aggregate aninhado com default member
+// initializers sendo value-inicializado num default argument da propria classe
+// envolvente: "default member initializer for ForjaKnob::Options::minWidth required
+// before the end of its enclosing class" derrubava PluginProcessor.cpp de todo plugin
+// que incluia o header. MSVC e clang aceitavam, entao so a CI de release pegava.
+// Continua aggregate SEM construtor declarado: os editores passam listas parciais
+// ({ 130, true }) e um construtor de quatro argumentos reprovava todas elas com
+// C2665 no MSVC.
+struct ForjaKnobOptions
+{
+    int minWidth = 160;
+    bool showHint = true;
+    bool showLabel = true;
+    bool showValue = true;
+};
+
 class ForjaKnob : public juce::Component
 {
 public:
-    struct Options
-    {
-        int minWidth = 160;
-        bool showHint = true;
-        bool showLabel = true;
-        bool showValue = true;
-    };
+    using Options = ForjaKnobOptions;
 
-    // O default do ultimo parametro e Options(), nao Options{}: o GCC do runner
-    // de Linux (C++20) reprova o init de aggregate aninhado em default argument
-    // ("could not convert '<brace-enclosed initializer list>()' to Options") e o
-    // job Linux inteiro caia ai. MSVC e clang aceitavam, entao so a CI pegava.
-    // Options continua aggregate, SEM construtor declarado: os editores da suite
-    // passam listas parciais ({ 130, true }) e um construtor de quatro argumentos
-    // reprovava todas elas com C2665 no MSVC.
     ForjaKnob (juce::String knobLabel,
                juce::String knobHint,
                float knobDiameter,

@@ -83,18 +83,25 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Aggregate em default argument com "Options options = {}" funciona em
-          # MSVC e clang e reprova no GCC do runner. Se voltar, o smoke falha aqui
-          # com a linha exata em vez de derrubar a build inteira la na frente.
-          # O conserto e Options() -- NAO um construtor: os editores passam listas
-          # parciais ({ 130, true }) e um construtor de quatro argumentos quebra
-          # todos eles com C2665 no MSVC (Options precisa continuar aggregate).
+          # Dois formatos derrubam o job Linux inteiro e nem MSVC nem clang avisam:
+          # (1) um default argument escrito "Options options = {}" e (2) o aggregate
+          # Options morando DENTRO de ForjaKnob -- o GCC exige os default member
+          # initializers de um tipo aninhado antes do fim da classe envolvente e
+          # reprova o default argument. O formato aceito e ForjaKnobOptions em
+          # namespace + "using Options = ForjaKnobOptions" + default Options().
+          # NAO resolver com construtor: os editores passam listas parciais
+          # ({ 130, true }) e um construtor de quatro argumentos reprovava todas
+          # elas com C2665 no MSVC. Options precisa continuar aggregate.
           if grep -rn -E 'Options\s+[A-Za-z_]+\s*=\s*\{\}' Forja/Source/forja/ui/*.h; then
             echo "::error::default argument 'Options x = {}' em Forja/Source/forja/ui -- o GCC do runner reprova. Use Options() mantendo o aggregate."
             exit 1
           fi
-          if grep -rn -E '^\s*Options\s*\(' Forja/Source/forja/ui/ForjaKnob.h; then
+          if grep -rn -E 'Options\s*\(\s*\)\s*[;:{]|^\s*Options\s*\(' Forja/Source/forja/ui/ForjaKnob.h; then
             echo "::error::ForjaKnob::Options ganhou construtor: os editores usam listas parciais e o MSVC reprova. Mantenha aggregate."
             exit 1
           fi
-          echo "OK: nenhum default argument do tipo Options com '{}' em forja_ui."
+          if grep -rn -E '^\s*struct Options\b' Forja/Source/forja/ui/ForjaKnob.h; then
+            echo "::error::Options voltou a ser tipo aninhado em ForjaKnob: o GCC reprova o default argument (use ForjaKnobOptions em namespace)."
+            exit 1
+          fi
+          echo "OK: ForjaKnob::Options e aggregate de namespace com default Options()."

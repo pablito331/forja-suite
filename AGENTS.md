@@ -173,9 +173,18 @@ ctest --test-dir build -C Release --output-on-failure
 - CI/release: `.github/workflows/release.yml` compila os três SOs em tags `v*`.
 - **Smoke** (`.github/workflows/smoke.yml`) compila um plugin com o **GCC** do mesmo runner
   da CI de Linux em todo push em `Forja/Source/**`, `Airwindows/Eq/Cinzel/**`, `cmake/**` e
-  `CMakeLists.txt`. Existe porque o MSVC aceita coisas que o GCC reprova (um `Options o = {}`
-  em default argument derrubou o build de Linux por um tag inteiro) e porque descobrir isso
-  só na release custa 20 minutos.
+  `CMakeLists.txt`. Existe porque o MSVC aceita coisas que o GCC reprova, e as duas que já
+  derrubaram o job inteiro de Linux estavam no mesmo default argument de `ForjaKnob`:
+  `Options o = {}` e, depois do conserto aparente, o aggregate `Options` **aninhado** na
+  classe com `= Options()` (o GCC exige os default member initializers de um tipo aninhado
+  antes do fim da classe envolvente). O formato válido é `ForjaKnobOptions` em namespace +
+  `using Options = ForjaKnobOptions` + default `Options()`, **sem** declarar construtor
+  (os editores passam listas parciais e o MSVC reprova com C2665). Descobrir isso só na
+  release custa 20 minutos.
+- Quando o Smoke falha, ele publica os erros do GCC como **anotações** do check-run e no
+  resumo do job. O log bruto pela API exige token (`/actions/jobs/<id>/logs` responde 403
+  num repositório público), então `GET /repos/<dono>/<repo>/check-runs/<check_run_id>/annotations`
+  é o caminho para ler a causa sem abrir a página.
 - **Antes de taggar**, confira localmente: `ci/test_resolve.ps1`, depois
   `installer/collect_payload.ps1 -BuildRoot build -Clean` e `ISCC.exe installer/forja.iss`.
   O `ISCC` não vem na máquina (`winget install --id JRSoftware.InnoSetup`) e é o único jeito

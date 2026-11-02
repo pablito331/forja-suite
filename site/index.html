@@ -48,6 +48,44 @@
 
 <main class="conteudo">
 
+<section class="secao secao--sobre" id="sobre">
+  <h2>Sobre a Forja</h2>
+  <p class="secao__nota">Engenharia de precisÃ£o, respeito Ã  proveniÃªncia do DSP e design de estÃºdio artesanal.</p>
+  <div class="sobre__conteudo">
+    <div class="sobre__texto">
+      <p>
+        A <strong>Forja</strong> nasceu da vontade de unir o melhor de dois mundos no Ã¡udio digital:
+        a genialidade sÃ´nica e matemÃ¡tica dos algoritmos consagrados de Chris Johnson (Airwindows) com uma experiÃªncia de uso
+        moderna, confiÃ¡vel, tÃ¡til e integrada.
+      </p>
+      <p>
+        Em vez de interfaces genÃ©ricas ou WebViews lentas que consomem memÃ³ria desnecessÃ¡ria na sua DAW, cada plugin da Forja
+        traz uma <strong>interface vetorial nativa</strong> acelerada por hardware, com nossa identidade visual de ferro e brasa.
+        Cada detalhe tÃ©cnico foi refinado: medidores de reduÃ§Ã£o de ganho rÃ¡pidos, curvas de equalizaÃ§Ã£o em tempo real e o exclusivo painel
+        <strong>FUNDAMENTOS</strong> em portuguÃªs, explicando o comportamento exato de cada controle sem termos inventados.
+      </p>
+      <p>
+        AlÃ©m das consagradas ferramentas de mixagem e masterizaÃ§Ã£o, a suÃ­te conta com ecossistemas originais completos: o <strong>ForjaRack</strong>
+        (rack estilo SÃ©rie 500 com 8 gavetas encadeÃ¡veis), os <strong>Minis</strong> (instrumentos e processadores compactos focados em velocidade) e o
+        <strong>Drumforge</strong> (sampler acÃºstico de bateria com round-robin, velocity layers e console dedicada).
+      </p>
+    </div>
+    <div class="sobre__pontos">
+      <div class="sobre__ponto">
+        <h4>Zero AlocaÃ§Ã£o no Ãudio</h4>
+        <p>Garantia RT-safe em todo o caminho de Ã¡udio: sem travamentos, sem garbage collection e sem jitter na sua sessÃ£o.</p>
+      </div>
+      <div class="sobre__ponto">
+        <h4>Paridade MatemÃ¡tica</h4>
+        <p>Cada adaptador Airwindows Ã© validado por testes de paridade bit-a-bit (erro mÃ¡x â‰¤ 1e-9) contra o cÃ³digo-fonte original MIT.</p>
+      </div>
+      <div class="sobre__ponto">
+        <h4>Bypass Musical</h4>
+        <p>Crossfade com rampa suave de 10 ms em todos os processadores. Alterne bypass sem cliques ou estalos nos seus monitores.</p>
+      </div>
+    </div>
+  </div>
+</section>
 <section class="secao" id="linhas">
   <h2>Linhas de produto</h2>
   <p class="secao__nota">
@@ -658,5 +696,45 @@
   </p>
 </footer>
 
+<!-- Modal Lightbox de ExpansÃ£o de Imagens -->
+<div class="modal-zoom" id="modalZoom" aria-hidden="true" role="dialog">
+  <img id="modalZoomImg" src="" alt="">
+  <div class="modal-zoom__legenda" id="modalZoomLegenda"></div>
+</div>
+
+<script>
+(function() {
+  const modal = document.getElementById('modalZoom');
+  const modalImg = document.getElementById('modalZoomImg');
+  const modalLegenda = document.getElementById('modalZoomLegenda');
+
+  if (!modal || !modalImg) return;
+
+  document.querySelectorAll('.card__fig img').forEach(img => {
+    img.addEventListener('click', (e) => {
+      e.stopPropagation();
+      modalImg.src = img.src;
+      modalImg.alt = img.alt || '';
+      modalLegenda.textContent = img.alt || '';
+      modal.classList.add('aberto');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    });
+  });
+
+  function fecharModal() {
+    modal.classList.remove('aberto');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  modal.addEventListener('click', fecharModal);
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('aberto')) {
+      fecharModal();
+    }
+  });
+})();
+</script>
 </body>
 </html>

@@ -20,8 +20,10 @@ republicar a suíte inteira — e sem que uma mexida no `forja_ui` quebre um pro
 pode sair várias vezes enquanto o Rack continua na 1.0.0.
 
 O que **não** muda entre os trens: o `.github/workflows/release.yml` configura, compila e
-roda os 37 testes inteiros em todo tag, nos três sistemas. Só o *staging* e o empacotamento
-são filtrados. Um trem de produto é uma seleção de payload, nunca um subset de build.
+roda os 37 testes inteiros no **Windows e no Linux**, em todo tag. Só o *staging* e o
+empacotamento são filtrados. Um trem de produto é uma seleção de payload, nunca um subset de
+build. A única exceção é o macOS, por limite físico do runner — veja
+[O teto do runner de macOS](#o-teto-do-runner-de-macos).
 
 ## Registro único: `ci/products.json`
 
@@ -35,7 +37,10 @@ download do site. Campos por produto:
   *append-only*, nunca se reordena nem se renomeia um prefixo já publicado.
 - `versionFrom` — versão em que a linha está hoje. Informativo: a versão real vem do tag.
 - `pathFilters` — prefixos de caminho passados ao `collect_payload.ps1 -OnlyPath`.
-- `testRegex` — quais testes pertencem à linha (documentação; a CI roda todos).
+- `testRegex` — quais testes pertencem à linha. No Windows e no Linux é documentação (a CI
+  roda todos); no macOS é **contrato**: o job compila só os alvos `forja_<nome do teste>`
+  que esse regex seleciona. O `ci/test_resolve.ps1` confere se cada nome selecionado tem
+  alvo correspondente no `Tests/CMakeLists.txt`.
 - `readme` — o LEIA-ME que vai dentro do pacote do produto.
 
 Três armadilhas registradas no cabeçalho do arquivo:
@@ -83,9 +88,52 @@ $iscc = @("$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
 O `ISCC` **não** está na máquina por padrão (`winget install --id JRSoftware.InnoSetup`) e a
 CI não avisa antes de 20 minutos: foi assim que um `Flags:` inexistente em `[Types]` derrubou
 tanto o run de `v0.5.1` quanto o primeiro `vrack-1.0.0`. O mesmo vale para o compilador
-cruzado: o workflow **Smoke** (`.github/workflows/smoke.yml`) compila e **liga** um plugin com
-o GCC do mesmo runner da CI de release em todo push em `Forja/Source/**`,
-`Forja/CMakeLists.txt`, `Airwindows/Eq/Cinzel/**`, `cmake/**` e `CMakeLists.txt`.
+cruzado: o workflow **Smoke** (`.github/workflows/smoke.yml`) compila e **liga**, com o GCC do
+mesmo runner da CI de release, o Cinzel (puxa o `forja_ui` inteiro), os cinco produtos Forja
+e o `forja_alloc_guard` (que inclui os 31 adaptadores num TU só). Dispara em push em
+`Forja/Source/**`, `Forja/CMakeLists.txt`, `Airwindows/Eq/Cinzel/**`, `Forjarack/**`,
+`Minis/**`, `drumforge/**`, `cmake/**` e `CMakeLists.txt`.
+
+## O teto do runner de macOS
+
+Medido em sonda (`workflow_dispatch` de cronômetro, runner gratuito de macOS, build
+universal `arm64;x86_64`, `FORJA_LTO=OFF`):
+
+| Etapa | Tempo |
+| --- | --- |
+| Configure (FetchContent do JUCE incluso) | 71 s |
+| ForjaRack (subtree `build/Forjarack`) | 37 min |
+| Três plugins pequenos (Cinzel, Torno, Lima) | 24 min (~8 min por plugin) |
+| Os quatro testes do trem do rack (compilar + rodar) | 19 min |
+
+Ou seja: **um trem de produto fecha em ~1 h**, mas os 36 plugins + os 37 testes passam folgado
+das 6 h de teto de job do runner — e era isso que derrubava o trem inteiro, com o job
+aparecendo como `cancelled` e sem dizer nada (tentativas 3, 5 e 6). Por isso o job de macOS
+compila apenas os `pathFilters` do trem e roda apenas os testes do `testRegex`. Enquanto o
+fatiamento não chegar, **um tag de suíte `vX.Y.Z` para no step de build do macOS com a
+mensagem explicando o teto**; os pacotes de Windows e Linux continuam completos.
+
+Faltas registradas:
+
+1. **Fatiar o job de macOS** em shards por família (matriz de build + um job de
+   empacotamento que junta os artefatos). Só com isso o tag de suíte `vX.Y.Z` e o
+   `vairwindows-` voltam a sair para macOS.
+2. A sonda que produziu os números acima foi removida depois de medir. Precisando de número
+   novo, recrie um workflow de `workflow_dispatch` com cronômetro em vez de adivinhar.
+
+## Ver um trem falhar
+
+O log bruto de job de repositório público exige sessão (a página diz "Sign in to view logs"
+e a API de log responde 403), então quem está fora da sessão só enxerga as **anotações** do
+check-run. Os jobs de release publicam nelas o trecho do log que falhou, pelo action
+compartilhado `.github/actions/diagnostico` (`logs:` com os arquivos de log candidatos);
+`build-smoke.log`, `build-linux.log`, `test-linux.log`, `build-macos.log` e
+`test-macos.log` são gravados por `tee` exatamente para isso. No Windows, o coletor e o ISCC
+publicam a exceção e a linha de erro do `.iss` no mesmo canal.
+
+As etapas de Windows rodam em `shell: powershell` (Windows PowerShell 5.1) e **não** em
+`pwsh`: é o shell com que o `collect_payload.ps1` foi validado localmente, o script declara
+`#Requires -Version 5.1`, e o pwsh 7 do runner reprovou a etapa de staging uma vez.
 
 ## O que sai em cada artefato
 

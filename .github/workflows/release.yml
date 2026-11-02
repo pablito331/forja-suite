@@ -3,9 +3,13 @@ name: Release
 # Dois trens de release no mesmo repositorio, resolvidos por ci/products.json:
 #   tag vX.Y.Z        -> a suite inteira (todos os 36 plugins num so pacote)
 #   tag <prefixo>-X.Y.Z -> um produto so (ex.: vrack-1.0.0, vcanivete-1.0.0)
-# Build e testes correm SEMPRE inteiros, mesmo no trem de um produto: e o que
-# impede que uma mexida em forja_ui quebre outro produto sem ninguem ver. So o
-# empacotamento e filtrado (collect_payload.ps1 -OnlyPath).
+# Build e testes correm inteiros no Windows e no Linux, mesmo no trem de um
+# produto: e o que impede que uma mexida em forja_ui quebre outro produto sem
+# ninguem ver. So o empacotamento e filtrado (collect_payload.ps1 -OnlyPath).
+# Excecao (documentada, medida): o job de macOS compila apenas os alvos do trem.
+# O runner gratuito de macOS nao fecha os 36 plugins universais dentro do teto
+# de 6 h do job -- as tentativas 3, 5 e 6 morreram em `cancelled` no step Build.
+# Ver o job macos abaixo para os numeros da sonda e o que falta (fatiar).
 on:
   push:
     tags:
@@ -33,6 +37,7 @@ jobs:
       version: ${{ steps.pick.outputs.version }}
       artifactBase: ${{ steps.pick.outputs.artifactBase }}
       pathFilters: ${{ steps.pick.outputs.pathFilters }}
+      testRegex: ${{ steps.pick.outputs.testRegex }}
       leiam: ${{ steps.pick.outputs.leiam }}
       tag: ${{ steps.pick.outputs.tag }}
     steps:
@@ -68,6 +73,7 @@ jobs:
             BASE=$(jq -r --arg s "$SLUG" '.[$s].artifactBase' ci/products.json)
             LEIAM=$(jq -r --arg s "$SLUG" '.[$s].readme' ci/products.json)
             FILTERS=$(jq -r --arg s "$SLUG" '.[$s].pathFilters | join(",")' ci/products.json)
+            TESTREGEX=$(jq -r --arg s "$SLUG" '.[$s].testRegex' ci/products.json)
           else
             KIND=suite
             SLUG=suite
@@ -76,6 +82,7 @@ jobs:
             BASE=$(jq -r '.suite.artifactBase' ci/products.json)
             LEIAM=$(jq -r '.suite.readme' ci/products.json)
             FILTERS=""
+            TESTREGEX=$(jq -r '.suite.testRegex' ci/products.json)
           fi
 
           {
@@ -86,6 +93,7 @@ jobs:
             echo "version=$VERSION"
             echo "artifactBase=$BASE"
             echo "pathFilters=$FILTERS"
+            echo "testRegex=$TESTREGEX"
             echo "leiam=$LEIAM"
           } >> "$GITHUB_OUTPUT"
 
@@ -107,8 +115,12 @@ jobs:
       - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
 
+      # powershell (5.1) e o shell validado localmente para o coletor: o script
+      # declara #Requires -Version 5.1 e o pwsh 7 do runner reprovou esta etapa
+      # sem deixar ver o motivo no log anonimo. Mudar aqui exige repetir a
+      # checagem local com o MESMO shell da CI.
       - name: Stage installer payload
-        shell: pwsh
+        shell: powershell
         run: |
           $filters = '${{ needs.resolve.outputs.pathFilters }}'
           $collect = @(
@@ -116,10 +128,23 @@ jobs:
             "-LeiamE", "${{ needs.resolve.outputs.leiam }}"
           )
           if ($filters) { $collect += @("-OnlyPath", ($filters -split ',')) }
-          & ./installer/collect_payload.ps1 @collect -Clean
+          # O log do job de repo publico so abre para quem tem sessao, entao o
+          # erro vai para as anotacoes (tee para nao perder a saida do console).
+          try {
+            & ./installer/collect_payload.ps1 @collect -Clean 2>&1 |
+              Tee-Object -FilePath payload.log | Out-Host
+            if (-not $?) { throw "collect_payload.ps1 terminou com sucesso falso" }
+          } catch {
+            $msg = ("{0}: {1}" -f $_.Exception.GetType().FullName, $_.Exception.Message)
+            $msg = $msg -replace '%', '%25' -replace "`r|`n", ' '
+            Write-Host "::error::payload falhou -- $msg"
+            $linha = ($_.ScriptStackTrace -split "`n" | Select-Object -First 3) -join ' | '
+            Write-Host "::error::origem: $($linha -replace '%', '%25')"
+            exit 1
+          }
 
       - name: Build Windows installer (Inno Setup)
-        shell: pwsh
+        shell: powershell
         run: |
           choco install innosetup --no-progress -y
           $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
@@ -129,11 +154,16 @@ jobs:
             $defines += "/DProductName=${{ needs.resolve.outputs.product }}"
             $defines += "/DProductVersion=${{ needs.resolve.outputs.version }}"
           }
-          & $iscc @defines installer\forja.iss
+          & $iscc @defines installer\forja.iss 2>&1 | Tee-Object -FilePath iscc.log | Out-Host
+          if (-not $?) {
+            $causa = Select-String -Path iscc.log -Pattern '^Error' | Select-Object -Last 1
+            Write-Host ("::error::ISCC falhou -- {0}" -f ("$causa" -replace '%','%25'))
+            exit 1
+          }
           Copy-Item installer/dist/Forja*.exe ./
 
       - name: Package
-        shell: pwsh
+        shell: powershell
         run: |
           New-Item -ItemType Directory -Force package/VST3 | Out-Null
           Get-ChildItem installer/payload -Recurse -Directory -Filter *.vst3 | ForEach-Object {
@@ -154,6 +184,13 @@ jobs:
     name: macOS universal
     needs: resolve
     runs-on: macos-15
+    # Numeros medidos pela sonda (run 41475070630, runner gratuito de macOS):
+    # configure 71 s, subtree do rack 37 min, tres plugins pequenos 24 min
+    # (~8 min por plugin universal). Os 36 plugins + 37 testes passam de 6 h e o
+    # job morria em `cancelled` sem dizer nada. Enquanto o fatiamento nao chega,
+    # o trem de produto compila e testa so o que empacota (Windows e Linux
+    # continuam inteiros) e o trem da suite para na hora com a mensagem abaixo.
+    timeout-minutes: 330
     steps:
       - uses: actions/checkout@v4
 
@@ -167,10 +204,62 @@ jobs:
           -DFORJA_STANDALONE=OFF
 
       - name: Build
-        run: cmake --build build --config Release --parallel
+        run: |
+          set -euo pipefail
+          FILTERS='${{ needs.resolve.outputs.pathFilters }}'
+          if [ -z "$FILTERS" ]; then
+            echo "::error::trem inteiro (36 plugins universais) nao cabe no teto de"
+            echo "::error::6 h do runner de macOS: falta fatiar o job em shards. Os"
+            echo "::error::numeros da sonda estao no comentario deste job."
+            exit 1
+          fi
+          # Cada filtro e uma pasta da arvore de build. O Makefile daquele subtree
+          # compila so aquele produto; forja_ui e JUCE chegam como dependencia.
+          IFS=','
+          for filtro in $FILTERS; do
+            echo "::group::$filtro"
+            cmake --build "build/$filtro" --parallel 2>&1 | tee -a build-macos.log
+            echo "::endgroup::"
+          done
 
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        run: |
+          set -euo pipefail
+          REGEX='${{ needs.resolve.outputs.testRegex }}'
+          if [ -z "$REGEX" ]; then
+            echo "::error::trem sem testRegex nao e empacotado no macOS (ver Build)"
+            exit 1
+          fi
+          # O alvo CMake e "forja_<nome do teste>" e o ctest -N sabe os nomes, entao
+          # a lista vem do proprio registro sem duplicar nada. A guarda de presenca
+          # existe porque a regra de nome falha em parity_legacy (alvo forja_parity):
+          # se um nome casar sem alvo correspondente, o trem para em vez de testar
+          # menos do que prometeu.
+          nomes=$(ctest --test-dir build -N -R "$REGEX" |
+            sed -n 's/^[[:space:]]*Test[[:space:]]*#[[:space:]]*[0-9]*:[[:space:]]*//p' |
+            tr -d '\r')
+          if [ -z "$nomes" ]; then
+            echo "::error::nenhum teste casa com '$REGEX' de ci/products.json"
+            exit 1
+          fi
+          alvos=$(make -C build/Tests help |
+            sed -n 's/^\.\.\. \([A-Za-z0-9_]\+\):.*$/\1/p')
+          for nome in $nomes; do
+            alvo="forja_$nome"
+            if ! printf '%s\n' "$alvos" | grep -qx "$alvo"; then
+              echo "::error::teste '$nome' nao tem alvo '$alvo' no build de Tests"
+              exit 1
+            fi
+            cmake --build build/Tests --target "$alvo" --parallel 2>&1 | tee -a test-macos.log
+          done
+          ctest --test-dir build -R "$REGEX" --output-on-failure 2>&1 | tee -a test-macos.log
+
+      - name: Mostrar a falha
+        if: failure()
+        uses: ./.github/actions/diagnostico
+        with:
+          logs: build-macos.log test-macos.log
+          titulo: macOS falhou
 
       - name: Package
         run: |
@@ -222,10 +311,21 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DFORJA_LTO=OFF -DFORJA_STANDALONE=OFF
 
       - name: Build
-        run: cmake --build build --parallel
+        run: |
+          set -o pipefail
+          cmake --build build --parallel 2>&1 | tee build-linux.log
 
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        run: |
+          set -o pipefail
+          ctest --test-dir build --output-on-failure 2>&1 | tee test-linux.log
+
+      - name: Mostrar a falha
+        if: failure()
+        uses: ./.github/actions/diagnostico
+        with:
+          logs: build-linux.log test-linux.log
+          titulo: Linux falhou
 
       - name: Package
         run: |

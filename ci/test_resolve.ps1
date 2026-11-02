@@ -67,7 +67,7 @@ foreach ($prop in $products.PSObject.Properties) {
         $fail++; Write-Host "FAIL $($prop.Name): valor precisa ser objeto (o resolve indexa .value.kind em toda chave)" -ForegroundColor Red
         continue
     }
-    foreach ($campo in 'display', 'kind', 'artifactBase', 'tagPrefix', 'versionFrom', 'readme') {
+    foreach ($campo in 'display', 'kind', 'artifactBase', 'tagPrefix', 'versionFrom', 'readme', 'testRegex') {
         if (-not ($prop.Value.PSObject.Properties.Name -contains $campo)) {
             $fail++; Write-Host "FAIL $($prop.Name): falta campo '$campo'" -ForegroundColor Red
         }
@@ -106,6 +106,38 @@ foreach ($prop in $products.PSObject.Properties) {
             if ($iss -notmatch ('#if defined\(ForjaColhido_' + $bits[-1] + '\)')) {
                 $fail++; Write-Host "FAIL $($prop.Name): grupo '$($bits[-1])' sem bloco ForjaColhido_$($bits[-1]) no forja.iss" -ForegroundColor Red
             }
+        }
+    }
+}
+
+# O job de macOS nao compila a suite inteira (nao cabe no teto do runner): ele
+# deriva o alvo CMake do nome do teste, que vem do testRegex daqui. Esta conta e
+# feita antes de taggear, lendo Tests/CMakeLists.txt -- sem build e sem generator.
+$cmake = Get-Content (Join-Path $PSScriptRoot '..\Tests\CMakeLists.txt') -Raw
+$testes = @{}
+$alvos  = @{}
+foreach ($m in [regex]::Matches($cmake, 'add_executable\((\w+)'))  { $alvos[$m.Groups[1].Value]  = $true }
+foreach ($m in [regex]::Matches($cmake, 'add_custom_target\((\w+)')) { $alvos[$m.Groups[1].Value] = $true }
+foreach ($m in [regex]::Matches($cmake, 'add_test\(NAME\s+(\w+)\s+COMMAND')) {
+    $testes[$m.Groups[1].Value] = $true
+}
+# Os modelos de paridade nascem dentro de uma function: nome e alvo saem do
+# argumento de forja_add_parity_model, nao do texto literal do add_test.
+foreach ($m in [regex]::Matches($cmake, 'forja_add_parity_model\((\w+)')) {
+    $slug = $m.Groups[1].Value
+    $testes["parity_$slug"] = $true
+    $alvos["forja_parity_$slug"] = $true
+}
+
+foreach ($prop in $products.PSObject.Properties) {
+    if ($prop.Name -match '^_' -or $prop.Value.kind -ne 'product') { continue }
+    $selecionados = @($testes.Keys | Where-Object { $_ -match $prop.Value.testRegex } | Sort-Object)
+    if ($selecionados.Count -eq 0) {
+        $fail++; Write-Host "FAIL $($prop.Name): testRegex '$($prop.Value.testRegex)' nao casa com nenhum teste" -ForegroundColor Red
+    }
+    foreach ($nome in $selecionados) {
+        if (-not $alvos.ContainsKey("forja_$nome")) {
+            $fail++; Write-Host "FAIL $($prop.Name): teste '$nome' nao tem alvo 'forja_$nome' (regra do job de macOS)" -ForegroundColor Red
         }
     }
 }

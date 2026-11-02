@@ -71,3 +71,6 @@ pianoforge/
 # Scratch files
 compile_tmp.bat
 test_dsp_tmp.cpp
+
+# log de cronometro local do build (scratch, nunca entra)
+build_relog.txt

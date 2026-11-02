@@ -150,6 +150,12 @@ target_compile_definitions(forja_parity PRIVATE _USE_MATH_DEFINES)
 target_compile_features(forja_parity PRIVATE cxx_std_20)
 add_test(NAME parity_legacy COMMAND forja_parity)
 
+# Apelido de alvo: o job de macOS do trem de release deriva o alvo CMake do nome
+# do teste ("forja_<nome>"). Este e o unico teste cujo executavel nao segue a
+# regra (o bundle legado chama-se forja_parity), entao o alvo existe por aqui e o
+# trem nao precisa conhecer a excecao.
+add_custom_target(forja_parity_legacy DEPENDS forja_parity)
+
 add_executable(forja_alloc_guard Source/alloc_guard.cpp)
 target_include_directories(forja_alloc_guard PRIVATE ${CMAKE_SOURCE_DIR}/Forja/Source)
 target_compile_features(forja_alloc_guard PRIVATE cxx_std_20)

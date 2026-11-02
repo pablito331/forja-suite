@@ -170,10 +170,16 @@ ctest --test-dir build -C Release --output-on-failure
   runner. Não remova a opção.
 - `FORJA_STANDALONE` (padrão `OFF`): o build da suíte é VST3-only. Ligue `ON` apenas para
   abrir um plugin sem DAW (por exemplo, para capturar a UI); os pacotes nunca incluem Standalone.
-- CI/release: `.github/workflows/release.yml` compila os três SOs em tags `v*`.
-- **Smoke** (`.github/workflows/smoke.yml`) compila um plugin com o **GCC** do mesmo runner
-  da CI de release em todo push em `Forja/Source/**`, `Forja/CMakeLists.txt`,
-  `Airwindows/Eq/Cinzel/**`, `cmake/**` e `CMakeLists.txt`. Existe porque o MSVC aceita coisas que o GCC reprova, e as duas que já
+- CI/release: `.github/workflows/release.yml` compila os três SOs em qualquer tag `v*` —
+  sem prefixo = suíte, com prefixo = um produto. Os jobs que falham publicam a causa em
+  **anotações** pelo action compartilhado `.github/actions/diagnostico` (o log bruto de
+  repositório público exige sessão), então não adianta "rodar de novo" sem ler as anotações.
+- **Smoke** (`.github/workflows/smoke.yml`) compila e **liga** com o **GCC** do mesmo runner
+  da CI de release: o Cinzel (puxa o `forja_ui` inteiro), os cinco produtos Forja
+  (`Forjarack`, os três `Minis` e o `Drumforge`) e o `forja_alloc_guard`, que inclui os 31
+  adaptadores num TU só. Dispara em push em `Forja/Source/**`, `Forja/CMakeLists.txt`,
+  `Airwindows/Eq/Cinzel/**`, `Forjarack/**`, `Minis/**`, `drumforge/**`, `cmake/**` e
+  `CMakeLists.txt`. Existe porque o MSVC aceita coisas que o GCC reprova, e as duas que já
   derrubaram o job inteiro de Linux estavam no mesmo default argument de `ForjaKnob`:
   `Options o = {}` e, depois do conserto aparente, o aggregate `Options` **aninhado** na
   classe com `= Options()` (o GCC exige os default member initializers de um tipo aninhado
@@ -199,9 +205,13 @@ ctest --test-dir build -C Release --output-on-failure
 - **Trens de release**: a tag sem prefixo (`v0.5.2`) empacota a suíte inteira; uma tag
   prefixada (`vrack-1.0.0`, `vminis-`, `vcanivete-`, `vminidrum-`, `vminisat-`,
   `vdrumforge-`, `vairwindows-`) empacota **só aquele produto**. Build e testes correm
-  sempre inteiros; só o empacotamento é filtrado (`collect_payload.ps1 -OnlyPath`, lido de
-  `ci/products.json` — o registro único dos produtos). Tag de produto **não** bumpa a
-  versão da suíte. Passo a passo em `docs/RELEASES.md`.
+  inteiros no Windows e no Linux; só o empacotamento é filtrado (`collect_payload.ps1
+  -OnlyPath`, lido de `ci/products.json` — o registro único dos produtos). A exceção é o
+  **macOS**, que compila só os `pathFilters` e roda só os testes do `testRegex` do trem: o
+  runner gratuito não fecha 36 plugins universais dentro do teto de 6 h do job (números da
+  sonda em `docs/RELEASES.md`). Enquanto não houver shards, **tag de suíte para no build do
+  macOS**. Se um trem novo precisar de macOS inteiro, fatiar é o trabalho, não subir o teto.
+  Tag de produto **não** bumpa a versão da suíte. Passo a passo em `docs/RELEASES.md`.
 - Site: `site/catalogo.json` é o conteúdo da página pública; `tools/build_site.ps1` gera o
   `site/index.html` commitado e `tools/validate_site.ps1` confere o catálogo contra os
   targets CMake, os `ForjaInfoText.h`, as capturas e o `ci/products.json` (roda na CI de
@@ -270,9 +280,10 @@ Siga `docs/NOVO-PLUGIN.md`. Resumo:
   `tools/validate_site.ps1` PASS (36 plugins em 12 famílias).
 - Site **no ar**: `https://pablito331.github.io/forja-suite/` (Pages com Source: GitHub
   Actions, deploy por `.github/workflows/pages.yml`). `tools/validate_site.ps1` PASS.
-- Trem de produto ainda não publicou Release: o tag `vrack-1.0.0` aponta para um commit
-  anterior aos consertos do instalador e do build de Linux. Os testes estão verdes, então o
-  que falta é reapontar o tag e acompanhar o run.
+- Trem de produto ainda não publicou Release. O gargalo deixou de ser o código: o job de
+  macOS estourava o teto de 6 h do runner (medido: 37 min para o rack, ~8 min por plugin
+  pequeno), e por isso hoje compila só o trem. Um tag de suíte `vX.Y.Z` continua parado no
+  macOS até o job ser fatiado em shards — falta registrada em `docs/RELEASES.md`.
 - Sem DAW no ambiente de desenvolvimento: automação/bypass de host seguem pendentes de
   validação manual (ver README).
 - REPIQUE e ECO têm sync de BPM opcional; com `sync = false` o caminho é bit-exato.

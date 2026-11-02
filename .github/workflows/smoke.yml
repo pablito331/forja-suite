@@ -4,9 +4,9 @@ name: Smoke
 # A suite compila em MSVC e clang sem problema e so quebrava no Linux depois de
 # taggear -- duas vezes seguidas (v0.5.1 e vrack-1.0.0) o job inteiro morreu em
 # ForjaKnob.h por um default argument que o GCC rejeita. Este workflow roda no
-# MESMO runner da CI de release, compile de um plugin so, e dispara em push nas
-# fontes compartilhadas: erro de compilador cruzado aparece em ~5 minutos, nao
-# 25, e antes de qualquer tag.
+# MESMO runner da CI de release e dispara em push nas fontes compartilhadas:
+# erro de compilador cruzado aparece em ~10 minutos, nao 25, e antes de qualquer
+# tag. O conjunto de alvos esta no step de build.
 # Repositorio publico: minutos de Actions sao gratis, entao o custo e so tempo.
 
 on:
@@ -20,6 +20,11 @@ on:
       - "Forja/CMakeLists.txt"
       - "Forja/**/*.cmake"
       - "Airwindows/Eq/Cinzel/**"
+      # Os produtos Forja tem codigo proprio (rack, minis, drumforge) que o Cinzel
+      # nao toca: uma mexida ahi so aparecia no Linux depois de taggear.
+      - "Forjarack/**"
+      - "Minis/**"
+      - "drumforge/**"
       - "cmake/**"
       - "CMakeLists.txt"
       - ".github/workflows/smoke.yml"
@@ -53,39 +58,29 @@ jobs:
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DFORJA_LTO=OFF -DFORJA_STANDALONE=OFF
 
-      # Um plugin basta: ele puxa forja_ui inteiro (chrome, knobs, cards, painel
-      # FUNDAMENTOS) e os adapters header-only, que e onde um default argument
-      # invalido aparece.
-      - name: Build Cinzel_VST3
+      # Conjunto escolhido por custo de cobertura, nao por volume:
+      # - Cinzel puxa o forja_ui inteiro (chrome, knobs, cards, FUNDAMENTOS) e um
+      #   adapter, que e onde um default argument invalido aparece;
+      # - os cinco produtos Forja tem codigo proprio que o Cinzel nao encosta;
+      # - forja_alloc_guard inclui os 31 adaptadores num unico TU, entao todo o
+      #   DSP da Airwindows e compilado pelo GCC sem pagar 31 executaveis.
+      - name: Build Cinzel, os produtos e os 31 adaptadores
         run: |
           set -o pipefail
           # O log fica em arquivo para o passo de diagnostico poder resumir o
           # erro: num repositorio publico a API de job log pede token, entao sem
           # anotacao nao ha como ver o que o GCC reprovou sem abrir a pagina.
-          cmake --build build --target Cinzel_VST3 --parallel 2>&1 | tee build-smoke.log
+          cmake --build build --parallel \
+            --target Cinzel_VST3 Forjarack_VST3 Minisat_VST3 Minidrum_VST3 \
+                     Canivete_VST3 Drumforge_VST3 forja_alloc_guard \
+            2>&1 | tee build-smoke.log
 
-      - name: Show the compiler errors
+      - name: Mostrar a falha
         if: failure()
-        shell: bash
-        run: |
-          set -uo pipefail
-          # Num repositorio publico o log bruto so aparece para quem tem sessao
-          # (a pagina mostra "Sign in to view logs" e a API responde 403), entao o
-          # unico canal que sobra para diagnosticar sao as anotacoes do check-run.
-          # Do `FAILED:` para o fim do log vem o comando completo e a mensagem do
-          # toolchain (o `ld` fala em linhas que nao contém "error:", entao só o
-          # grep de padrão perderia a causa).
-          bloco=$(sed -n '/FAILED:/,$p' build-smoke.log | head -n 60)
-          if [ -z "$bloco" ]; then bloco=$(tail -n 40 build-smoke.log); fi
-          {
-            echo '### Smoke falhou no GCC -- do primeiro FAILED ao fim do log'
-            echo '```'
-            printf '%s\n' "$bloco"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-          printf '%s\n' "$bloco" | head -n 25 | cut -c1-500 | sed 's/%/%25/g; s/\r//g' | while IFS= read -r linha; do
-            echo "::error::${linha}"
-          done
+        uses: ./.github/actions/diagnostico
+        with:
+          logs: build-smoke.log
+          titulo: Smoke falhou no GCC
 
       - name: Guard against the brace-init pattern that GCC rejects
         shell: bash

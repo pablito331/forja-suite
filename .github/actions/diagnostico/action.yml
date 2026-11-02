@@ -1,0 +1,47 @@
+name: Diagnostico de falha
+description: >
+  Resume em anotacoes o trecho do log que derrubou o passo. Num repositorio
+  publico o log bruto so abre para quem tem sessao (a pagina diz "Sign in to
+  view logs" e a API de job log responde 403), entao sem anotacao nao ha como
+  diagnosticar um job vermelho sem pedir a alguem que abra a pagina.
+inputs:
+  logs:
+    description: "Arquivos de log candidatos, separados por espaco"
+    required: true
+  titulo:
+    description: "Cabecalho da anotacao e do summary"
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Publicar o trecho
+      shell: bash
+      run: |
+        set -uo pipefail
+        primeiro=""
+        alvo=""
+        for log in ${{ inputs.logs }}; do
+          [ -f "$log" ] || continue
+          if [ -z "$primeiro" ]; then primeiro="$log"; fi
+          if grep -qE 'FAILED|error:|\*\*\* \[|^Error ' "$log"; then alvo="$log"; break; fi
+        done
+        alvo="${alvo:-$primeiro}"
+        if [ -z "$alvo" ]; then
+          echo "::error::${{ inputs.titulo }} e nenhum log foi gravado para inspecionar"
+          exit 0
+        fi
+        # Do primeiro `FAILED:` ao fim vem o comando inteiro e a mensagem do
+        # toolchain. O ld e o ctest falam em linhas que nao contem "error:", por
+        # isso o trecho e preferido ao grep de padrao. Sem FAILED, o rabo do log.
+        bloco=$(sed -n '/FAILED:/,$p' "$alvo" | head -n 60)
+        if [ -z "$bloco" ]; then bloco=$(tail -n 40 "$alvo"); fi
+        {
+          echo "### ${{ inputs.titulo }} -- trecho de $alvo"
+          echo '```'
+          printf '%s\n' "$bloco"
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+        printf '%s\n' "$bloco" | head -n 25 | cut -c1-500 |
+          sed 's/%/%25/g; s/\r//g' | while IFS= read -r linha; do
+            echo "::error::${linha}"
+          done

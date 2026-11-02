@@ -16,7 +16,7 @@ html {
 }
 
 body {
-  margin: 0;
+  margin: 0 auto;
   padding: 0 var(--forja-space-5) var(--forja-space-5);
   max-width: 1320px;
   color: var(--forja-text);

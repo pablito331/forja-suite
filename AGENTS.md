@@ -5,13 +5,14 @@ Ele explica de onde vem o DSP, qual padrão a suíte segue e o que **não** pode
 
 ## O que é a Forja
 
-Forja é uma suíte de 35 plugins VST3 em JUCE 9 (C++20) para Windows,
+Forja é uma suíte de 36 plugins VST3 em JUCE 9 (C++20) para Windows,
 macOS e Linux, organizada em bases de DSP. A base `Airwindows/` adapta plugins da
 [Airwindows](https://www.airwindows.com/vsts/) de **Chris Johnson**, licenciado em MIT.
 A base `drumforge/` é a de DSP original: o **DRUMFORGE**, sampler de bateria com engine
 própria, mesa e multi-out. A base `Forjarack/` entrega o **FORJARACK**, um rack em cadeia
 estilo Série 500 que hospeda adaptadores Airwindows já validados. A base `Minis/` entrega
-os minis Forja de propósito único: **MINIDRUM** (leitor de kits do Drumforge com um knob de
+os minis Forja de propósito único: **CANIVETE** (player de soundfont SF2/SF3),
+**MINIDRUM** (leitor de kits do Drumforge com um knob de
 volume) e **MINISAT** (saturador de um knob que reusa o adaptador do BRASA). A Forja
 acrescenta interface nativa (sem WebView), painel
 FUNDAMENTOS em português, bypass suavizado, medição, presets/estado via APVTS e validação
@@ -38,7 +39,8 @@ drumforge/                         base 2: sampler de bateria, DSP Forja
   Drumforge/Source/ui/             abas Kits, Mixer e Loops, MiniKnob
 Forjarack/                         base 3: FORJARACK, rack Série 500 de módulos Airwindows
   Forjarack/Source/rack/           ModuleCatalog (registro append-only), módulos
-Minis/                             base 4: minis Forja de propósito único (MINIDRUM, MINISAT)
+Minis/                             base 4: minis Forja de propósito único (CANIVETE, MINIDRUM, MINISAT)
+  Canivete/Source/canivete/        player SF2/SF3 (tsf + stb_vorbis no vendor)
   Minidrum/Source/minidrum/        wrapper do engine Drumforge como plugin autônomo
   Minisat/Source/minisat/          wrapper do adaptador do BRASA como plugin e módulo de rack
 Forja/                             biblioteca compartilhada forja_ui + DSP + vendor
@@ -47,8 +49,11 @@ Forja/                             biblioteca compartilhada forja_ui + DSP + ven
   Source/forja/vendor/airwindows/  originais verbatim (referência, NÃO compilados)
 Tests/                             paridade, guarda de alocação, engine do Drumforge, shim VST2
 cmake/ForjaSuite.cmake             helper forja_add_plugin(...)
+ci/products.json                   registro único dos trens de release (fonte de verdade)
+installer/                         coletor de payload + forja.iss (Inno Setup)
+site/                              página pública: catalogo.json + index.html gerado
 docs/                              arquitetura, guia de novo plugin, imagens do README
-tools/                             gerador de scaffold de plugin
+tools/                             scaffold, capturas, gerador/validador do site
 ```
 
 ## Bases
@@ -65,9 +70,11 @@ tools/                             gerador de scaffold de plugin
   próprio (a paridade é herdada dos módulos); o teste do engine cobre o catalogo
   append-only, o encadeamento das gavetas, bypass/solo por gaveta e ausência de alocação.
 - `Minis/` — base dos minis originais Forja: plugins compactos de propósito único —
-  **MINIDRUM** (leitor de kits do Drumforge com um knob de volume) e **MINISAT**
+  **CANIVETE** (player de soundfont SF2/SF3), **MINIDRUM** (leitor de kits do Drumforge com
+  um knob de volume) e **MINISAT**
   (saturador de um knob que reusa o adaptador validado do BRASA). Cada mini reusa um bloco
-  já testado como DSP (engine do DRUMFORGE ou `forja::BrasaDSP`), sem fork e sem vendor
+  já testado como DSP (engine do DRUMFORGE ou `forja::BrasaDSP`; o CANIVETE usa o vendor de
+  soundfont `tsf`/`stb_vorbis`), sem fork e sem vendor Airwindows
   novo; **não** têm paridade própria (herdada do bloco), e o teste de cada um cobre o
   wrapper, o mapeamento/estado próprio, latência, bypass, medidor, zero alocação e o
   registro no catálogo do ForjaRack. A família **MINIS** no catálogo é mais ampla que a
@@ -164,6 +171,16 @@ ctest --test-dir build -C Release --output-on-failure
 - `FORJA_STANDALONE` (padrão `OFF`): o build da suíte é VST3-only. Ligue `ON` apenas para
   abrir um plugin sem DAW (por exemplo, para capturar a UI); os pacotes nunca incluem Standalone.
 - CI/release: `.github/workflows/release.yml` compila os três SOs em tags `v*`.
+- **Trens de release**: a tag sem prefixo (`v0.5.2`) empacota a suíte inteira; uma tag
+  prefixada (`vrack-1.0.0`, `vminis-`, `vcanivete-`, `vminidrum-`, `vminisat-`,
+  `vdrumforge-`, `vairwindows-`) empacota **só aquele produto**. Build e testes correm
+  sempre inteiros; só o empacotamento é filtrado (`collect_payload.ps1 -OnlyPath`, lido de
+  `ci/products.json` — o registro único dos produtos). Tag de produto **não** bumpa a
+  versão da suíte. Passo a passo em `docs/RELEASES.md`.
+- Site: `site/catalogo.json` é o conteúdo da página pública; `tools/build_site.ps1` gera o
+  `site/index.html` commitado e `tools/validate_site.ps1` confere o catálogo contra os
+  targets CMake, os `ForjaInfoText.h`, as capturas e o `ci/products.json` (roda na CI de
+  Pages). Plugin novo exige o card no catálogo — a validação pega se você esquecer.
 
 ## Como adicionar um plugin
 
@@ -175,7 +192,8 @@ Siga `docs/NOVO-PLUGIN.md`. Resumo:
 3. Ajuste parâmetros, defaults e UI; escreva o README.
 4. Adicione o caso de paridade e o adapter ao `alloc_guard`.
 5. Rode build + testes + captura visual antes de considerar pronto.
-6. Atualize `Forja — Catálogo de DSP e Mixer.md` e o README da suíte.
+6. Atualize `Forja — Catálogo de DSP e Mixer.md` e o README da suíte, e registre o card em
+   `site/catalogo.json` (`tools/build_site.ps1` + `tools/validate_site.ps1`).
 
 ## O que não fazer
 
@@ -205,7 +223,21 @@ Siga `docs/NOVO-PLUGIN.md`. Resumo:
   bypass, latência 0 medida por impulso, zero alocação em estéreo e mono e registro da
   gaveta `minisat` no ForjaRack). O adaptador compartilhado `forja::BrasaDSP` entrou no
   `alloc_guard`.
-- Última verificação local (Windows, Release): `ctest` com 33/33 testes verdes.
+- CANIVETE compila como VST3; o teste `canivete` PASS (carga de banco, presets, 16 canais
+  GM, SF3 via stb_vorbis, zero alocação). **Pendência conhecida**: na **gaveta do
+  ForjaRack**, com o banco `.sf3` do usuário, `forjarack_processor` falha em
+  "o bank da gaveta assentou (preset em uso visível)" — o banco carrega e **soa**
+  (pico ~0,40), mas `currentInstrument()` volta vazio e a lista de presets volta com 0 —
+  e `forjarack_vst3_midi` falha em "nota do host atravessa o wrapper VST3 e faz o CANIVETE
+  soar" (pico 0,00; o anúncio de MIDI no wrapper passa). O conserto parcial está em
+  `6a0c0a7`; a causa provável é o caminho de presets específico do `.sf3` na integração
+  rack↔mini, não o CANIVETE sozinho.
+- Última verificação local (Windows, Release): `ctest` com **35/37** — os dois verdes que
+  faltam são os do item acima, e nada mais. `tools/validate_site.ps1` PASS (36 plugins em
+  12 famílias).
+- Site publicado: `site/` + `.github/workflows/pages.yml` existem e validam localmente, mas
+  ainda não há Release de produto nem Pages no ar — falta um push de tag (ver
+  `docs/RELEASES.md`) e ligar o Source: GitHub Actions uma vez.
 - Sem DAW no ambiente de desenvolvimento: automação/bypass de host seguem pendentes de
   validação manual (ver README).
 - REPIQUE e ECO têm sync de BPM opcional; com `sync = false` o caminho é bit-exato.

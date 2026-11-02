@@ -1,17 +1,95 @@
 name: Release
 
+# Dois trens de release no mesmo repositorio, resolvidos por ci/products.json:
+#   tag vX.Y.Z        -> a suite inteira (todos os 36 plugins num so pacote)
+#   tag <prefixo>-X.Y.Z -> um produto so (ex.: vrack-1.0.0, vcanivete-1.0.0)
+# Build e testes correm SEMPRE inteiros, mesmo no trem de um produto: e o que
+# impede que uma mexida em forja_ui quebre outro produto sem ninguem ver. So o
+# empacotamento e filtrado (collect_payload.ps1 -OnlyPath).
 on:
   push:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      ref:
+        description: "Tag ou commit para reempacotar (ex.: vrack-1.0.0)"
+        required: true
+        default: main
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
+  # Lê ci/products.json e decide o que o trem empacota. Um job só, barato; os
+  # outputs saem em bruto para os jobs de SO consumirem.
+  resolve:
+    name: Resolve release train
+    runs-on: ubuntu-22.04
+    outputs:
+      kind: ${{ steps.pick.outputs.kind }}
+      slug: ${{ steps.pick.outputs.slug }}
+      product: ${{ steps.pick.outputs.product }}
+      version: ${{ steps.pick.outputs.version }}
+      artifactBase: ${{ steps.pick.outputs.artifactBase }}
+      pathFilters: ${{ steps.pick.outputs.pathFilters }}
+      leiam: ${{ steps.pick.outputs.leiam }}
+      tag: ${{ steps.pick.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve train from tag
+        id: pick
+        shell: bash
+        env:
+          REF: ${{ github.event.inputs.ref || github.ref_name }}
+        run: |
+          set -euo pipefail
+          TAG="$REF"
+
+          # O produto e a chave cujo tagPrefix casa com a tag; o mais longo
+          # ganha (vcanivete- casa antes de qualquer v- futuro). A suite e o
+          # fallback: kind != product e tagPrefix ignorado.
+          SLUG=$(jq -r --arg tag "$TAG" '
+            to_entries
+            | map(select(.value.kind == "product"))
+            | map(select(.value.tagPrefix as $p | $tag | startswith($p)))
+            | sort_by(.value.tagPrefix | length)
+            | last // empty | .key' ci/products.json)
+
+          if [ -n "$SLUG" ]; then
+            KIND=product
+            VERSION="${TAG#"$(jq -r --arg s "$SLUG" '.[$s].tagPrefix' ci/products.json)"}"
+            PRODUCT=$(jq -r --arg s "$SLUG" '.[$s].display' ci/products.json)
+            BASE=$(jq -r --arg s "$SLUG" '.[$s].artifactBase' ci/products.json)
+            LEIAM=$(jq -r --arg s "$SLUG" '.[$s].readme' ci/products.json)
+            FILTERS=$(jq -r --arg s "$SLUG" '.[$s].pathFilters | join(",")' ci/products.json)
+          else
+            KIND=suite
+            SLUG=suite
+            VERSION="$TAG"
+            PRODUCT=""
+            BASE=$(jq -r '.suite.artifactBase' ci/products.json)
+            LEIAM=$(jq -r '.suite.readme' ci/products.json)
+            FILTERS=""
+          fi
+
+          {
+            echo "tag=$TAG"
+            echo "kind=$KIND"
+            echo "slug=$SLUG"
+            echo "product=$PRODUCT"
+            echo "version=$VERSION"
+            echo "artifactBase=$BASE"
+            echo "pathFilters=$FILTERS"
+            echo "leiam=$LEIAM"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "trem: $KIND ($SLUG) versao $VERSION -> $BASE, filtros: ${FILTERS:-todos}"
+
   windows:
     name: Windows x64
+    needs: resolve
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
@@ -27,38 +105,50 @@ jobs:
 
       - name: Stage installer payload
         shell: pwsh
-        run: ./installer/collect_payload.ps1 -BuildRoot build -Clean
+        run: |
+          $filters = '${{ needs.resolve.outputs.pathFilters }}'
+          $collect = @(
+            "-BuildRoot", "build",
+            "-LeiamE", "${{ needs.resolve.outputs.leiam }}"
+          )
+          if ($filters) { $collect += @("-OnlyPath", ($filters -split ',')) }
+          & ./installer/collect_payload.ps1 @collect -Clean
 
       - name: Build Windows installer (Inno Setup)
         shell: pwsh
         run: |
           choco install innosetup --no-progress -y
           $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
-          & $iscc "/DAppVersion=${{ github.ref_name }}" installer\forja.iss
-          Copy-Item installer/dist/Forja-*-windows-x64.exe ./
+          $kind = '${{ needs.resolve.outputs.kind }}'
+          $defines = @("/DAppVersion=${{ needs.resolve.outputs.tag }}")
+          if ($kind -eq 'product') {
+            $defines += "/DProductName=${{ needs.resolve.outputs.product }}"
+            $defines += "/DProductVersion=${{ needs.resolve.outputs.version }}"
+          }
+          & $iscc @defines installer\forja.iss
+          Copy-Item installer/dist/Forja*.exe ./
 
       - name: Package
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force package/VST3 | Out-Null
-          Get-ChildItem build -Recurse -Directory -Filter VST3 | ForEach-Object {
-            Get-ChildItem $_.FullName -Filter *.vst3 | ForEach-Object {
-              Copy-Item $_.FullName package/VST3/ -Recurse -Force
-            }
+          Get-ChildItem installer/payload -Recurse -Directory -Filter *.vst3 | ForEach-Object {
+            Copy-Item $_.FullName package/VST3/ -Recurse -Force
           }
-          Copy-Item docs/instalar/INSTALAR-WINDOWS.txt package/LEIA-ME.txt
-          Compress-Archive -Path package/* -DestinationPath "Forja-${{ github.ref_name }}-windows-x64.zip"
+          Get-ChildItem installer/payload/LEIA-ME.txt | Copy-Item -Destination package/LEIA-ME.txt -Force
+          Compress-Archive -Path package/* -DestinationPath "${{ needs.resolve.outputs.artifactBase }}-${{ needs.resolve.outputs.version }}-windows-x64.zip"
 
       - uses: actions/upload-artifact@v4
         with:
           name: forja-windows-x64
           path: |
-            Forja-*-windows-x64.zip
-            Forja-*-windows-x64.exe
+            Forja*.zip
+            Forja*.exe
           if-no-files-found: error
 
   macos:
     name: macOS universal
+    needs: resolve
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -81,19 +171,34 @@ jobs:
       - name: Package
         run: |
           mkdir -p package/VST3
-          find build -type d -name "*.vst3" -path "*_artefacts*" -exec cp -R {} package/VST3/ \;
-          cp docs/instalar/INSTALAR-MACOS.txt package/LEIA-ME.txt
+          FILTERS='${{ needs.resolve.outputs.pathFilters }}'
+          while IFS= read -r bundle; do
+            rel="${bundle#build/}"
+            if [ -z "$FILTERS" ]; then
+              cp -R "$bundle" package/VST3/
+              continue
+            fi
+            IFS=','; for filter in $FILTERS; do
+              case "$rel" in "$filter"*) cp -R "$bundle" package/VST3/ ;; esac
+            done
+          done < <(find build -type d -name "*.vst3" -path "*_artefacts*" | sort)
+          if [ '${{ needs.resolve.outputs.kind }}' = suite ]; then
+            cp docs/instalar/INSTALAR-MACOS.txt package/LEIA-ME.txt
+          else
+            cp '${{ needs.resolve.outputs.leiam }}' package/LEIA-ME.txt
+          fi
           cd package
-          zip -qry "../Forja-${GITHUB_REF_NAME}-macos-universal.zip" .
+          zip -qry "../${{ needs.resolve.outputs.artifactBase }}-${{ needs.resolve.outputs.version }}-macos-universal.zip" .
 
       - uses: actions/upload-artifact@v4
         with:
           name: forja-macos-universal
-          path: Forja-*-macos-universal.zip
+          path: Forja*.zip
           if-no-files-found: error
 
   linux:
     name: Linux x64
+    needs: resolve
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -121,21 +226,37 @@ jobs:
       - name: Package
         run: |
           mkdir -p package/VST3
-          find build -type d -name "*.vst3" -path "*_artefacts*" -exec cp -R {} package/VST3/ \;
-          cp docs/instalar/INSTALAR-LINUX.txt package/LEIA-ME.txt
+          FILTERS='${{ needs.resolve.outputs.pathFilters }}'
+          while IFS= read -r bundle; do
+            rel="${bundle#build/}"
+            if [ -z "$FILTERS" ]; then
+              cp -R "$bundle" package/VST3/
+              continue
+            fi
+            IFS=','; for filter in $FILTERS; do
+              case "$rel" in "$filter"*) cp -R "$bundle" package/VST3/ ;; esac
+            done
+          done < <(find build -type d -name "*.vst3" -path "*_artefacts*" | sort)
+          if [ '${{ needs.resolve.outputs.kind }}' = suite ]; then
+            cp docs/instalar/INSTALAR-LINUX.txt package/LEIA-ME.txt
+          else
+            cp '${{ needs.resolve.outputs.leiam }}' package/LEIA-ME.txt
+          fi
           cd package
-          zip -qry "../Forja-${GITHUB_REF_NAME}-linux-x64.zip" .
+          zip -qry "../${{ needs.resolve.outputs.artifactBase }}-${{ needs.resolve.outputs.version }}-linux-x64.zip" .
 
       - uses: actions/upload-artifact@v4
         with:
           name: forja-linux-x64
-          path: Forja-*-linux-x64.zip
+          path: Forja*.zip
           if-no-files-found: error
 
   release:
     name: Publish release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [windows, macos, linux]
+    needs: [resolve, windows, macos, linux]
+    permissions:
+      contents: write
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/download-artifact@v4

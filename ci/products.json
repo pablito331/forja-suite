@@ -1,0 +1,91 @@
+{
+  "_": "Registro unico de produtos da Forja. Fonte de verdade para a CI de release (job resolve), para o coletor de payload (pathFilters) e para o catalogo do site (linha). Append-only: produto novo entra com tagPrefix novo e NUNCA reordena os existentes, porque o tagPrefix e o contrato publico do trem de release. ATENCAO 1: testRegex casa com o NOME DO TESTE do ctest (canivete, forjarack_engine, parity_cinzel, alloc_guard), nao com o target CMake (forja_canivete). ATENCAO 2: pathFilters de tres segmentos (Minis/Canivete/Canivete) fazem o coletor agrupar o payload pelo NOME DO PLUGIN; esse grupo precisa da linha correspondente no catalogo de familias do installer/forja.iss, senao o bundle e coletado mas nao instalado.",
+
+  "suite": {
+    "display": "Forja (suite completa)",
+    "kind": "suite",
+    "artifactBase": "Forja",
+    "tagPrefix": "v",
+    "versionFrom": "0.5.1",
+    "pathFilters": [],
+    "testRegex": "",
+    "readme": "docs/instalar/INSTALAR-WINDOWS.txt"
+  },
+
+  "rack": {
+    "display": "ForjaRack",
+    "kind": "product",
+    "artifactBase": "ForjaRack",
+    "tagPrefix": "vrack-",
+    "versionFrom": "1.0.0",
+    "pathFilters": ["Forjarack"],
+    "testRegex": "^forjarack_",
+    "readme": "Forjarack/Forjarack/README.md"
+  },
+
+  "minis": {
+    "display": "Forja Minis",
+    "kind": "product",
+    "artifactBase": "ForjaMinis",
+    "tagPrefix": "vminis-",
+    "versionFrom": "1.0.0",
+    "pathFilters": ["Minis"],
+    "testRegex": "^(canivete|minidrum|minisat)$",
+    "readme": "docs/instalar/INSTALAR-WINDOWS.txt"
+  },
+
+  "canivete": {
+    "display": "CANIVETE",
+    "kind": "product",
+    "artifactBase": "ForjaCanivete",
+    "tagPrefix": "vcanivete-",
+    "versionFrom": "1.0.0",
+    "pathFilters": ["Minis/Canivete/Canivete"],
+    "testRegex": "^canivete$",
+    "readme": "docs/instalar/INSTALAR-WINDOWS.txt"
+  },
+
+  "minidrum": {
+    "display": "MINIDRUM",
+    "kind": "product",
+    "artifactBase": "ForjaMinidrum",
+    "tagPrefix": "vminidrum-",
+    "versionFrom": "1.0.0",
+    "pathFilters": ["Minis/Minidrum/Minidrum"],
+    "testRegex": "^minidrum$",
+    "readme": "docs/instalar/INSTALAR-WINDOWS.txt"
+  },
+
+  "minisat": {
+    "display": "MINISAT",
+    "kind": "product",
+    "artifactBase": "ForjaMinisat",
+    "tagPrefix": "vminisat-",
+    "versionFrom": "1.0.0",
+    "pathFilters": ["Minis/Minisat/Minisat"],
+    "testRegex": "^minisat$",
+    "readme": "docs/instalar/INSTALAR-WINDOWS.txt"
+  },
+
+  "drumforge": {
+    "display": "Drumforge",
+    "kind": "product",
+    "artifactBase": "ForjaDrumforge",
+    "tagPrefix": "vdrumforge-",
+    "versionFrom": "1.0.0",
+    "pathFilters": ["drumforge"],
+    "testRegex": "^drumforge_engine$",
+    "readme": "docs/instalar/INSTALAR-WINDOWS.txt"
+  },
+
+  "airwindows": {
+    "display": "Forja Airwindows",
+    "kind": "product",
+    "artifactBase": "ForjaAirwindows",
+    "tagPrefix": "vairwindows-",
+    "versionFrom": "1.0.0",
+    "pathFilters": ["Airwindows"],
+    "testRegex": "^(parity_|legacy_parity)|^alloc_guard$",
+    "readme": "docs/instalar/INSTALAR-WINDOWS.txt"
+  }
+}

@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forja — suíte de plugins de mixagem e instrumentos</title>
+<meta name="description" content="Forja: 36 plugins de áudio em JUCE — ForjaRack, Minis, Drumforge e os Airwindows forjados. Windows, macOS e Linux, código aberto com base MIT.">
+<meta name="color-scheme" content="dark">
+<link rel="stylesheet" href="forja-site.css">
+</head>
+<body>
+
+<header class="topo">
+  <div class="marca">
+    <span class="marca__nome">FORJA</span>
+    <span class="marca__sub">suíte de plugins · JUCE · aberto</span>
+  </div>
+  <p class="marca__descricao">
+    Ferramentas de estúdio feitas uma por uma, com a mesma interface de ferro e brasa:
+    o rack de oito gavetas, os instrumentos de gaveta, o sampler de bateria e
+    trinta e um plugins de mixagem derivados do código MIT de Chris Johnson (Airwindows).
+    Windows, macOS e Linux, VST3.
+  </p>
+  <nav aria-label="Seções">
+    <ul class="linha-nav">
+<!--FORJA:NAVEGACAO-->
+      <li><a href="#rack">ForjaRack</a></li>
+      <li><a href="#minis">Minis</a></li>
+      <li><a href="#drumforge">Drumforge</a></li>
+      <li><a href="#eq">Equalização</a></li>
+      <li><a href="#dynamics">Dinâmica</a></li>
+      <li><a href="#saturation">Saturação</a></li>
+      <li><a href="#space">Espaço</a></li>
+      <li><a href="#tape">Fita</a></li>
+      <li><a href="#lofi">Lo-fi</a></li>
+      <li><a href="#oneknob">Um knob</a></li>
+      <li><a href="#amps">Amps e DI</a></li>
+      <li><a href="#strips">Channel strips</a></li>
+<!--/FORJA:NAVEGACAO-->
+    </ul>
+  </nav>
+  <p class="topo__acoes">
+    <a class="botao" href="https://github.com/pablito331/forja-suite/releases/latest">Baixar a suíte</a>
+    <a class="botao botao--fantasma" href="https://github.com/pablito331/forja-suite">Código-fonte</a>
+  </p>
+</header>
+
+<main class="conteudo">
+
+<section class="secao" id="linhas">
+  <h2>Linhas de produto</h2>
+  <p class="secao__nota">
+    Cada linha tem trem de release próprio: os instaladores saem de tags separadas
+    (<code>vrack-</code>, <code>vminis-</code>, <code>vdrumforge-</code>, <code>vairwindows-</code>),
+    e a suíte continua saindo da tag sem prefixo.
+  </p>
+  <div class="grade grade--linhas">
+<!--FORJA:LINHAS-->
+    <article class="card card--linha" data-estado="publicado">
+      <div class="card__fig"><img src="assets/forjarack.png" alt="Interface de ForjaRack" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">ForjaRack</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__resumo">Oito gavetas em cadeia: encaixe modulos Airwindows e monte uma fileira completa sem sair de um unico plug-in.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card card--linha" data-estado="publicado">
+      <div class="card__fig"><img src="assets/canivete.png" alt="Interface de Minis" width="700" height="325" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">Minis</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__resumo">Instrumentos de gaveta: player de soundfont, tocador de kits e saturador de valvula.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card card--linha" data-estado="publicado">
+      <div class="card__fig"><img src="assets/drumforge.png" alt="Interface de Drumforge" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">Drumforge</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__resumo">Sampler de bateria com dezesseis pads, round-robin e uma mesa completa.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card card--linha" data-estado="publicado">
+      <div class="card__fig"><img src="assets/cinzel.png" alt="Interface de Airwindows forjados" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">Airwindows forjados</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__resumo">Trinta e um plugins de mixagem derivados do codigo MIT de Chris Johnson, com interface Forja.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases">Download</a></p>
+      </div>
+    </article>
+<!--/FORJA:LINHAS-->
+  </div>
+</section>
+
+<!--FORJA:SECOES-->
+<section class="secao" id="rack">
+  <h2>ForjaRack</h2>
+  <div class="grade">
+    <article class="card" id="forjarack" data-linha="rack" data-familia="Rack" data-estado="publicado">
+      <div class="card__fig"><img src="assets/forjarack.png" alt="Interface do plugin FORJARACK" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">FORJARACK</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">RACK SERIE 500</p>
+        <p class="card__resumo">Oito gavetas em cadeia: encaixe modulos Airwindows MIT e monte uma fileira de timbre, dinamica, EQ, ambiente e lo-fi sem sair de um unico plug-in.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="secao" id="minis">
+  <h2>Minis</h2>
+  <div class="grade">
+    <article class="card" id="canivete" data-linha="minis" data-familia="Minis" data-estado="publicado">
+      <div class="card__fig"><img src="assets/canivete.png" alt="Interface do plugin CANIVETE" width="700" height="325" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">CANIVETE</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">PLAYER SF2/SF3</p>
+        <p class="card__resumo">CANIVETE é o player de soundfont da suíte: abre bancos .sf2 (e .sf3 quando o build traz o decodificador Ogg) e toca 16 canais GM pelo MIDI da DAW.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="minidrum" data-linha="minis" data-familia="Minis" data-estado="publicado">
+      <div class="card__fig"><img src="assets/minidrum.png" alt="Interface do plugin MINIDRUM" width="700" height="325" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">MINIDRUM</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">TOCADOR DE KITS</p>
+        <p class="card__resumo">MINIDRUM é o Drumforge em formato de gaveta: puxa um kit da biblioteca compartilhada, toca o premix gravado no próprio arquivo e manda no nível com um único knob.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="minisat" data-linha="minis" data-familia="Minis" data-estado="publicado">
+      <div class="card__fig"><img src="assets/minisat.png" alt="Interface do plugin MINISAT" width="700" height="325" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">MINISAT</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">SATURADOR DE VÁLVULAS</p>
+        <p class="card__resumo">MINISAT é a válvula do BRASA (Airwindows Tube2) em formato de gaveta: um único knob DRIVE leva o sinal do pad documentado ao sinal cheio, sem makeup gain e sem mesa de três knobs.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="secao" id="drumforge">
+  <h2>Drumforge</h2>
+  <div class="grade">
+    <article class="card" id="drumforge" data-linha="drumforge" data-familia="Drumforge" data-estado="publicado">
+      <div class="card__fig"><img src="assets/drumforge.png" alt="Interface do plugin DRUMFORGE" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">DRUMFORGE</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">SAMPLER DE BATERIA</p>
+        <p class="card__resumo">Dezesseis pads, camadas de velocidade, round-robin e uma mesa completa: o kit entra, o groove sai. Sem latência e sem depender de biblioteca externa.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="secao" id="eq">
+  <h2>Equalização</h2>
+  <div class="grade">
+    <article class="card" id="cinzel" data-linha="airwindows" data-familia="Eq" data-estado="publicado">
+      <div class="card__fig"><img src="assets/cinzel.png" alt="Interface do plugin CINZÉL" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">CINZÉL</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">EQUALIZADOR PARAMÉTRICO DINÂMICO</p>
+        <p class="card__resumo">Três bandas paramétricas com ressonância musical e uma camada dinâmica opcional que só existe na Forja: esculpe sem estourar.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="lima" data-linha="airwindows" data-familia="Eq" data-estado="publicado">
+      <div class="card__fig"><img src="assets/lima.png" alt="Interface do plugin LIMA" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">LIMA</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">EQUALIZADOR DE BUS</p>
+        <p class="card__resumo">Quatro bandas largas separadas por crossovers suaves, sem saturação: o ajuste que o bus inteiro aceita sem soar mexido.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="torno" data-linha="airwindows" data-familia="Eq" data-estado="publicado">
+      <div class="card__fig"><img src="assets/torno.png" alt="Interface do plugin TORNO" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">TORNO</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">SHELVES DE TOM</p>
+        <p class="card__resumo">Dois shelves Bessel entrelaçados e um estágio de Console: o tom muda de forma contínua, sem degraus e sem dureza.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="secao" id="dynamics">
+  <h2>Dinâmica</h2>
+  <div class="grade">
+    <article class="card" id="dique" data-linha="airwindows" data-familia="Dynamics" data-estado="publicado">
+      <div class="card__fig"><img src="assets/dique.png" alt="Interface do plugin DIQUE" width="1370" height="620" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">DIQUE</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">CLIPE DE PICO</p>
+        <p class="card__resumo">A última comporta antes da saída: o FinalClip arredonda picos extremos acima de +4,18 dBFS. Abaixo disso, o sinal passa intacto.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="escoria" data-linha="airwindows" data-familia="Dynamics" data-estado="publicado">
+      <div class="card__fig"><img src="assets/escoria.png" alt="Interface do plugin ESCÓRIA" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">ESCÓRIA</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">DE-ESSER DINÂMICO</p>
+        <p class="card__resumo">Escória é o resíduo que sobra do metal. Aqui, é o agudo que incomoda: o detector acha os transientes e devolve o resto intacto.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="malho" data-linha="airwindows" data-familia="Dynamics" data-estado="publicado">
+      <div class="card__fig"><img src="assets/malho.png" alt="Interface do plugin MALHO" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">MALHO</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">COMPRESSOR DE IMPACTO</p>
+        <p class="card__resumo">Ataque e soltura separados, envelopes independentes por canal e um drive que deixou o sinal na frente. Feito para bateria e bus de impacto.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="muralha" data-linha="airwindows" data-familia="Dynamics" data-estado="publicado">
+      <div class="card__fig"><img src="assets/muralha.png" alt="Interface do plugin MURALHA" width="1690" height="901" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">MURALHA</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">LIMITADOR ADAPTATIVO</p>
+        <p class="card__resumo">Um muro no fim da cadeia: o sinal pode entrar quente, mas o pico sai contido. O ADClip9 adapta o clipe ao movimento do material em vez de usar um teto fixo.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="prensa" data-linha="airwindows" data-familia="Dynamics" data-estado="publicado">
+      <div class="card__fig"><img src="assets/prensa.png" alt="Interface do plugin PRENSA" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">PRENSA</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">COMPRESSOR VARI-MU</p>
+        <p class="card__resumo">Densidade e caráter vari-mu com detector estéreo linkado. Apressa o sinal sem perder o corpo.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="tempera" data-linha="airwindows" data-familia="Dynamics" data-estado="publicado">
+      <div class="card__fig"><img src="assets/tempera.png" alt="Interface do plugin TÉMPERA" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">TÉMPERA</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">COMPRESSOR DE BUS</p>
+        <p class="card__resumo">Quatro compressores paralelos que se alternam a cada amostra para colar o bus sem apagar o ataque. O movimento é suave e o caráter, musical.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="secao" id="saturation">
+  <h2>Saturação</h2>
+  <div class="grade">
+    <article class="card" id="brasa" data-linha="airwindows" data-familia="Saturation" data-estado="publicado">
+      <div class="card__fig"><img src="assets/brasa.png" alt="Interface do plugin BRASA" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">BRASA</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">SATURADOR DE VÁLVULA</p>
+        <p class="card__resumo">Um modelador de válvula assimétrico para calor, cola e compressão natural. O sinal ganha peso harmônico sem perder o ataque.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="secao" id="space">
+  <h2>Espaço</h2>
+  <div class="grade">
+    <article class="card" id="eco" data-linha="airwindows" data-familia="Space" data-estado="publicado">
+      <div class="card__fig"><img src="assets/eco.png" alt="Interface do plugin ECO" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">ECO</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">ESPAÇO DE ECO</p>
+        <p class="card__resumo">Eco não é um delay com um tempo: é uma sala inteira. O Echojam desenha dezessete espaços fixos, cada um com seu próprio conjunto de tempos de parede, e o Forja os expõe num só seletor. O atraso é musical, não compensação de latência.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="folego" data-linha="airwindows" data-familia="Space" data-estado="publicado">
+      <div class="card__fig"><img src="assets/folego.png" alt="Interface do plugin FÔLEGO" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">FÔLEGO</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">AMBIENTE DE CLUBE</p>
+        <p class="card__resumo">FÔLEGO é o ambiente de um clube de 272 lugares: reflexões iniciais curtas, corpo de seis vias por canal e dois estágios de subamostragem por Bézier. É o par pequeno do SALÃO. O atraso interno é musical, não compensação de latência.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="repique" data-linha="airwindows" data-familia="Space" data-estado="publicado">
+      <div class="card__fig"><img src="assets/repique.png" alt="Interface do plugin REPIQUE" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">REPIQUE</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">DELAY DE FITA</p>
+        <p class="card__resumo">Repique é o eco de uma máquina de fita: a cópia volta com o filtro do cabeçote, com a velocidade oscilando e com uma regeneração que vira ressonância quando o filtro aperta. O atraso é musical, não compensação de latência.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="salao" data-linha="airwindows" data-familia="Space" data-estado="publicado">
+      <div class="card__fig"><img src="assets/salao.png" alt="Interface do plugin SALÃO" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">SALÃO</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">SALA GRANDE</p>
+        <p class="card__resumo">SALÃO é uma sala de concerto, não um reverb de placa. O kRockstar2 junta reflexões iniciais curtas, um corpo de realimentação de seis vias por canal e um piso de ruído de sala. O atraso interno é musical: não há compensação de latência.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="secao" id="tape">
+  <h2>Fita</h2>
+  <div class="grade">
+    <article class="card" id="laminador" data-linha="airwindows" data-familia="Tape" data-estado="publicado">
+      <div class="card__fig"><img src="assets/laminador.png" alt="Interface do plugin LAMINADOR" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">LAMINADOR</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">FITA DE ESTÚDIO</p>
+        <p class="card__resumo">Laminar é passar o metal entre cilindros até ele ficar do jeito certo. Aqui, o cilindro é a fita: a entrada ganha corpo, o cabeçote reforça o grave e o flutter move a velocidade como uma máquina real.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="oxido" data-linha="airwindows" data-familia="Tape" data-estado="publicado">
+      <div class="card__fig"><img src="assets/oxido.png" alt="Interface do plugin ÓXIDO" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">ÓXIDO</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">FITA E LO-FI</p>
+        <p class="card__resumo">Óxido de ferro é o que dá cor à fita. Aqui, ele é o grão: velocidade, flutter e ruído constroem a textura, e a mistura pode ir de só seco a só fita, inclusive invertida.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="secao" id="lofi">
+  <h2>Lo-fi</h2>
+  <div class="grade">
+    <article class="card" id="granalha" data-linha="airwindows" data-familia="Lofi" data-estado="publicado">
+      <div class="card__fig"><img src="assets/granalha.png" alt="Interface do plugin GRANALHA" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">GRANALHA</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">REDUTOR DE BITS</p>
+        <p class="card__resumo">GRANALHA é o grão digital controlado: reduz a resolução da onda, redesenha os degraus em Bézier e deixa o brilho e os graves decidirem onde o lo-fi morde. É o bitcrusher da suíte, feito para sujar sem perder o corpo.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="secao" id="oneknob">
+  <h2>Um knob</h2>
+  <div class="grade">
+    <article class="card" id="cera" data-linha="airwindows" data-familia="OneKnob" data-estado="publicado">
+      <div class="card__fig"><img src="assets/cera.png" alt="Interface do plugin CERA" width="700" height="325" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">CERA</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">CALOR ASSIMÉTRICO</p>
+        <p class="card__resumo">CERA derrete o sinal com uma curva assimétrica e devolve a diferença em derivadas: o resultado é calor de valvula sem perda de ataque. O ponto neutro é exatamente 0,50.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="corpo" data-linha="airwindows" data-familia="OneKnob" data-estado="publicado">
+      <div class="card__fig"><img src="assets/corpo.png" alt="Interface do plugin CORPO" width="700" height="325" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">CORPO</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">CORPO E GRAVES</p>
+        <p class="card__resumo">CORPO é o ganho com forma: o Mojo empurra a onda para dentro de uma curva que engorda o sinal, dando peso e graves sem a aspereza de um drive comum.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="impeto" data-linha="airwindows" data-familia="OneKnob" data-estado="publicado">
+      <div class="card__fig"><img src="assets/impeto.png" alt="Interface do plugin ÍMPETO" width="700" height="325" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">ÍMPETO</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">COMPRESSÃO RÁPIDA</p>
+        <p class="card__resumo">ÍMPETO é compressão sem envelope: a quarta potência do sinal vira a própria curva, então o pico é dobrado para dentro instantaneamente, sem ataque, release ou detector.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="lixa" data-linha="airwindows" data-familia="OneKnob" data-estado="publicado">
+      <div class="card__fig"><img src="assets/lixa.png" alt="Interface do plugin LIXA" width="700" height="325" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">LIXA</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">DRIVE LIMPO</p>
+        <p class="card__resumo">LIXA é o drive de um só controle que não vira distorção: uma curva de seno arredonda os picos e a quantidade aplicada acompanha o próprio sinal. Serve para limpar transientes e dar cola sem chiado.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="mel" data-linha="airwindows" data-familia="OneKnob" data-estado="publicado">
+      <div class="card__fig"><img src="assets/mel.png" alt="Interface do plugin MEL" width="700" height="325" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">MEL</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">BRILHO SUAVE</p>
+        <p class="card__resumo">MEL é o adoçador de topo: uma média curta do sinal ao quadrado é subtraída da entrada, arredondando picos e amaciar os agudos sem injetar harmônicos de exciter.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="rebarba" data-linha="airwindows" data-familia="OneKnob" data-estado="publicado">
+      <div class="card__fig"><img src="assets/rebarba.png" alt="Interface do plugin REBARBA" width="700" height="325" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">REBARBA</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">SUAVIZAÇÃO DE SLEW</p>
+        <p class="card__resumo">REBARBA lima as arestas da onda: um preditor de três amostras estima o próximo passo e o limitador corta o que passa do limite. É o removedor de rebarba do sinal digital.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="secao" id="amps">
+  <h2>Amps e DI</h2>
+  <div class="grade">
+    <article class="card" id="chime" data-linha="airwindows" data-familia="Amps" data-estado="publicado">
+      <div class="card__fig"><img src="assets/chime.png" alt="Interface do plugin CHIME" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">CHIME</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">AMP CHIME</p>
+        <p class="card__resumo">CHIME é o amp comprimido da família: cada banda tem seu próprio seguidor de envelope, então o ataque abre o som e o corpo sustenta. Serve para guitarras que precisam brilhar sem gritar.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="crick" data-linha="airwindows" data-familia="Amps" data-estado="publicado">
+      <div class="card__fig"><img src="assets/crick.png" alt="Interface do plugin CRICK" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">CRICK</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">BAIXO DE DOIS CAPTADORES</p>
+        <p class="card__resumo">CRICK é um amp de baixo com dois caminhos de captador: o canal esquerdo e o direito passam por estágios de saturação e gabinetes diferentes, como um baixo com dois captadores no mesmo amp.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="deluxe" data-linha="airwindows" data-familia="Amps" data-estado="publicado">
+      <div class="card__fig"><img src="assets/deluxe.png" alt="Interface do plugin DELUXE" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">DELUXE</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">DI COMPRIMIDO</p>
+        <p class="card__resumo">DELUXE é o DI da família: dez bandas fixas, dezesseis blocos de filtro em cascata e um seguidor de envelope por banda. O sinal sai comprimido, com ataque preservado e corpo no lugar.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="gabinete" data-linha="airwindows" data-familia="Amps" data-estado="publicado">
+      <div class="card__fig"><img src="assets/gabinete.png" alt="Interface do plugin GABINETE" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">GABINETE</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">GABINETE FASEADO</p>
+        <p class="card__resumo">GABINETE é a cor do alto-falante sem distorção: dois filtros em cascata que fecham o topo e afinam o corpo, como um cone real em um recinto. Serve a guitarra, baixo ou voz.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="lobo" data-linha="airwindows" data-familia="Amps" data-estado="publicado">
+      <div class="card__fig"><img src="assets/lobo.png" alt="Interface do plugin LOBO" width="700" height="325" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">LOBO</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">TRANSFORMADOR DI</p>
+        <p class="card__resumo">LOBO é um DI de transformador sem controles: dois preditores Kalman em série limpam e dão corpo ao sinal antes do amp, como um transformador de entrada bem escolhido.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="ponta" data-linha="airwindows" data-familia="Amps" data-estado="publicado">
+      <div class="card__fig"><img src="assets/ponta.png" alt="Interface do plugin PONTA" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">PONTA</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">AMP DE GUITARRA</p>
+        <p class="card__resumo">PONTA é um amp de guitarra completo em um só plugin: pré com distorção, equalização de três bandas, gabinete e gate. Do sinal de entrada ao cone, sem pedais.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="secao" id="strips">
+  <h2>Channel strips</h2>
+  <div class="grade">
+    <article class="card" id="bigorna" data-linha="airwindows" data-familia="Strips" data-estado="publicado">
+      <div class="card__fig"><img src="assets/bigorna.png" alt="Interface do plugin BIGORNA" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">BIGORNA</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">CHANNEL STRIP COMPLETO</p>
+        <p class="card__resumo">A bigorna molda a peça inteira: EQ de três bandas, filtros, compressor e uma saída que também aquece. Um strip, um caminho.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+
+    <article class="card" id="cadinho" data-linha="airwindows" data-familia="Strips" data-estado="publicado">
+      <div class="card__fig"><img src="assets/cadinho.png" alt="Interface do plugin CADINHO" width="1250" height="675" loading="lazy"></div>
+      <div class="card__corpo">
+        <div class="card__cabeca">
+          <h3 class="card__nome">CADINHO</h3>
+          <span class="selo">disponível</span>
+        </div>
+        <p class="card__sub">STRIP DE BUS</p>
+        <p class="card__resumo">No cadinho o metal se mistura: quatro bandas entrelaçadas, compressão de bandas e ClipOnly3 na saída. Feito para bus e master.</p>
+        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+      </div>
+    </article>
+  </div>
+</section>
+<!--/FORJA:SECOES-->
+
+</main>
+
+<footer class="rodape">
+  <p>
+    Forja é código aberto: os plugins da linha Airwindows partem do código MIT de
+    Chris Johnson e cada adaptador é conferido por teste de paridade com o original.
+    Interface desenhada em JUCE, sem janelas nativas.
+  </p>
+  <p>
+    <a href="https://github.com/pablito331/forja-suite">github.com/pablito331/forja-suite</a> ·
+    <a href="https://github.com/pablito331/forja-suite/blob/main/LICENSE">licença</a> ·
+    <a href="https://github.com/pablito331/forja-suite/releases">todas as versões</a>
+  </p>
+</footer>
+
+</body>
+</html>

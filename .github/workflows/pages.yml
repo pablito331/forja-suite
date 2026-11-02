@@ -1,0 +1,54 @@
+name: Pages
+
+# Publica site/ no GitHub Pages (https://<usuario>.github.io/forja-suite/).
+# A pagina e HTML estatico: o index.html gerado por tools/build_site.ps1 esta
+# commitado, entao aqui so valida e entrega a pasta. Roda em Windows porque
+# build_site le as dimensoes dos PNGs para escrever width/height no <img>; em
+# outro SO o HTML gerado sairia diferente do commitado e o -Checks reclamaria.
+# Precisa uma vez de Settings -> Pages -> Source: GitHub Actions.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "site/**"
+      - "ci/products.json"
+      - "forja-ui-theme.css"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    name: Validate and publish
+    runs-on: windows-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate catalog against the repo
+        shell: pwsh
+        run: ./tools/validate_site.ps1
+
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

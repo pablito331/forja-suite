@@ -1,0 +1,325 @@
+/* Layout da pagina da Forja (site/index.html).
+   So define estrutura: cabecalho, grade, cards, rodape. Os tokens de cor e as
+   fontes vem do tema compartilhado dos plugins (forja-ui-theme.css), copiado para
+   dentro de site/ por tools/build_site.ps1 para funcionar no GitHub Pages. */
+
+@import url("forja-ui-theme.css");
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--forja-iron-0);
+}
+
+body {
+  margin: 0;
+  padding: 0 var(--forja-space-5) var(--forja-space-5);
+  max-width: 1320px;
+  color: var(--forja-text);
+  background: linear-gradient(180deg, var(--forja-iron-1) 0, var(--forja-iron-0) 340px);
+  font: 400 15px/1.6 var(--forja-font-ui);
+}
+
+a {
+  color: var(--forja-ember-soft);
+}
+
+a:hover {
+  color: var(--forja-ember-pale);
+}
+
+h2 {
+  margin: 0 0 var(--forja-space-3);
+  color: var(--forja-text);
+  font: 400 27px/1.25 var(--forja-font-display);
+}
+
+/* ---------------------------------------------------------------- cabecalho */
+
+.topo {
+  padding: var(--forja-space-5) 0 var(--forja-space-4);
+  border-bottom: var(--forja-border);
+}
+
+.marca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--forja-space-3);
+}
+
+.marca__nome {
+  color: var(--forja-ember);
+  font: 400 46px/1 var(--forja-font-display);
+  letter-spacing: .06em;
+}
+
+.marca__sub {
+  color: var(--forja-dim);
+  font: 600 10px/1.3 var(--forja-font-ui);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.marca__descricao {
+  max-width: 74ch;
+  margin: var(--forja-space-4) 0 0;
+  color: var(--forja-muted);
+  font: 400 17px/1.6 var(--forja-font-ui);
+}
+
+.topo__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--forja-space-2);
+  margin-top: var(--forja-space-4);
+}
+
+/* Nav de ancora no topo da pagina. */
+.linha-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--forja-space-1);
+  margin: var(--forja-space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linha-nav a {
+  display: inline-block;
+  padding: 5px 10px;
+  color: var(--forja-muted);
+  background: var(--forja-iron-2);
+  border: var(--forja-border);
+  border-radius: var(--forja-radius-sm);
+  font: 600 11px/1.3 var(--forja-font-ui);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.linha-nav a:hover {
+  color: var(--forja-ember-pale);
+  border-color: #885021;
+}
+
+/* -------------------------------------------------------------------- botoes */
+
+.botao {
+  display: inline-block;
+  min-height: 34px;
+  padding: 8px 16px;
+  color: var(--forja-iron-0);
+  background: linear-gradient(180deg, var(--forja-ember-soft), var(--forja-ember));
+  border: 1px solid #a85716;
+  border-radius: var(--forja-radius-sm);
+  font: 700 12px/1.3 var(--forja-font-ui);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.botao:hover {
+  color: var(--forja-iron-0);
+  background: linear-gradient(180deg, var(--forja-ember-pale), var(--forja-ember-soft));
+}
+
+.botao--fantasma {
+  color: var(--forja-muted);
+  background: linear-gradient(180deg, var(--forja-iron-4), var(--forja-iron-2));
+  border: var(--forja-border);
+}
+
+.botao--fantasma:hover {
+  color: var(--forja-ember-pale);
+  background: var(--forja-iron-4);
+  border-color: #885021;
+}
+
+.botao--sm {
+  min-height: 28px;
+  padding: 6px 11px;
+  font-size: 11px;
+}
+
+/* ------------------------------------------------------------------ containers */
+
+.conteudo {
+  padding-top: var(--forja-space-5);
+}
+
+.secao {
+  margin: 0 0 var(--forja-space-5);
+  padding-bottom: var(--forja-space-4);
+}
+
+.secao__nota {
+  margin: calc(-1 * var(--forja-space-3)) 0 var(--forja-space-4);
+  color: var(--forja-dim);
+  font: 400 13px/1.5 var(--forja-font-ui);
+}
+
+.grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--forja-space-4);
+}
+
+.grade--linhas {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* ---------------------------------------------------------------------- cards */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--forja-iron-3), var(--forja-iron-2) 70%);
+  border: var(--forja-border);
+  border-radius: var(--forja-radius-md);
+}
+
+.card:hover {
+  border-color: var(--forja-line-strong);
+}
+
+.card__fig {
+  display: block;
+  margin: 0;
+  border-bottom: var(--forja-border);
+  background: var(--forja-iron-0);
+}
+
+.card__fig img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.card__fig--sem-imagem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1000 / 540;
+  color: var(--forja-dim);
+  font: 600 11px/1.2 var(--forja-font-ui);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  background: repeating-linear-gradient(135deg, var(--forja-iron-1) 0 14px, #101319 14px 28px);
+}
+
+.card__corpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--forja-space-2);
+  padding: var(--forja-space-3) var(--forja-space-3) var(--forja-space-4);
+}
+
+.card__cabeca {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--forja-space-2);
+}
+
+.card__nome {
+  margin: 0;
+  color: var(--forja-text);
+  font: 400 22px/1.1 var(--forja-font-display);
+  letter-spacing: .02em;
+}
+
+.card__sub {
+  margin: 0;
+  color: var(--forja-dim);
+  font: 600 9px/1.4 var(--forja-font-ui);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.card__resumo {
+  flex: 1 1 auto;
+  margin: 0;
+  color: var(--forja-muted);
+  font: 400 14px/1.55 var(--forja-font-ui);
+}
+
+.card__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--forja-space-2);
+  margin: 0;
+}
+
+.card__link-video {
+  align-self: center;
+  color: var(--forja-ember-soft);
+  font: 600 12px/1.3 var(--forja-font-ui);
+}
+
+/* Selos de estado no canto do card. */
+.selo {
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  color: var(--forja-success);
+  background: #1e3027;
+  border: 1px solid #34523d;
+  border-radius: var(--forja-radius-sm);
+  font: 700 9px/1.3 var(--forja-font-ui);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.card[data-estado="video"] .selo {
+  color: var(--forja-ember-soft);
+  background: #342617;
+  border-color: #785126;
+}
+
+.card[data-estado="breve"] .selo {
+  color: var(--forja-dim);
+  background: var(--forja-iron-1);
+  border-color: var(--forja-line);
+}
+
+.card[data-estado="breve"] {
+  border-style: dashed;
+}
+
+/* Cards de linha de produto: um pouco mais de presenca. */
+.card--linha .card__nome {
+  font-size: 26px;
+}
+
+/* -------------------------------------------------------------------- rodape */
+
+.rodape {
+  margin-top: var(--forja-space-5);
+  padding-top: var(--forja-space-4);
+  color: var(--forja-dim);
+  border-top: var(--forja-border);
+  font: 400 13px/1.6 var(--forja-font-ui);
+}
+
+.rodape a {
+  color: var(--forja-muted);
+}
+
+@media (max-width: 640px) {
+  body {
+    padding: 0 var(--forja-space-3) var(--forja-space-4);
+  }
+
+  .marca__nome {
+    font-size: 36px;
+  }
+
+  .grade {
+    grid-template-columns: 1fr;
+  }
+}

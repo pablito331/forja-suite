@@ -210,6 +210,10 @@ alocação, silêncio → ~0, latência de impulso igual à tabela.
   substitutos (`DSP-006`, `DSP-009`, …) quando for o caso.
 - `README.md` da suíte: família, modelo, número de controles e latência.
 - `MIX-009`: amplie o léxico se o plugin for de mixagem.
+- `site/catalogo.json`: registre o card (slug, nome, família, linha, subtítulo, resumo,
+  estado e imagem). O `nome` e o `resumo` do card têm de ser exatamente o `info.title` e o
+  `info.tagline` do `ForjaInfoText.h` — o validador confere e a CI de Pages falha se você
+  esquecer. Depois rode `tools/build_site.ps1` e commite o `site/index.html` gerado.
 
 ## 8. Verificação
 
@@ -226,6 +230,10 @@ ctest --test-dir build -C Release --output-on-failure
 - Confira a latência medida contra `setLatencySamples`.
 - Rode `tools/sync_prototipos.ps1` para atualizar `Documents/prototipos` (o usuário testa
   o VST3 ali); feche a DAW antes, porque ela trava as pastas `.vst3` copiadas.
+- Rode `tools/validate_site.ps1`: ele cruza catálogo ↔ targets CMake ↔ `ForjaInfoText.h` ↔
+  capturas ↔ `ci/products.json` e confere se o `index.html` está atualizado.
+- Se o plugin pertence a uma linha com trem próprio, confira `ci/products.json` (ver
+  `docs/RELEASES.md`); plugin novo na suíte não pede mudança lá, só produto novo.
 
 ## Dicas específicas
 

@@ -448,7 +448,11 @@ void SoundFontEngine::process (juce::MidiBuffer& midi,
 
     meter.clip = meter.peakLeft > 1.0f || meter.peakRight > 1.0f;
     meter.activeVoices = tsf_active_voice_count (bank.handle);
-    lastMeter.store (meter, std::memory_order_relaxed);
+    // Espelho campo a campo (nada de atomic<Meter> de 16 bytes -- ver readMeter).
+    meterPeakL.store (meter.peakLeft, std::memory_order_relaxed);
+    meterPeakR.store (meter.peakRight, std::memory_order_relaxed);
+    meterVoices.store (meter.activeVoices, std::memory_order_relaxed);
+    meterClip.store (meter.clip, std::memory_order_relaxed);
 }
 
 } // namespace forja::canivete

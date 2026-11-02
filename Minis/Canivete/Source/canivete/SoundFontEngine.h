@@ -57,7 +57,21 @@ public:
         bool clip = false;
     };
 
-    Meter readMeter() const noexcept { return lastMeter.load (std::memory_order_relaxed); }
+    // Espelho do ultimo bloco, lido pela UI e pela gaveta do rack. Os campos sao
+    // atomicos separados de proposito: um std::atomic<Meter> de 16 bytes vira
+    // chamada a libatomic (__atomic_store_16/__atomic_load_16) no GCC de x86_64,
+    // e uma estatica (o SharedCode do plugin) nao pode adicionar -latomic no link
+    // -- o plugin entao falha em tempo de link de Linux. Atomicos de 4/1 byte sao
+    // sempre lock-free e nao precisam de biblioteca nenhuma.
+    Meter readMeter() const noexcept
+    {
+        Meter m {};
+        m.peakLeft = meterPeakL.load (std::memory_order_relaxed);
+        m.peakRight = meterPeakR.load (std::memory_order_relaxed);
+        m.activeVoices = meterVoices.load (std::memory_order_relaxed);
+        m.clip = meterClip.load (std::memory_order_relaxed);
+        return m;
+    }
 
     void setVolume (float volume01) noexcept { volume.store (volume01, std::memory_order_relaxed); }
     float getVolume() const noexcept { return volume.load (std::memory_order_relaxed); }
@@ -173,7 +187,10 @@ private:
     std::atomic<int> acceptedToken { 0 };
 
     std::vector<float> renderScratch;   // par estereo desenweavado, pre-alocado
-    std::atomic<Meter> lastMeter { Meter{} };
+    std::atomic<float> meterPeakL { 0.0f };
+    std::atomic<float> meterPeakR { 0.0f };
+    std::atomic<int> meterVoices { 0 };
+    std::atomic<bool> meterClip { false };
 
     double sampleRate = 48000.0;
     std::atomic<float> volume { 0.5f };   // 0,5 = 0 dB na curva do rack

@@ -198,6 +198,13 @@ ctest --test-dir build -C Release --output-on-failure
   object`). O CMake só liga `-fPIC` por padrão em alvos `SHARED`/`MODULE`, nunca em
   `STATIC`, e o MSVC ignora a propriedade — o build de Windows nunca avisa. Vale para
   qualquer estática nova que entre no link de um plugin.
+- **Outro link de Linux que o MSVC não avisa**: nunca use `std::atomic<T>` de 16 bytes
+  (uma struct de medidor redonda, por exemplo) no SharedCode. No GCC de x86_64 isso vira
+  chamada a `libatomic` (`__atomic_store_16`/`__atomic_load_16`), e uma **estática não
+  pode adicionar `-latomic`** no link do plugin compartilhado — o `ld` reprova com
+  `undefined reference`. O MSVC faz lock-free in-line e compila limpo, então só a CI de
+  Linux pega. Publique medidores como atômicos POD separados (4/1 byte, sempre lock-free)
+  e remonte o agregado na leitura. Foi assim que o CANIVETE consertou o link.
 - **Antes de taggar**, confira localmente: `ci/test_resolve.ps1`, depois
   `installer/collect_payload.ps1 -BuildRoot build -Clean` e `ISCC.exe installer/forja.iss`.
   O `ISCC` não vem na máquina (`winget install --id JRSoftware.InnoSetup`) e é o único jeito

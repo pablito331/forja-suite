@@ -123,15 +123,16 @@ jobs:
         shell: powershell
         run: |
           $filters = '${{ needs.resolve.outputs.pathFilters }}'
-          $collect = @(
-            "-BuildRoot", "build",
-            "-LeiamE", "${{ needs.resolve.outputs.leiam }}"
-          )
-          if ($filters) { $collect += @("-OnlyPath", ($filters -split ',')) }
+          $splat = @{
+            BuildRoot = 'build'
+            Clean     = $true
+            LeiamE    = '${{ needs.resolve.outputs.leiam }}'
+          }
+          if ($filters) { $splat['OnlyPath'] = @($filters -split ',') }
           # O log do job de repo publico so abre para quem tem sessao, entao o
           # erro vai para as anotacoes (tee para nao perder a saida do console).
           try {
-            & ./installer/collect_payload.ps1 @collect -Clean 2>&1 |
+            & ./installer/collect_payload.ps1 @splat 2>&1 |
               Tee-Object -FilePath payload.log | Out-Host
             if (-not $?) { throw "collect_payload.ps1 terminou com sucesso falso" }
           } catch {
@@ -242,15 +243,9 @@ jobs:
             echo "::error::nenhum teste casa com '$REGEX' de ci/products.json"
             exit 1
           fi
-          alvos=$(make -C build/Tests help |
-            sed -n 's/^\.\.\. \([A-Za-z0-9_]\+\):.*$/\1/p')
           for nome in $nomes; do
             alvo="forja_$nome"
-            if ! printf '%s\n' "$alvos" | grep -qx "$alvo"; then
-              echo "::error::teste '$nome' nao tem alvo '$alvo' no build de Tests"
-              exit 1
-            fi
-            cmake --build build/Tests --target "$alvo" --parallel 2>&1 | tee -a test-macos.log
+            cmake --build build --target "$alvo" --parallel 2>&1 | tee -a test-macos.log
           done
           ctest --test-dir build -R "$REGEX" --output-on-failure 2>&1 | tee -a test-macos.log
 
@@ -303,7 +298,7 @@ jobs:
             build-essential cmake ninja-build pkg-config \
             libasound2-dev libx11-dev libxext-dev libxinerama-dev \
             libxrandr-dev libxcursor-dev libxcomposite-dev libxrender-dev \
-            libxi-dev \
+            libxi-dev libgtk-3-dev \
             libfreetype6-dev libfontconfig1-dev libglu1-mesa-dev \
             libcurl4-openssl-dev
 

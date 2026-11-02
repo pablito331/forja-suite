@@ -14,7 +14,7 @@ inline ui::ForjaInfo makeForjaInfo()
     info.title = "CERA";
     info.subtitle = u ("CALOR ASSIM\u00c9TRICO \u00b7 FORJA");
     info.tagline = u ("CERA derrete o sinal com uma curva assim\u00e9trica e devolve a "
-                      "diferen\u00e7a em derivadas: o resultado \u00e9 calor de valvula sem "
+                      "diferen\u00e7a em derivadas: o resultado \u00e9 calor de v\u00e1lvula sem "
                       "perda de ataque. O ponto neutro \u00e9 exatamente 0,50.");
 
     info.sections.push_back ({

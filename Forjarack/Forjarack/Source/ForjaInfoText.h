@@ -15,10 +15,10 @@ inline forja::ui::ForjaInfo makeForjaInfo()
 
     forja::ui::ForjaInfo info;
     info.title = "FORJARACK";
-    info.subtitle = u ("RACK SERIE 500 \u00b7 FORJA");
-    info.tagline = u ("Oito gavetas em cadeia: encaixe modulos Airwindows MIT e "
-                      "monte uma fileira de timbre, dinamica, EQ, ambiente e lo-fi "
-                      "sem sair de um unico plug-in.");
+    info.subtitle = u ("RACK S\u00c9RIE 500 \u00b7 FORJA");
+    info.tagline = u ("Oito gavetas em cadeia: encaixe m\u00f3dulos Airwindows MIT e "
+                      "monte uma fileira de timbre, din\u00e2mica, EQ, ambiente e lo-fi "
+                      "sem sair de um \u00fanico plug-in.");
 
     info.sections.push_back ({
         u ("O que faz"),

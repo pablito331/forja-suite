@@ -17,8 +17,8 @@ html {
 
 body {
   margin: 0 auto;
-  padding: 0 var(--forja-space-5) var(--forja-space-5);
-  max-width: 1320px;
+  padding: 0 clamp(16px, 4vw, 64px) var(--forja-space-5);
+  max-width: 1880px;
   color: var(--forja-text);
   background: linear-gradient(180deg, var(--forja-iron-1) 0, var(--forja-iron-0) 340px);
   font: 400 15px/1.6 var(--forja-font-ui);
@@ -35,7 +35,7 @@ a:hover {
 h2 {
   margin: 0 0 var(--forja-space-3);
   color: var(--forja-text);
-  font: 400 27px/1.25 var(--forja-font-display);
+  font: 400 clamp(22px, 1.2rem + 1vw, 32px)/1.25 var(--forja-font-display);
 }
 
 /* ---------------------------------------------------------------- cabecalho */
@@ -54,7 +54,7 @@ h2 {
 
 .marca__nome {
   color: var(--forja-ember);
-  font: 400 46px/1 var(--forja-font-display);
+  font: 400 clamp(38px, 2rem + 3vw, 60px)/1 var(--forja-font-display);
   letter-spacing: .06em;
 }
 
@@ -66,10 +66,10 @@ h2 {
 }
 
 .marca__descricao {
-  max-width: 74ch;
+  max-width: 84ch;
   margin: var(--forja-space-4) 0 0;
   color: var(--forja-muted);
-  font: 400 17px/1.6 var(--forja-font-ui);
+  font: 400 clamp(15px, 0.9rem + 0.4vw, 18px)/1.6 var(--forja-font-ui);
 }
 
 .topo__acoes {
@@ -165,12 +165,12 @@ h2 {
 
 .grade {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
   gap: var(--forja-space-4);
 }
 
 .grade--linhas {
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
 }
 
 /* ---------------------------------------------------------------------- cards */
@@ -319,8 +319,73 @@ h2 {
     font-size: 36px;
   }
 
-  .grade {
+  .grade,
+  .grade--linhas {
     grid-template-columns: 1fr;
+  }
+
+  .secao--sobre {
+    padding: var(--forja-space-4);
+  }
+
+  /* Botões ocupam a largura toda do card/topo no toque. */
+  .topo__acoes .botao,
+  .card__acoes .botao {
+    flex: 1 1 140px;
+    text-align: center;
+  }
+
+  .linha-nav a {
+    padding: 7px 12px;
+  }
+}
+
+@media (max-width: 380px) {
+  .card__nome,
+  .card--linha .card__nome {
+    font-size: 19px;
+  }
+
+  .botao {
+    padding: 8px 12px;
+  }
+}
+
+/* ------------------------------------------------------------- telas largas */
+
+/* Cabeçalho divide a largura: descrição à esquerda, nav e ações à direita. */
+@media (min-width: 900px) {
+  .topo {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    column-gap: var(--forja-space-5);
+    row-gap: var(--forja-space-3);
+    align-items: start;
+  }
+
+  .topo .marca {
+    grid-area: 1 / 1 / 2 / -1;
+  }
+
+  .topo .marca__descricao {
+    grid-area: 2 / 1 / 4 / 2;
+    margin-top: 0;
+  }
+
+  .topo nav {
+    grid-area: 3 / 2 / 4 / 3;
+    justify-self: start;
+  }
+
+  .topo .linha-nav {
+    margin-top: 0;
+    justify-content: flex-end;
+  }
+
+  .topo__acoes {
+    grid-area: 2 / 2 / 3 / 3;
+    justify-self: start;
+    margin-top: 0;
   }
 }
 
@@ -459,6 +524,20 @@ h2 {
   line-height: 1.5;
 }
 
+/* Link das redes no fim do texto Sobre (o mesmo do chip REDES dos plugins). */
+.sobre__redes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--forja-space-2);
+  margin: var(--forja-space-3) 0 0;
+}
+
+.sobre__redes span {
+  color: var(--forja-dim);
+  font-size: 12px;
+}
+
 @media (max-width: 860px) {
   .sobre__conteudo {
     grid-template-columns: 1fr;
@@ -469,5 +548,64 @@ h2 {
     border-top: var(--forja-border);
     padding-left: 0;
     padding-top: var(--forja-space-4);
+  }
+}
+
+/* Points "Sobre" viram uma linha só em telas largas. */
+@media (min-width: 1200px) {
+  .sobre__conteudo {
+    grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
+  }
+}
+
+/* ------------------------------------------------------------------ destaque */
+
+/* Seção com um card só (ForjaRack, Drumforge): em telas largas o card deita e
+   usa a largura toda — imagem à esquerda, texto e ações à direita. */
+@media (min-width: 900px) {
+  .grade:has(> .card:only-child) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .grade > .card:only-child {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .grade > .card:only-child .card__fig {
+    border-bottom: none;
+    border-right: var(--forja-border);
+    align-self: center;
+  }
+
+  .grade > .card:only-child .card__corpo {
+    gap: var(--forja-space-3);
+    justify-content: center;
+    padding: var(--forja-space-4) var(--forja-space-5);
+  }
+
+  .grade > .card:only-child .card__nome {
+    font-size: 30px;
+  }
+
+  .grade > .card:only-child .card__resumo {
+    font-size: 15px;
+    line-height: 1.65;
+  }
+}
+
+/* ------------------------------------------------------------------ rodape */
+
+@media (min-width: 800px) {
+  .rodape {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: var(--forja-space-5);
+    align-items: start;
+  }
+
+  .rodape p {
+    margin: 0;
   }
 }

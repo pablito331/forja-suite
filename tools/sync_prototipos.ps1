@@ -519,20 +519,52 @@ $readmePath = Join-Path $Root "README.md"
 $readme = Get-Content -Raw -Encoding UTF8 $readmePath
 $agentsText = Get-Content -Raw -Encoding UTF8 (Join-Path $Root "AGENTS.md")
 
-$tableMatch = [regex]::Match($readme, '(?ms)^## Plugins\s*\r?\n(.*?)^## ')
-if ($tableMatch.Success) {
-    $rows = [regex]::Matches($tableMatch.Groups[1].Value, '(?m)^\|\s*([^|]+?)\s*\|')
-    $tableNames = @($rows | ForEach-Object { ConvertTo-AsciiText $_.Groups[1].Value.Trim() } |
-        Where-Object { $_ -and $_ -ne 'Plugin' -and $_ -notmatch '^-+$' })
-    $expected = @($installed | ForEach-Object { $_.Product })
-    foreach ($name in $expected) {
-        if ($tableNames -notcontains $name) { Add-Problem "README: tabela de Plugins sem $name" }
+# O README nao lista mais plugin por plugin: os cards vivem no catalogo da pagina e o
+# README so afirma as linhas. A auditoria acompanha essa divisao - o que precisa estar
+# completo e o catalogo (slug = alvo CMake minusculo) e o que precisa apontar para a
+# pagina e o README.
+$catalogoPath = Join-Path $Root "site\catalogo.json"
+if (Test-Path $catalogoPath) {
+    $cards = @((Get-Content -Raw -Encoding UTF8 $catalogoPath | ConvertFrom-Json).itens)
+    $slugs = @($cards | ForEach-Object { ([string] $_.slug).ToLowerInvariant() })
+    foreach ($plugin in $installed) {
+        if ($slugs -notcontains $plugin.Product.ToLowerInvariant()) {
+            Add-Problem ("site/catalogo.json: sem card para " + $plugin.Product)
+        }
     }
-    foreach ($name in $tableNames) {
-        if ($expected -notcontains $name) { Add-Problem "README: tabela de Plugins lista $name, que nao esta no build" }
+    foreach ($slug in $slugs) {
+        if (@($installed | Where-Object { $_.Product.ToLowerInvariant() -eq $slug }).Count -eq 0) {
+            Add-Problem ("site/catalogo.json: card '$slug' nao esta no build")
+        }
+    }
+    if ($cards.Count -ne $installed.Count) {
+        Add-Problem ("site/catalogo.json tem {0} cards, build tem {1} plugins" -f $cards.Count, $installed.Count)
     }
 } else {
-    Add-Problem "README: secao '## Plugins' nao encontrada"
+    Add-Problem "site/catalogo.json nao encontrado"
+}
+
+if ($readme -notmatch 'pablito331\.github\.io/forja-suite') {
+    Add-Problem "README: nenhuma pagina publica citada (o detalhe dos plugins mora na pagina)"
+}
+
+$tableMatch = [regex]::Match($readme, '(?ms)^## Produtos\s*\r?\n(.*?)^## ')
+if ($tableMatch.Success) {
+    $rows = [regex]::Matches($tableMatch.Groups[1].Value, '(?m)^\|\s*([^|]+?)\s*\|\s*(\d+)\s*\|')
+    $somada = 0
+    $awRow = -1
+    foreach ($row in $rows) {
+        $somada += [int] $row.Groups[2].Value
+        if ((ConvertTo-AsciiText $row.Groups[1].Value) -match 'Airwindows') { $awRow = [int] $row.Groups[2].Value }
+    }
+    if ($somada -ne $installed.Count) {
+        Add-Problem ("README: tabela de Produtos soma {0} plugins, build tem {1}" -f $somada, $installed.Count)
+    }
+    if ($awRow -ne $airwindows.Count) {
+        Add-Problem ("README: linha Airwindows diz {0}, base Airwindows tem {1}" -f $awRow, $airwindows.Count)
+    }
+} else {
+    Add-Problem "README: secao '## Produtos' nao encontrada"
 }
 
 $targetRow = [regex]::Match($readme, '\|\s*Targets locais[^|]*\|\s*(\d+) plugins')
@@ -542,20 +574,6 @@ if ($targetRow.Success) {
     }
 } else {
     Add-Problem "README: linha 'Targets locais' nao encontrada"
-}
-
-$artRow = [regex]::Match($readme, '\|\s*Artefatos em[^|]*\|\s*(\d+) `\.vst3`')
-if ($artRow.Success) {
-    if ([int]$artRow.Groups[1].Value -ne $installed.Count) {
-        Add-Problem ("README: 'Artefatos em prototipos' diz {0} .vst3, build tem {1}" -f $artRow.Groups[1].Value, $installed.Count)
-    }
-} else {
-    Add-Problem "README: linha 'Artefatos em prototipos' nao encontrada"
-}
-
-$gallery = [regex]::Match($readme, 'Galeria completa \((\d+) plugins\)')
-if ($gallery.Success -and [int]$gallery.Groups[1].Value -ne $airwindows.Count) {
-    Add-Problem ("README: galeria diz {0} plugins, base Airwindows tem {1}" -f $gallery.Groups[1].Value, $airwindows.Count)
 }
 
 $agentsCount = [regex]::Match($agentsText, 'suite de (\d+) plugins')
@@ -581,7 +599,7 @@ Write-Output ("{0} plugins ({1} Airwindows + {2} Forja) | {3} .vst3" -f
     $installed.Count, $airwindows.Count, $ownForja.Count, $installed.Count)
 
 if ($problems.Count -eq 0) {
-    Write-Output "DOCS OK: README, AGENTS e capturas batem com o codigo."
+    Write-Output "DOCS OK: README, catalogo da pagina, AGENTS e capturas batem com o codigo."
 } else {
     Write-Output ""
     Write-Output "DIVERGENCIAS NAS DOCS:"

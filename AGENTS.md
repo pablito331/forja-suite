@@ -185,6 +185,13 @@ ctest --test-dir build -C Release --output-on-failure
   resumo do job. O log bruto pela API exige token (`/actions/jobs/<id>/logs` responde 403
   num repositório público), então `GET /repos/<dono>/<repo>/check-runs/<check_run_id>/annotations`
   é o caminho para ler a causa sem abrir a página.
+- `forja_ui` é uma biblioteca **estática ligada dentro de cada plugin**, e o plugin é
+  compartilhado — então `POSITION_INDEPENDENT_CODE ON` no `Forja/CMakeLists.txt` é
+  obrigatório: sem `-fPIC` o `ld` do Ubuntu reprova o link dos 36 plugins
+  (`relocation R_X86_64_PC32 against symbol ... can not be used when making a shared
+  object`). O CMake só liga `-fPIC` por padrão em alvos `SHARED`/`MODULE`, nunca em
+  `STATIC`, e o MSVC ignora a propriedade — o build de Windows nunca avisa. Vale para
+  qualquer estática nova que entre no link de um plugin.
 - **Antes de taggar**, confira localmente: `ci/test_resolve.ps1`, depois
   `installer/collect_payload.ps1 -BuildRoot build -Clean` e `ISCC.exe installer/forja.iss`.
   O `ISCC` não vem na máquina (`winget install --id JRSoftware.InnoSetup`) e é o único jeito

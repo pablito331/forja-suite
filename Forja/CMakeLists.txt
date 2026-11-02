@@ -30,6 +30,15 @@ add_library(forja_ui STATIC
     Source/forja/ui/ForjaCanvas.h
 )
 
+# O plugin e uma biblioteca compartilhada (.so no Linux, .dylib no macOS) e liga
+# este arquivo estatico, entao os objetos precisam de PIC. Sem a propriedade o
+# ld do Ubuntu reprova o link de todo plugin:
+#   relocation R_X86_64_PC32 against symbol `_ZTVN5forja2ui10ForjaMeterE' can not
+#   be used when making a shared object; recompile with -fPIC
+# O CMake so liga -fPIC por padrao em alvos SHARED/MODULE, nunca em STATIC, e o
+# MSVC ignora a propriedade -- por isso o build de Windows nunca avisou.
+set_target_properties(forja_ui PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 target_include_directories(forja_ui PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/Source
 )

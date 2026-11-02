@@ -113,13 +113,17 @@ SolidCompression=yes
 UninstallDisplayName={#EfetivoName} {#EfetivoVersion} (VST3)
 LicenseFile=..\LICENSE
 
+; ISCC nao aceita continuacao de linha em entradas de secao: o backslash e o
+; resto viram texto literal do Description. Vai tudo numa linha so.
 [Tasks]
-Name: "docs"; Description: "Atalho no menu Iniciar para a documentacao"; \
-  Flags: unchecked
+Name: "docs"; Description: "Atalho no menu Iniciar para a documentacao"; Flags: unchecked
 
 [Types]
 Name: "full"; Description: "Tudo - instala todas as familias disponiveis"
-Name: "custom"; Description: "Personalizada - escolha as familias"; Flags: inspect
+; Nao ha flag de tipo chamada "inspect": as flags de [Types] sao "full" e
+; "custom" (implicitas no Name). Deixar Flags: aca tinha derrubado o ISCC da CI
+; com "Parameter Flags includes an unknown flag".
+Name: "custom"; Description: "Personalizada - escolha as familias"
 
 [Components]
 ; Nome tecnico (ascii) e a descricao vista na arvore de selecao. So as familias
@@ -155,8 +159,7 @@ Name: "{group}\Documentacao {#EfetivoName}"; Filename: "{commonappdata}\Forja\LE
 Name: "{group}\Desinstalar {#EfetivoName}"; Filename: "{uninstallexe}"
 
 [Run]
-Filename: "{commonappdata}\Forja\LEIA-ME.txt"; Description: "Abrir as instrucoes de uso na DAW"; \
-  Flags: postinstall nowait skipifsilent unchecked
+Filename: "{commonappdata}\Forja\LEIA-ME.txt"; Description: "Abrir as instrucoes de uso na DAW"; Flags: postinstall nowait skipifsilent unchecked
 
 [Code]
 // Guarda contra o instalador rodar sem nenhuma familia selecionada: sem .vst3

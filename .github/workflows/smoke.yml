@@ -15,6 +15,10 @@ on:
       - main
     paths:
       - "Forja/Source/**"
+      # O CMake da forja_ui (e qualquer .cmake dela) muda o link dos 36 plugins:
+      # uma propriedade ausente aqui reprova o Linux inteiro e o MSVC nao avisa.
+      - "Forja/CMakeLists.txt"
+      - "Forja/**/*.cmake"
       - "Airwindows/Eq/Cinzel/**"
       - "cmake/**"
       - "CMakeLists.txt"

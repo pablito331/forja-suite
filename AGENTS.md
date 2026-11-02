@@ -172,8 +172,8 @@ ctest --test-dir build -C Release --output-on-failure
   abrir um plugin sem DAW (por exemplo, para capturar a UI); os pacotes nunca incluem Standalone.
 - CI/release: `.github/workflows/release.yml` compila os três SOs em tags `v*`.
 - **Smoke** (`.github/workflows/smoke.yml`) compila um plugin com o **GCC** do mesmo runner
-  da CI de Linux em todo push em `Forja/Source/**`, `Airwindows/Eq/Cinzel/**`, `cmake/**` e
-  `CMakeLists.txt`. Existe porque o MSVC aceita coisas que o GCC reprova, e as duas que já
+  da CI de release em todo push em `Forja/Source/**`, `Forja/CMakeLists.txt`,
+  `Airwindows/Eq/Cinzel/**`, `cmake/**` e `CMakeLists.txt`. Existe porque o MSVC aceita coisas que o GCC reprova, e as duas que já
   derrubaram o job inteiro de Linux estavam no mesmo default argument de `ForjaKnob`:
   `Options o = {}` e, depois do conserto aparente, o aggregate `Options` **aninhado** na
   classe com `= Options()` (o GCC exige os default member initializers de um tipo aninhado

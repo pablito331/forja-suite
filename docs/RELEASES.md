@@ -61,20 +61,31 @@ git push origin vrack-1.0.0
 A CI resolve o trem, compila tudo, testa tudo e publica a Release do tag com os artefatos.
 Para a suíte, o procedimento é o mesmo com `vX.Y.Z`.
 
-Antes de taggar, confira o resolve e o instalador localmente:
+Antes de taggar, confira o resolve e o instalador localmente, com os mesmos comandos da CI:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File ci/test_resolve.ps1
+
+# trem da suíte
 powershell -ExecutionPolicy Bypass -File installer/collect_payload.ps1 -BuildRoot build -Clean
-& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DAppVersion=0.0.0-local installer/forja.iss
+
+# trem de um produto: os pathFilters e o readme vêm de ci/products.json
+powershell -ExecutionPolicy Bypass -File installer/collect_payload.ps1 -BuildRoot build `
+  -OnlyPath Forjarack -LeiamE Forjarack/Forjarack/README.md -Clean
+
+# o winget instala em escopo de usuário; o caminho de escopo de máquina é o outro
+$iscc = @("$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
+          "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe") |
+  Where-Object { Test-Path $_ } | Select-Object -First 1
+& $iscc /DAppVersion=vrack-1.0.0 /DProductName=ForjaRack /DProductVersion=1.0.0 installer/forja.iss
 ```
 
 O `ISCC` **não** está na máquina por padrão (`winget install --id JRSoftware.InnoSetup`) e a
 CI não avisa antes de 20 minutos: foi assim que um `Flags:` inexistente em `[Types]` derrubou
 tanto o run de `v0.5.1` quanto o primeiro `vrack-1.0.0`. O mesmo vale para o compilador
-cruzado: o workflow **Smoke** (`.github/workflows/smoke.yml`) compila um plugin com o GCC do
-mesmo runner da CI de release em todo push em `Forja/Source/**`, `cmake/**` e
-`CMakeLists.txt`.
+cruzado: o workflow **Smoke** (`.github/workflows/smoke.yml`) compila e **liga** um plugin com
+o GCC do mesmo runner da CI de release em todo push em `Forja/Source/**`,
+`Forja/CMakeLists.txt`, `Airwindows/Eq/Cinzel/**`, `cmake/**` e `CMakeLists.txt`.
 
 ## O que sai em cada artefato
 

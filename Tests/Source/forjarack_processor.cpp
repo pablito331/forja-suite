@@ -528,9 +528,18 @@ void testRealCaniveteThroughProcessor (ForjarackAudioProcessor& processor)
 
     // A carga do bank vai ao background; a lista de presets (e o nome em uso)
     // so existe quando ele assenta -- mesmo caminho do timer no plugin vivo.
+    // O orçamento e generico de proposito: um .sf3 real da biblioteca do
+    // usuario (MuseScore General, 38 MB de amostras Ogg) leva ~8 s para
+    // assentar nesta maquina. Com 5 s o teste pegava o banco ainda carregando,
+    // vinha com 0 presets e FAILAVA um caminho que esta certo -- o seletor da
+    // gaveta so aparece quando a carga assenta (SlotComponent), entao o
+    // produto esta correto e era o teste que estava apressado.
+    const int kSettlePasses = 3000;   // 60 s no pior caso; sai antes se assentar
     juce::String instrument;
+    int settlePass = 0;
 
-    for (int pass = 0; pass < 250 && (instrument = processor.currentInstrument (2)).isEmpty(); ++pass)
+    for (; settlePass < kSettlePasses
+           && (instrument = processor.currentInstrument (2)).isEmpty(); ++settlePass)
     {
         pumpMessages (20);
 
@@ -539,6 +548,10 @@ void testRealCaniveteThroughProcessor (ForjarackAudioProcessor& processor)
         juce::MidiBuffer noMidi;
         processor.processBlock (idleBuffer, noMidi);   // o audio adota o bank
     }
+
+    std::printf ("  (bank assentou em %d ms | %d presets na gaveta)\n",
+                 settlePass * 20,
+                 static_cast<int> (processor.drawerInstrumentNames (2).size()));
 
     check (instrument.isNotEmpty(),
            "o bank da gaveta assentou (preset em uso visivel)");

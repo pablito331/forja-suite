@@ -18,6 +18,13 @@ public:
         bool showValue = true;
     };
 
+    // O default do ultimo parametro e Options(), nao Options{}: o GCC do runner
+    // de Linux (C++20) reprova o init de aggregate aninhado em default argument
+    // ("could not convert '<brace-enclosed initializer list>()' to Options") e o
+    // job Linux inteiro caia ai. MSVC e clang aceitavam, entao so a CI pegava.
+    // Options continua aggregate, SEM construtor declarado: os editores da suite
+    // passam listas parciais ({ 130, true }) e um construtor de quatro argumentos
+    // reprovava todas elas com C2665 no MSVC.
     ForjaKnob (juce::String knobLabel,
                juce::String knobHint,
                float knobDiameter,
@@ -26,7 +33,7 @@ public:
                double interval,
                double defaultValue,
                std::function<juce::String (double)> valueFormatter = {},
-               Options options = {})
+               Options options = Options())
         : label (std::move (knobLabel)),
           hint (std::move (knobHint)),
           diameter (knobDiameter),

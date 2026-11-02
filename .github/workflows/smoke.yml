@@ -1,0 +1,76 @@
+name: Smoke
+
+# Guardado rapido no compilador da CI de release (GCC do Ubuntu 22.04).
+# A suite compila em MSVC e clang sem problema e so quebrava no Linux depois de
+# taggear -- duas vezes seguidas (v0.5.1 e vrack-1.0.0) o job inteiro morreu em
+# ForjaKnob.h por um default argument que o GCC rejeita. Este workflow roda no
+# MESMO runner da CI de release, compile de um plugin so, e dispara em push nas
+# fontes compartilhadas: erro de compilador cruzado aparece em ~5 minutos, nao
+# 25, e antes de qualquer tag.
+# Repositorio publico: minutos de Actions sao gratis, entao o custo e so tempo.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "Forja/Source/**"
+      - "Airwindows/Eq/Cinzel/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Linux build (GCC)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build pkg-config \
+            libasound2-dev libx11-dev libxext-dev libxinerama-dev \
+            libxrandr-dev libxcursor-dev libxcomposite-dev libxrender-dev \
+            libxi-dev \
+            libfreetype6-dev libfontconfig1-dev libglu1-mesa-dev \
+            libcurl4-openssl-dev
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DFORJA_LTO=OFF -DFORJA_STANDALONE=OFF
+
+      # Um plugin basta: ele puxa forja_ui inteiro (chrome, knobs, cards, painel
+      # FUNDAMENTOS) e os adapters header-only, que e onde um default argument
+      # invalido aparece.
+      - name: Build Cinzel_VST3
+        run: cmake --build build --target Cinzel_VST3 --parallel
+
+      - name: Guard against the brace-init pattern that GCC rejects
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Aggregate em default argument com "Options options = {}" funciona em
+          # MSVC e clang e reprova no GCC do runner. Se voltar, o smoke falha aqui
+          # com a linha exata em vez de derrubar a build inteira la na frente.
+          # O conserto e Options() -- NAO um construtor: os editores passam listas
+          # parciais ({ 130, true }) e um construtor de quatro argumentos quebra
+          # todos eles com C2665 no MSVC (Options precisa continuar aggregate).
+          if grep -rn -E 'Options\s+[A-Za-z_]+\s*=\s*\{\}' Forja/Source/forja/ui/*.h; then
+            echo "::error::default argument 'Options x = {}' em Forja/Source/forja/ui -- o GCC do runner reprova. Use Options() mantendo o aggregate."
+            exit 1
+          fi
+          if grep -rn -E '^\s*Options\s*\(' Forja/Source/forja/ui/ForjaKnob.h; then
+            echo "::error::ForjaKnob::Options ganhou construtor: os editores usam listas parciais e o MSVC reprova. Mantenha aggregate."
+            exit 1
+          fi
+          echo "OK: nenhum default argument do tipo Options com '{}' em forja_ui."

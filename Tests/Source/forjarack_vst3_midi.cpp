@@ -199,19 +199,31 @@ int run (juce::AudioPluginInstance& instance)
     check (silentPeak < 0.001f, "sem nota tocada o plugin devolve silencio");
 
     // Fase B: notas rearmadas. Se o MIDI atravessa o wrapper, a voz sai.
+    // O teto e alto de proposito: o bank da biblioteca do usuario e carregado
+    // em background (um .sf3 de 38 MB leva ~8 s nesta maquina) e as notas
+    // precisam continuar entrando ate ele assentar. O loop sai no primeiro
+    // som, entao so custa caro numa maquina onde a carga nunca assenta.
+    constexpr int kMaxPlayedBlocks = 6000;
     float playedPeak = 0.0f;
+    int settledAtBlock = kMaxPlayedBlocks;
 
-    for (int block = 0; block < 600; ++block)
+    for (int block = 0; block < kMaxPlayedBlocks; ++block)
     {
         buffer.clear();
         feedNotes (midi, block);
         instance.processBlock (buffer, midi);
         playedPeak = juce::jmax (playedPeak, peakOf (buffer));
         pumpMessages (4);
+
+        if (playedPeak > 0.02f)
+        {
+            settledAtBlock = block + 1;
+            break;
+        }
     }
 
-    std::printf ("  (pico com nota: %.4f | pico sem nota: %.6f)\n",
-                 playedPeak, silentPeak);
+    std::printf ("  (pico com nota: %.4f | pico sem nota: %.6f | som no bloco %d)\n",
+                 playedPeak, silentPeak, settledAtBlock);
 
     check (playedPeak > 0.02f, "nota do host atravessa o wrapper VST3 e faz o CANIVETE soar");
 

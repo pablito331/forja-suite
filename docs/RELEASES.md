@@ -38,13 +38,18 @@ download do site. Campos por produto:
 - `testRegex` — quais testes pertencem à linha (documentação; a CI roda todos).
 - `readme` — o LEIA-ME que vai dentro do pacote do produto.
 
-Duas armadilhas registradas no cabeçalho do arquivo:
+Três armadilhas registradas no cabeçalho do arquivo:
 
 1. `testRegex` casa com o **nome do teste no ctest** (`canivete`, `forjarack_engine`,
    `parity_cinzel`, `alloc_guard`), não com o target CMake (`forja_canivete`).
 2. `pathFilters` de três segmentos (`Minis/Canivete/Canivete`) fazem o coletor agrupar o
-   payload pelo **nome do plugin**. Esse grupo precisa de uma linha no catálogo de famílias
-   do `installer/forja.iss`, senão o bundle é coletado mas não instalado.
+   payload pelo **nome do plugin**. Esse grupo precisa de um bloco
+   `#if defined(ForjaColhido_Canivete)` no `installer/forja.iss` (nos dois: `[Components]`
+   e `[Files]`), senão o bundle é coletado mas não instalado. O `ci/test_resolve.ps1` pega.
+3. Toda chave de `ci/products.json` precisa ser um **objeto**, exceto as de comentário,
+   que começam com `"_"` e carregam **texto**. O `jq` do job `resolve` indexa
+   `.value.kind` em toda chave e morre num valor não-objeto — com `set -e`, o job inteiro
+   cai. O `ci/test_resolve.ps1` confere a forma antes.
 
 ## Como taggar um produto
 
@@ -56,11 +61,20 @@ git push origin vrack-1.0.0
 A CI resolve o trem, compila tudo, testa tudo e publica a Release do tag com os artefatos.
 Para a suíte, o procedimento é o mesmo com `vX.Y.Z`.
 
-Antes de taggar, confira o resolve localmente (sem runner, sem `jq`):
+Antes de taggar, confira o resolve e o instalador localmente:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File ci/test_resolve.ps1
+powershell -ExecutionPolicy Bypass -File installer/collect_payload.ps1 -BuildRoot build -Clean
+& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DAppVersion=0.0.0-local installer/forja.iss
 ```
+
+O `ISCC` **não** está na máquina por padrão (`winget install --id JRSoftware.InnoSetup`) e a
+CI não avisa antes de 20 minutos: foi assim que um `Flags:` inexistente em `[Types]` derrubou
+tanto o run de `v0.5.1` quanto o primeiro `vrack-1.0.0`. O mesmo vale para o compilador
+cruzado: o workflow **Smoke** (`.github/workflows/smoke.yml`) compila um plugin com o GCC do
+mesmo runner da CI de release em todo push em `Forja/Source/**`, `cmake/**` e
+`CMakeLists.txt`.
 
 ## O que sai em cada artefato
 
@@ -75,10 +89,14 @@ O `.exe` é o instalador Inno Setup e só existe no Windows; o `.zip` é a pasta
 solta com o LEIA-ME. No produto, o LEIA-ME é o `readme` do registro (ex.:
 `Forjarack/Forjarack/README.md`); na suíte, são os `docs/instalar/INSTALAR-*.txt`.
 
-O instalador de produto traz **um** componente obrigatório (`Flags: fixed`) — sem o "escolha
-o que instalar" da suíte — porque os `[Components]`/`[Files]` são montados a partir do
-manifest `installer/payload/forja-payload.txt` que o coletor escreve. Família sem bundle
-coletado não vira componente: componente vazio é impossível por construção.
+O instalador de produto traz **um** componente só (a única família coletada) porque os
+`[Components]`/`[Files]` são montados a partir do manifest que o coletor escreve:
+`installer/payload/forja-payload.txt` (uma família por linha) e o espelho ISPP
+`installer/payload/forja-payload.isl` (um `#define ForjaColhido_<Família>` por família, por
+linha). Família sem bundle coletado não vira componente: componente vazio é impossível por
+construção. O `.isl` existe porque o ISPP não tem como iterar um arquivo de texto —
+`FileRead` só lê a primeira linha, `#if` não aceita `IsDefined("..." + F)` e `#sub` não
+aceita `\N` dentro de chamada de macro.
 
 ## Reempacotar sem retagar
 
@@ -89,9 +107,12 @@ os artefatos no aba de artifacts da execução sem tocar na Release existente.
 Empacotamento local, para conferir antes de subir:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File installer/collect_payload.ps1 -Clean -OnlyPath Forjarack -LeiamE Forjarack/Forjarack/README.md
-iscc /DProductName=ForjaRack /DProductVersion=1.0.0 installer/forja.iss
+powershell -ExecutionPolicy Bypass -File installer/collect_payload.ps1 -BuildRoot build -Clean -OnlyPath Forjarack -LeiamE Forjarack/Forjarack/README.md
+& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DProductName=ForjaRack /DProductVersion=1.0.0 installer/forja.iss
 ```
+
+(o `collect_payload.ps1` precisa ser chamado **antes** do `ISCC`: sem o `forja-payload.isl`
+o `.iss` aborta com `#error` explícito).
 
 ## Liberar aos poucos no site
 

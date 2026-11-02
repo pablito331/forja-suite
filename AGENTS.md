@@ -171,6 +171,15 @@ ctest --test-dir build -C Release --output-on-failure
 - `FORJA_STANDALONE` (padrão `OFF`): o build da suíte é VST3-only. Ligue `ON` apenas para
   abrir um plugin sem DAW (por exemplo, para capturar a UI); os pacotes nunca incluem Standalone.
 - CI/release: `.github/workflows/release.yml` compila os três SOs em tags `v*`.
+- **Smoke** (`.github/workflows/smoke.yml`) compila um plugin com o **GCC** do mesmo runner
+  da CI de Linux em todo push em `Forja/Source/**`, `Airwindows/Eq/Cinzel/**`, `cmake/**` e
+  `CMakeLists.txt`. Existe porque o MSVC aceita coisas que o GCC reprova (um `Options o = {}`
+  em default argument derrubou o build de Linux por um tag inteiro) e porque descobrir isso
+  só na release custa 20 minutos.
+- **Antes de taggar**, confira localmente: `ci/test_resolve.ps1`, depois
+  `installer/collect_payload.ps1 -BuildRoot build -Clean` e `ISCC.exe installer/forja.iss`.
+  O `ISCC` não vem na máquina (`winget install --id JRSoftware.InnoSetup`) e é o único jeito
+  de ver erro de `.iss` — um `Flags:` inexistente em `[Types]` derrubou a CI sem dizer por quê.
 - **Trens de release**: a tag sem prefixo (`v0.5.2`) empacota a suíte inteira; uma tag
   prefixada (`vrack-1.0.0`, `vminis-`, `vcanivete-`, `vminidrum-`, `vminisat-`,
   `vdrumforge-`, `vairwindows-`) empacota **só aquele produto**. Build e testes correm
@@ -224,20 +233,24 @@ Siga `docs/NOVO-PLUGIN.md`. Resumo:
   gaveta `minisat` no ForjaRack). O adaptador compartilhado `forja::BrasaDSP` entrou no
   `alloc_guard`.
 - CANIVETE compila como VST3; o teste `canivete` PASS (carga de banco, presets, 16 canais
-  GM, SF3 via stb_vorbis, zero alocação). **Pendência conhecida**: na **gaveta do
-  ForjaRack**, com o banco `.sf3` do usuário, `forjarack_processor` falha em
-  "o bank da gaveta assentou (preset em uso visível)" — o banco carrega e **soa**
-  (pico ~0,40), mas `currentInstrument()` volta vazio e a lista de presets volta com 0 —
-  e `forjarack_vst3_midi` falha em "nota do host atravessa o wrapper VST3 e faz o CANIVETE
-  soar" (pico 0,00; o anúncio de MIDI no wrapper passa). O conserto parcial está em
-  `6a0c0a7`; a causa provável é o caminho de presets específico do `.sf3` na integração
-  rack↔mini, não o CANIVETE sozinho.
-- Última verificação local (Windows, Release): `ctest` com **35/37** — os dois verdes que
-  faltam são os do item acima, e nada mais. `tools/validate_site.ps1` PASS (36 plugins em
-  12 famílias).
-- Site publicado: `site/` + `.github/workflows/pages.yml` existem e validam localmente, mas
-  ainda não há Release de produto nem Pages no ar — falta um push de tag (ver
-  `docs/RELEASES.md`) e ligar o Source: GitHub Actions uma vez.
+  GM, SF3 via stb_vorbis, zero alocação). A gaveta no ForjaRack também está verde:
+  `forjarack_processor` e `forjarack_vst3_midi` provam que o banco assenta na gaveta, que a
+  lista de instrumentos aparece e que a troca pelo seletor muda o preset em uso.
+- **Carga assíncrona não é latência zero.** O `SoundFontEngine` leva o bank ao background e a
+  gaveta só expõe instrumentos depois que a carga assenta — um `.sf3` real de 38 MB leva ~8 s
+  nesta máquina. Teste que depende dessa carga tem que **esperar com orçamento alto e sair no
+  primeiro sinal**, nunca assumir um tempo curto: com 5 s os dois casos do CANIVETE na gaveta
+  falhavam contra um caminho que estava correto (e o pico do teste antigo, 0,40, era o tom
+  injetado da fase anterior, não o soundfont — um falso positivo escondindo a mesma pressa).
+  Arquivo do usuário no caminho é a outra metade da lição: se o teste precisa de um bank, ele
+  mesmo gera o SF2 mínimo, como faz `Tests/Source/canivete.cpp`.
+- Última verificação local (Windows, Release): `ctest` com **37/37** verdes.
+  `tools/validate_site.ps1` PASS (36 plugins em 12 famílias).
+- Site **no ar**: `https://pablito331.github.io/forja-suite/` (Pages com Source: GitHub
+  Actions, deploy por `.github/workflows/pages.yml`). `tools/validate_site.ps1` PASS.
+- Trem de produto ainda não publicou Release: o tag `vrack-1.0.0` aponta para um commit
+  anterior aos consertos do instalador e do build de Linux. Os testes estão verdes, então o
+  que falta é reapontar o tag e acompanhar o run.
 - Sem DAW no ambiente de desenvolvimento: automação/bypass de host seguem pendentes de
   validação manual (ver README).
 - REPIQUE e ECO têm sync de BPM opcional; com `sync = false` o caminho é bit-exato.

@@ -97,12 +97,14 @@ foreach ($prop in $products.PSObject.Properties) {
     if ($p.artifactBase -match '\s') {
         $fail++; Write-Host "FAIL $($prop.Name): artifactBase com espaco: $($p.artifactBase)" -ForegroundColor Red
     }
-    # Grupo de um plugin so (tres segmentos) precisa da linha no catalogo do .iss.
+    # Grupo de um plugin so (tres segmentos) precisa do bloco no forja.iss: o
+    # coletor escreve '#define ForjaColhido_<Grupo>' e o instalador so oferece o
+    # grupo com esse bloco. Sem ele, o trem empacota payload mas nao instala nada.
     foreach ($filter in @($p.pathFilters)) {
         $bits = $filter -split '/'
         if ($bits.Count -ge 3) {
-            if ($iss -notmatch ('"' + $bits[-1] + '\|')) {
-                $fail++; Write-Host "FAIL $($prop.Name): grupo '$($bits[-1])' sem linha no catalogo do forja.iss" -ForegroundColor Red
+            if ($iss -notmatch ('#if defined\(ForjaColhido_' + $bits[-1] + '\)')) {
+                $fail++; Write-Host "FAIL $($prop.Name): grupo '$($bits[-1])' sem bloco ForjaColhido_$($bits[-1]) no forja.iss" -ForegroundColor Red
             }
         }
     }

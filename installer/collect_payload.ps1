@@ -183,6 +183,24 @@ if (Test-Path -LiteralPath $leiamSource) {
 Set-Content -LiteralPath (Join-Path $PayloadDir "forja-payload.txt") `
     -Value @($byFamily.Keys) -Encoding ASCII
 
+# Espelho ISPP do manifest. O preprocessor do Inno NAO tem como iterar um
+# arquivo de texto (FileRead so le a primeira linha, e #if nao chama macro com
+# referencia de parametro), entao o lado facil do contrato e aqui: cada familia
+# coletada vira um #define e o forja.iss so usa #IFDEF. Quem muda o catalogo de
+# familias e o .iss; isto e gerado, nao mexido a mao.
+# Nome de #define precisa ser identificador ascii: [A-Za-z0-9_]. Familia fora
+# desse formato e descartada do include com aviso (o .iss entao nao a oferece).
+$defines = @()
+foreach ($family in $byFamily.Keys) {
+    if ($family -match '^[A-Za-z0-9_]+$') {
+        $defines += "#define ForjaColhido_$family"
+    } else {
+        Write-Warning ("Familia com nome nao-ascii ignorada no include ISPP: {0}" -f $family)
+    }
+}
+Set-Content -LiteralPath (Join-Path $PayloadDir "forja-payload.isl") `
+    -Value $defines -Encoding ASCII
+
 Write-Host ""
 Write-Host "Payload montado em $PayloadDir" -ForegroundColor Green
 Write-Host ("Bundles copiados: {0}" -f $copied)

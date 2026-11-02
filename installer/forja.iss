@@ -2,14 +2,14 @@
 ;  Forja - instalador Windows (VST3)
 ;
 ;  Serve os dois trens de release a partir do MESMO arquivo:
-;    suíte         (tag vX.Y.Z)      -> payload com todas as familias
+;    suite         (tag vX.Y.Z)      -> payload com todas as familias
 ;    produto       (tag vrack-1.0.0) -> payload filtrado por
 ;                                       collect_payload.ps1 -OnlyPath
 ;
 ;  O que entra em [Components] e [Files] e decidido pelo manifest que o coletor
-;  escreve (payload\forja-payload.txt): so as familias com bundle coletado
-;  viram componente. Nada de lista duplicada entre aqui e o coletor, e nada de
-;  componente vazio.
+;  escreve (payload\forja-payload.isl): so as familias com bundle coletado viram
+;  linha. Nada de lista duplicada entre aqui e o coletor, e nada de componente
+;  vazio.
 ;
 ;  Build local (com Inno Setup 6 instalado):
 ;    powershell -File installer/collect_payload.ps1 -Clean
@@ -39,52 +39,32 @@
 #endif
 
 ; ============================================================
-;  ISPP: catalogo de grupos de payload e selecao pelo manifest do coletor.
-;  Cada linha e (pasta do payload|componente ascii|descricao). O nome do
-;  componente vive SO aqui; ao nascer uma familia/base nova, soma-se uma linha
-;  aqui e uma em Get-ForjaFamily no coletor.
+;  O coletor escreve payload\forja-payload.isl com um
+;  #define ForjaColhido_<Familia> para cada familia com bundle coletado, e o
+;  instalador so oferece o que de fato existe no payload -- componente vazio e
+;  impossivel por construcao, inclusive no trem de um produto.
 ;
-;  As tres ultimas linhas sao os tremens de plugin unico da base Minis: quando
-;  -OnlyPath desce ate a pasta do plugin (Minis/Canivete/Canivete) o coletor
-;  agrupa pelo nome do plugin, nao pela base. O validate_site.ps1 confere os
-;  dois lados.
+;  Porque o catalogo de familias vive em LINHAS LITERAIS aqui embaixo, e nao
+;  num #for sobre uma string concatenada (as quatro armadilhas reais do ISPP
+;  6.7, todas provadas no ISCC local):
+;   - o separador de argumentos de macro e ",", entao o catalogo antigo com ";"
+;     entregava a linha INTEIRA em \1 e \2/\3 vazios;
+;   - dentro de #sub, uma referencia "\N" dentro de chamada de macro derruba o
+;     parser com "Illegal character in input file: '\'";
+;   - #if aceita apenas inteiro/booleano literal ou defined(NOME_LITERAL);
+;     IsDefined("..." + F) e C(F) definido sobre expressao dao erro;
+;   - FileRead so le a primeira linha do arquivo, entao parsear o .txt do
+;     manifest seria pior que deixar o coletor falar ISPP.
+;  Familia nova: soma-se um bloco em [Components] e um em [Files] aqui, e uma
+;  linha em Get-ForjaFamily no coletor. O validate_site.ps1 confere os dois lados.
 ; ============================================================
-#define FamilyCatalog \
-  "Amps|amps|Amps - amplificadores e cabinets;" + \
-  "Dynamics|dynamics|Dynamics - compressores e gates;" + \
-  "Eq|eq|EQ - equalizadores;" + \
-  "Lofi|lofi|Lo-Fi - degradacao criativa;" + \
-  "OneKnob|oneknob|OneKnob - um unico controle;" + \
-  "Saturation|saturation|Saturation - saturacao harmonica;" + \
-  "Space|space|Space - reverberacao e delay;" + \
-  "Strips|strips|Strips - tiras de canal (mixer);" + \
-  "Tape|tape|Tape - simulacao de fita;" + \
-  "Drumforge|drumforge|Drumforge - sampler de bateria;" + \
-  "Rack|rack|ForjaRack - rack de gavetas em serie;" + \
-  "Minis|minis|Minis - Canivete, Minidrum, Minisat;" + \
-  "Canivete|canivete|Canivete - leitor de soundfonts;" + \
-  "Minidrum|minidrum|Minidrum - toca-kit de bateria;" + \
-  "Minisat|minisat|Minisat - saturador de um knob;"
+#define PayloadInclude AddBackslash(SourcePath) + "payload\forja-payload.isl"
 
-#define PayloadManifest AddBackslash(SourcePath) + "payload\forja-payload.txt"
-
-; O manifest traz uma familia por linha, cercada por quebras de linha; procurar
-; o token cerca-do-mesmo-lado evita que "Minis" case com um nome futuro tipo
-; "Minisat".
-#define FamiliaColetada(str Token) \
-  FileExists(PayloadManifest) && \
-  (Pos("|" + Token + "|", "|" + StringChange(FileRead(PayloadManifest), Chr(13) + Chr(10), "|") + "|") > 0)
-
-; #emit so aceita string literal: as duas linhas de secao viram macros que
-; recebem os campos do catalogo e devolvem a linha ja formatada. Barras normais
-; no Source: (o locator do Inno aceita) para evitar a fuga de contrabarra dentro
-; da literal.
-#define ComponentLine(str Comp, str Desc) \
-  "Name: \"" + Comp + "\"; Description: \"" + Desc + "\"; Types: full custom"
-
-#define FileLine(str Folder, str Comp) \
-  "Source: \"payload/" + Folder + "/*\"; DestDir: \"{app}\"; Components: " + Comp + \
-  "; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist"
+#if FileExists(PayloadInclude)
+  #include PayloadInclude
+#else
+  #error O include do manifest nao existe. Rode installer/collect_payload.ps1 antes do ISCC.
+#endif
 
 [Setup]
 AppName={#EfetivoName}
@@ -120,31 +100,112 @@ Name: "docs"; Description: "Atalho no menu Iniciar para a documentacao"; Flags: 
 
 [Types]
 Name: "full"; Description: "Tudo - instala todas as familias disponiveis"
-; Nao ha flag de tipo chamada "inspect": as flags de [Types] sao "full" e
-; "custom" (implicitas no Name). Deixar Flags: aca tinha derrubado o ISCC da CI
-; com "Parameter Flags includes an unknown flag".
+; Nao ha flag de tipo chamada "inspect": em [Types] as flags validas sao "full"
+; e "custom" (implicitas no Name). O Flags: aca derrubava o ISCC da CI com
+; "Parameter Flags includes an unknown flag".
 Name: "custom"; Description: "Personalizada - escolha as familias"
 
 [Components]
-; Nome tecnico (ascii) e a descricao vista na arvore de selecao. So as familias
-; presentes no manifest do coletor sao emitidas.
-#sub EachFamily
-  #if FamiliaColetada(\1)
-    #emit ComponentLine(\2, \3)
-  #endif
-#endsub
-#for {EachFamily FamilyCatalog}
+; Nome tecnico (ascii) e a descricao vista na arvore de selecao.
+; Airwindows: nove familias.
+#if defined(ForjaColhido_Amps)
+Name: "amps"; Description: "Amps - amplificadores e cabinets"; Types: full custom
+#endif
+#if defined(ForjaColhido_Dynamics)
+Name: "dynamics"; Description: "Dynamics - compressores e gates"; Types: full custom
+#endif
+#if defined(ForjaColhido_Eq)
+Name: "eq"; Description: "EQ - equalizadores"; Types: full custom
+#endif
+#if defined(ForjaColhido_Lofi)
+Name: "lofi"; Description: "Lo-Fi - degradacao criativa"; Types: full custom
+#endif
+#if defined(ForjaColhido_OneKnob)
+Name: "oneknob"; Description: "OneKnob - um unico controle"; Types: full custom
+#endif
+#if defined(ForjaColhido_Saturation)
+Name: "saturation"; Description: "Saturation - saturacao harmonica"; Types: full custom
+#endif
+#if defined(ForjaColhido_Space)
+Name: "space"; Description: "Space - reverberacao e delay"; Types: full custom
+#endif
+#if defined(ForjaColhido_Strips)
+Name: "strips"; Description: "Strips - tiras de canal (mixer)"; Types: full custom
+#endif
+#if defined(ForjaColhido_Tape)
+Name: "tape"; Description: "Tape - simulacao de fita"; Types: full custom
+#endif
+; Bases Forja.
+#if defined(ForjaColhido_Drumforge)
+Name: "drumforge"; Description: "Drumforge - sampler de bateria"; Types: full custom
+#endif
+#if defined(ForjaColhido_Rack)
+Name: "rack"; Description: "ForjaRack - rack de gavetas em serie"; Types: full custom
+#endif
+#if defined(ForjaColhido_Minis)
+Name: "minis"; Description: "Minis - Canivete, Minidrum, Minisat"; Types: full custom
+#endif
+; Trens de plugin unico da base Minis: com -OnlyPath descendo ate a pasta do
+; plugin (Minis/Canivete), o coletor agrupa pelo nome do plugin, nao pela base.
+#if defined(ForjaColhido_Canivete)
+Name: "canivete"; Description: "Canivete - leitor de soundfonts"; Types: full custom
+#endif
+#if defined(ForjaColhido_Minidrum)
+Name: "minidrum"; Description: "Minidrum - toca-kit de bateria"; Types: full custom
+#endif
+#if defined(ForjaColhido_Minisat)
+Name: "minisat"; Description: "Minisat - saturador de um knob"; Types: full custom
+#endif
 
 [Files]
 ; Cada familia copia seus .vst3 direto para a raiz VST3 ({app}), achatando o
 ; agrupamento por familia feito no payload. recursesubdirs preserva a estrutura
 ; interna de cada bundle (Contents\...).
-#sub EachFamilyFiles
-  #if FamiliaColetada(\1)
-    #emit FileLine(\1, \2)
-  #endif
-#endsub
-#for {EachFamilyFiles FamilyCatalog}
+#if defined(ForjaColhido_Amps)
+Source: "payload/Amps/*"; DestDir: "{app}"; Components: amps; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
+#if defined(ForjaColhido_Dynamics)
+Source: "payload/Dynamics/*"; DestDir: "{app}"; Components: dynamics; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
+#if defined(ForjaColhido_Eq)
+Source: "payload/Eq/*"; DestDir: "{app}"; Components: eq; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
+#if defined(ForjaColhido_Lofi)
+Source: "payload/Lofi/*"; DestDir: "{app}"; Components: lofi; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
+#if defined(ForjaColhido_OneKnob)
+Source: "payload/OneKnob/*"; DestDir: "{app}"; Components: oneknob; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
+#if defined(ForjaColhido_Saturation)
+Source: "payload/Saturation/*"; DestDir: "{app}"; Components: saturation; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
+#if defined(ForjaColhido_Space)
+Source: "payload/Space/*"; DestDir: "{app}"; Components: space; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
+#if defined(ForjaColhido_Strips)
+Source: "payload/Strips/*"; DestDir: "{app}"; Components: strips; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
+#if defined(ForjaColhido_Tape)
+Source: "payload/Tape/*"; DestDir: "{app}"; Components: tape; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
+#if defined(ForjaColhido_Drumforge)
+Source: "payload/Drumforge/*"; DestDir: "{app}"; Components: drumforge; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
+#if defined(ForjaColhido_Rack)
+Source: "payload/Rack/*"; DestDir: "{app}"; Components: rack; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
+#if defined(ForjaColhido_Minis)
+Source: "payload/Minis/*"; DestDir: "{app}"; Components: minis; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
+#if defined(ForjaColhido_Canivete)
+Source: "payload/Canivete/*"; DestDir: "{app}"; Components: canivete; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
+#if defined(ForjaColhido_Minidrum)
+Source: "payload/Minidrum/*"; DestDir: "{app}"; Components: minidrum; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
+#if defined(ForjaColhido_Minisat)
+Source: "payload/Minisat/*"; DestDir: "{app}"; Components: minisat; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
 
 ; Licenca e LEIA-ME num lugar limpo (fora da raiz VST3), sempre junto. O
 ; LEIA-ME.txt vem do coletor: guia de install para a suite, README do produto
@@ -184,6 +245,6 @@ begin
     if WizardSelectedComponents(False) <> '' then
       Log('Forja: ao abrir a DAW, refaca o escaneamento de plugins para os novos VST3 aparecerem.')
     else
-      Log('Forja: nenhuma familia marcada; nada instalado alem da documentacao.');
+      Log('Forja: nenhuma familia marcada; nada instalado alem da documentacao.')
   end;
 end;

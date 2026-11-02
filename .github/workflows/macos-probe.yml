@@ -1,0 +1,74 @@
+name: macOS probe
+
+# Sonda temporaria de cronometro. O job macOS do trem estourou o teto de 6 h do
+# runner em todas as tentativas (runs 3, 5, 6 e 7: cancelled no step Build), e
+# sem log anonimo nao da para saber quanto cada parte custa. Este workflow mede
+# configure, o subtree do rack, tres plugins pequenos e os testes do trem, e
+# imprime o tempo de cada um. Remove-se quando a estrategia de macOS fechar.
+
+# Dispara por tag probe-* porque o ambiente de desenvolvimento nao tem token para
+# workflow_dispatch. O trem de release escuta so `v*`, entao nao ha escolha errada.
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "probe-*"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: tempo de build no runner de macOS
+    runs-on: macos-15
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Maquina
+        run: |
+          sysctl -n machdep.cpu.brand_string
+          echo "cpus: $(sysctl -n hw.ncpu)"
+          sw_vers -productVersion
+
+      - name: Configure
+        run: |
+          t0=$(date +%s)
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
+            -DFORJA_LTO=OFF -DFORJA_STANDALONE=OFF
+          echo "::notice::configure = $(( $(date +%s) - t0 )) s"
+
+      - name: Alvos do Tests
+        run: |
+          cd build/Tests
+          make help | sed -n '1,60p'
+
+      - name: Build do rack (subtree)
+        run: |
+          t0=$(date +%s)
+          cmake --build build/Forjarack --parallel || cmake --build build --target Forjarack_VST3 --parallel
+          echo "::notice::rack = $(( $(date +%s) - t0 )) s"
+
+      - name: Build de tres plugins pequenos
+        run: |
+          t0=$(date +%s)
+          for t in Cinzel_VST3 Torno_VST3 Lima_VST3; do
+            cmake --build build --target "$t" --parallel
+          done
+          echo "::notice::3 plugins = $(( $(date +%s) - t0 )) s"
+
+      - name: Testes do trem do rack
+        run: |
+          t0=$(date +%s)
+          cd build/Tests
+          for t in forja_forjarack_engine forja_forjarack_hosted forja_forjarack_processor forja_forjarack_vst3_midi; do
+            make "$t"
+          done
+          echo "build dos testes = $(( $(date +%s) - t0 )) s"
+          t1=$(date +%s)
+          ctest -R '^forjarack' --output-on-failure
+          echo "::notice::testes do rack = $(( $(date +%s) - t1 )) s"

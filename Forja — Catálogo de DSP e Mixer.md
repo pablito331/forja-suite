@@ -438,6 +438,18 @@ nota do host atravessa `data.inputEvents` e faz o CANIVETE soar. Sem bundle ou s
 soundfont na biblioteca o teste se declara SKIP (exit 0). Foi exatamente essa camada que
 os outros testes não enxergavam — todos chamam `processBlock` no objeto C++ e por isso
 ficaram verdes com o plugin mudo na DAW.
+A fileira INSTRUMENTO da gaveta CANIVETE tinha um defeito da mesma casta — **na costura,
+não no DSP**: ela pedia o preset pelo **nome**, e o nome cru do SF2 vem do campo `phdr`,
+fixo em 20 bytes e recheado com espaços (`"Piano & String     "`). `chooseInstrument()`
+passava por `name.trim()` antes de entregar ao módulo, então a comparação nunca casava e
+o pedido morria ali; o plugin solto trocava porque pede por **índice**. A rede está na
+seção 4b de `forjarack_processor`: percorre os presets do bank do usuário, pede cada um
+pela API do processador e exige que o espelho de preset em uso — escrito exclusivamente
+pela thread de áudio quando ela chama `tsf_channel_set_presetindex` — acompanhe. Validada
+por mutação: com o `trim()` restaurado a asserção falha com o sintoma relatado. A prova
+de áudio puro (render da mesma nota com presets diferentes) é auto-calibrada com uma
+captura de controle: se a renderização não se repete na máquina, ela se declara SKIP e
+não conta — sem o controle ela dava falso positivo e aprovava um seletor morto.
 
 **Pendências, em ordem:**
 
@@ -451,7 +463,10 @@ ficaram verdes com o plugin mudo na DAW.
       enquanto o externo toca — o contrato já tem teste (`testDrawerFiles()`), mas o
       FileChooser depende de sessão gráfica. Na gaveta CANIVETE, conferir também a
       fileira INSTRUMENTO (`testDrawerInstruments()`) e o toque do banco pela trilha
-      do span (`testDrawerAudio()`, verde no CI). O teclado ao vivo dentro do rack tinha
+      do span (`testDrawerAudio()`, verde no CI) — a fileira chegou a ficar morta
+      por um `trim()` no nome do preset na costura (o `phdr` do SF2 é recheado com
+      espaços); já tem rede (seção 4b de `forjarack_processor`) e binário corrigido,
+      falta só a conferência visual na DAW. O teclado ao vivo dentro do rack tinha
       uma causa de silêncio **fora do C++**: `forja_add_plugin` declarava
       `NEEDS_MIDI_INPUT FALSE`, a macro `JucePlugin_WantsMidiInput` do wrapper VST3 ficava
       em `0`, o plugin não anunciava o barramento `kEvent` e o wrapper pulava a conversão

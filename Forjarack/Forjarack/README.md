@@ -304,6 +304,16 @@ da banda da gaveta HOSPEDADO:
   telemetria quando o bank fica tocável). A escolha é gravada pelo **nome**
   (`drawerInst_slotN`) — o índice de preset não é estável entre banks — e
   volta ao primeiro preset quando o bank muda.
+- **O nome do preset é a identidade e não pode ser podado.** O campo `phdr`
+  do SF2 é fixo em 20 bytes e recheado com espaços (`"Piano & String     "`),
+  então o rótulo que a lista devolve traz o recheio. A costura da gaveta
+  chamava `name.trim()` antes de entregar ao módulo e a comparação por nome
+  nunca casava: a fileira INSTRUMENTO ficava morta na gaveta enquanto o
+  plugin solto trocava normalmente — porque o solto pede o preset por
+  **índice**, nunca por nome. Hoje a costura passa o texto cru e o módulo
+  compara ignorando os espaços de **fim dos dois lados** (o estado vai a XML
+  e passa pelo host, que costuma podar espaços trailing). Nunca introduza
+  `trim()` num identificador vindo de tabela binária.
 
 Validação: `testDrawerFiles()` em `forja_minidrum` e `forja_canivete` cobre o
 contrato no nível do módulo (banda exposta, rejeição de nome fora da lista,
@@ -311,7 +321,13 @@ colheita do externo pelo `idle()`, knob mudo enquanto o externo manda e
 reversão graciosa quando o arquivo não existe). `testDrawerInstruments()` em
 `forja_canivete` cobre a banda de instrumento (lista vazia sem bank, pedido
 pendente resolvido no `idle()`, troca por nome, nome inexistente ignorado e
-limpeza na troca de bank). O `FileChooser` em si é UI nativa e depende de
+limpeza na troca de bank), e a seção 4b de `forjarack_processor` cobre a
+**costura do plugin** com o bank do usuário: cada preset da lista é pedido por
+`chooseInstrument()` e o espelho de preset em uso — escrito só pela thread de
+áudio, quando ela de fato chama `tsf_channel_set_presetindex` — tem que
+acompanhar um a um. Foi essa asserção que pegou o `trim()` da fileira
+INSTRUMENTO; ela falha exatamente como o sintoma relatado na DAW. O
+`FileChooser` em si é UI nativa e depende de
 sessão gráfica; fica registrado como pendência de validação manual em host,
 como o resto da banda HOSPEDADO.
 

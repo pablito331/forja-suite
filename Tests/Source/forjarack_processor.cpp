@@ -6,6 +6,7 @@
 //
 // O instrumento e uma sonda registrada em runtime (mesmo contrato de uma
 // expansao real), entao nada aqui depende de soundfont em disco.
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -336,6 +337,170 @@ void testChainStillWorks (ForjarackAudioProcessor& processor)
 // tem um bank em Documents/Forja/Canivete (e exatamente o caso do usuario);
 // sem bank na pasta a secao se declara SKIP e nao conta como falha.
 // ---------------------------------------------------------------------------
+// 4b) A fileira INSTRUMENTO da gaveta, pela porta do host. O plugin standalone
+// troca o preset e a gaveta usa o MESMO engine, entao a diferenca tem que estar
+// na costura (processor -> modulo -> preset -> thread de audio). O espelho de
+// preset em uso so e escrito pela thread de audio quando ela de fato chama
+// tsf_channel_set_presetindex: e a prova deterministica de que o pedido chegou
+// ---------------------------------------------------------------------------
+std::vector<float> renderNote (ForjarackAudioProcessor& processor, int note, int blocks)
+{
+    juce::AudioBuffer<float> buffer (2, testBlockSize);
+    juce::MidiBuffer midi;
+    midi.addEvent (juce::MidiMessage::noteOn (1, note, static_cast<juce::uint8> (100)), 0);
+
+    std::vector<float> captured;
+    captured.reserve (static_cast<size_t> (blocks * testBlockSize));
+
+    for (int block = 0; block < blocks; ++block)
+    {
+        buffer.clear();
+        processor.processBlock (buffer, midi);
+        midi.clear();   // so o ataque: a nota segue sustentada
+
+        captured.insert (captured.end(),
+                         buffer.getReadPointer (0),
+                         buffer.getReadPointer (0) + testBlockSize);
+    }
+
+    return captured;
+}
+
+// Devolve o campo ao silencio antes de cada captura: sem isso a cauda do preset
+// anterior vaza na comparacao e o teste aprova um seletor morto.
+bool settleToSilence (ForjarackAudioProcessor& processor, int note)
+{
+    juce::AudioBuffer<float> buffer (2, testBlockSize);
+    juce::MidiBuffer midi;
+    midi.addEvent (juce::MidiMessage::noteOff (1, note), 0);
+
+    for (int block = 0; block < 800; ++block)
+    {
+        buffer.clear();
+        processor.processBlock (buffer, midi);
+        midi.clear();
+
+        if (peakOf (buffer) < 1e-5f)
+            return true;
+    }
+
+    return false;
+}
+
+float maxDifference (const std::vector<float>& a, const std::vector<float>& b)
+{
+    float diff = 0.0f;
+    const auto n = std::min (a.size(), b.size());
+
+    for (size_t i = 0; i < n; ++i)
+        diff = std::max (diff, std::abs (a[i] - b[i]));
+
+    return diff;
+}
+
+void testDrawerInstrumentThroughProcessor (ForjarackAudioProcessor& processor, int slot)
+{
+    const auto instruments = processor.drawerInstrumentNames (slot);
+
+    if (instruments.size() < 2)
+    {
+        std::printf ("  SKIP: o bank da gaveta tem %d preset(s); a troca precisa de 2\n",
+                     instruments.size());
+        return;
+    }
+
+    std::printf ("  (%d presets na gaveta; testando a troca)\n", instruments.size());
+
+    bool mirrorFollows = true;
+    juce::String lastApplied;
+
+    for (int i = 1; i < instruments.size(); ++i)
+    {
+        processor.chooseInstrument (slot, instruments[i]);
+
+        // O proximo bloco aplica o pedido e escreve o espelho; a telemetria da
+        // gaveta le o mesmo atomico que o editor mostra.
+        for (int pass = 0; pass < 10 && processor.currentInstrument (slot) != instruments[i]; ++pass)
+        {
+            juce::AudioBuffer<float> tick (2, testBlockSize);
+            tick.clear();
+            juce::MidiBuffer none;
+            processor.processBlock (tick, none);
+            pumpMessages (10);
+        }
+
+        lastApplied = instruments[i];
+
+        if (processor.currentInstrument (slot) != instruments[i])
+            mirrorFollows = false;
+    }
+
+    if (! mirrorFollows)
+    {
+        std::printf ("  (ultimo preset pedido: %s | em uso: %s)\n",
+                     lastApplied.toRawUTF8 (),
+                     processor.currentInstrument (slot).toRawUTF8 ());
+    }
+
+    check (mirrorFollows, "a gaveta troca o preset no engine (espelho do audio acompanha)");
+
+    // Prova de som, calibrada por controle: a MESMA nota no MESMO preset tem que
+    // renderizar identica duas vezes; so entao a diferenca entre dois presets
+    // conta. Sem o controle o teste aprova um seletor morto (aprovou: a cauda e
+    // o estado do banco mudam entre capturas e o delta sai grande mesmo com o
+    // preset parado).
+    constexpr int referenceNote = 60;
+
+    auto capture = [&processor, slot] (const juce::String& preset, int note) -> std::vector<float>
+    {
+        processor.chooseInstrument (slot, preset);
+
+        for (int pass = 0; pass < 10 && processor.currentInstrument (slot) != preset; ++pass)
+        {
+            juce::AudioBuffer<float> tick (2, testBlockSize);
+            tick.clear();
+            juce::MidiBuffer none;
+            processor.processBlock (tick, none);
+            pumpMessages (10);
+        }
+
+        if (! settleToSilence (processor, note))
+            return {};
+
+        return renderNote (processor, note, 12);
+    };
+
+    const auto first = instruments[0];
+    const auto other = instruments[instruments.size() - 1];
+
+    const auto byFirst = capture (first, referenceNote);
+    const auto byFirstAgain = capture (first, referenceNote);
+    const auto byOther = capture (other, referenceNote);
+
+    if (byFirst.empty() || byFirstAgain.empty() || byOther.empty())
+    {
+        std::printf ("  SKIP: a cauda do bank nao assentou entre capturas\n");
+        return;
+    }
+
+    const auto repeat = maxDifference (byFirst, byFirstAgain);
+    const auto changed = maxDifference (byFirst, byOther);
+
+    std::printf ("  (%s vs %s | repeticao: %.6f | troca: %.6f)\n",
+                 first.trim().toRawUTF8 (), other.trim().toRawUTF8 (), repeat, changed);
+
+    if (repeat > 1e-5f)
+    {
+        std::printf ("  SKIP: render nao repetivel nesta maquina (controle %.6f); "
+                     "a prova de som nao vale\n", repeat);
+        return;
+    }
+
+    check (changed > 1e-4f, "o preset escolhido pela gaveta muda o audio do bank");
+
+    settleToSilence (processor, referenceNote);
+}
+
 void testRealCaniveteThroughProcessor (ForjarackAudioProcessor& processor)
 {
     std::printf ("\n[canivete real pelo processador]\n");
@@ -396,6 +561,8 @@ void testRealCaniveteThroughProcessor (ForjarackAudioProcessor& processor)
 
     check (peak > 0.02f,
            "nota do teclado faz o CANIVETE real soar pelo plugin do rack");
+
+    testDrawerInstrumentThroughProcessor (processor, 2);
 }
 
 } // namespace

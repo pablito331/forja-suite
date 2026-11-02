@@ -790,7 +790,12 @@ void ForjarackAudioProcessor::applyDrawerInstrument (int slot, const juce::Strin
 
 void ForjarackAudioProcessor::chooseInstrument (int slot, const juce::String& name)
 {
-    applyDrawerInstrument (slot, name.trim());
+    // O rotulo da lista E a identidade do preset: o nome vem do campo phdr do
+    // SF2, fixo em 20 bytes e recheado com espacos ("Piano & String     "),
+    // entao o modulo resolve por comparacao do texto cru. Encurtar aqui (um
+    // trim) fazia o pedido nunca casar com a lista e a fileira ficava morta na
+    // gaveta, enquanto o plugin standalone -- que pede por INDICE -- trocava.
+    applyDrawerInstrument (slot, name);
 }
 
 void ForjarackAudioProcessor::syncDrawerKnob (int slot, int index, int count)

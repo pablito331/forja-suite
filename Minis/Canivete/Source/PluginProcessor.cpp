@@ -209,8 +209,17 @@ void CaniveteAudioProcessor::timerCallback()
     // tocavel (a carga e assincrona) e entregue ao audio pelo indice na lista.
     if (pendingPresetName.isNotEmpty() && engine.hasBank() && ! engine.isLoading())
     {
+        // Os nomes de preset vem do campo phdr do SF2: 20 bytes fixos recheados
+        // com espacos ("Monster Hit         "). A comparacao exata funciona
+        // enquanto o texto cru sobrevive intacto, mas o preset escolhido passa
+        // por XML e pelo host ao ser restaurado, e camadas pelo caminho podam os
+        // espacos de fim. Se os DOIS lados forem podados a escolha continua a
+        // mesma (o primeiro da lista que casa), entao isto so resgata o caso em
+        // que o recheio se perdeu -- e a gaveta do rack morreu exatamente assim.
+        const auto wanted = pendingPresetName.trimEnd();
+
         for (int i = 0; i < engine.getNumPresets(); ++i)
-            if (engine.getPresetName (i) == pendingPresetName)
+            if (engine.getPresetName (i).trimEnd() == wanted)
             {
                 engine.requestPreset (i);
                 break;

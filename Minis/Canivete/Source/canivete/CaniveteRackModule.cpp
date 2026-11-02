@@ -8,6 +8,28 @@
 namespace forja::canivete
 {
 
+namespace
+{
+
+// Chave de comparacao de nome de preset: o phdr do SF2 e um campo fixo de 20
+// bytes recheado com espacos ("Piano & String     "), entao o texto cru que a
+// gaveta devolve so casa com a lista se ninguem pelo caminho encurtar o
+// recheio. O preset escolhido vive numa propriedade de estado (e passa por XML
+// e pelo host, que costumam podar espagos de fim), entao o matching ignora os
+// espacos de fim dos DOIS lados. Nomes iguais depois de podados resolvem para
+// o primeiro da lista, como ja acontecia.
+std::string presetKey (const std::string& name)
+{
+    const auto last = name.find_last_not_of (" \t");
+
+    if (last == std::string::npos)
+        return {};
+
+    return name.substr (0, last + 1);
+}
+
+} // namespace
+
 CaniveteModule::CaniveteModule() = default;
 
 void CaniveteModule::refreshLibrary()
@@ -208,14 +230,16 @@ void CaniveteModule::applyPendingInstrument()
     if (selectedInstrument.empty() || ! engine.hasBank() || engine.isLoading())
         return;
 
-    if (engine.getSelectedPresetName().toStdString() == selectedInstrument)
+    const auto wanted = presetKey (selectedInstrument);
+
+    if (presetKey (engine.getSelectedPresetName().toStdString()) == wanted)
         return;
 
     const int count = engine.getNumPresets();
 
     for (int i = 0; i < count; ++i)
     {
-        if (engine.getPresetName (i).toStdString() == selectedInstrument)
+        if (presetKey (engine.getPresetName (i).toStdString()) == wanted)
         {
             engine.requestPreset (i);
             return;

@@ -189,7 +189,13 @@ ctest --test-dir build -C Release --output-on-failure
 - Site: `site/catalogo.json` é o conteúdo da página pública; `tools/build_site.ps1` gera o
   `site/index.html` commitado e `tools/validate_site.ps1` confere o catálogo contra os
   targets CMake, os `ForjaInfoText.h`, as capturas e o `ci/products.json` (roda na CI de
-  Pages). Plugin novo exige o card no catálogo — a validação pega se você esquecer.
+  Pages).
+- **O `build_site.ps1` le as tags locais** para montar o link de Download de um produto, e o
+  `-Checks` compara a pagina gerada com a commitada. Num clone raso (sem tags) o card sai com
+  `/releases` em vez de `/releases/tag/vrack-<versao>` e a validacao reprova um `index.html`
+  que esta certo — por isso `pages.yml` clona com `fetch-depth: 0`. Ao rodar o gerador, tenha
+  `git fetch --tags` feito; o erro imprime a linha que diverge justamente para isso ser visível.
+- Plugin novo exige o card no catálogo — a validação pega se você esquecer.
 
 ## Como adicionar um plugin
 

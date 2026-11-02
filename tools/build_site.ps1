@@ -272,6 +272,24 @@ if (Test-Path -LiteralPath $themeSrc) {
 if ($Checks) {
     $atual = [System.IO.File]::ReadAllText($indexPath, [System.Text.Encoding]::UTF8) -replace "`r`n", "`n"
     if ($atual -ne $index) {
+        # Mostra a primeira linha que diverge: sem isso o erro empurra para
+        # "rode o gerador" quando a causa real costuma ser outra - o link de
+        # Download de um produto depende das tags do repositorio, entao um clone
+        # raso (CI, shallow) gera outra pagina que o commit feito com tags.
+        $linhasAtual = $atual -split "`n"
+        $linhasNovas = $index -split "`n"
+        $dif = -1
+        for ($i = 0; $i -lt [Math]::Min($linhasAtual.Count, $linhasNovas.Count); $i++) {
+            if ($linhasAtual[$i] -ne $linhasNovas[$i]) { $dif = $i; break }
+        }
+        if ($dif -ge 0) {
+            Write-Output ("linha {0} commitada: {1}" -f ($dif + 1), $linhasAtual[$dif].Trim().Substring(0, [Math]::Min(140, $linhasAtual[$dif].Trim().Length)))
+            Write-Output ("linha {0} gerada:    {1}" -f ($dif + 1), $linhasNovas[$dif].Trim().Substring(0, [Math]::Min(140, $linhasNovas[$dif].Trim().Length)))
+        }
+        if (-not (& git -C $repoRoot tag --list 2>$null)) {
+            Write-Error "site/index.html nao bate: este clone nao tem tags, e o link de Download de um produto e derivado das tags. Precisa de fetch completo (git fetch --tags; na CI, fetch-depth: 0)."
+            exit 1
+        }
         Write-Error "site/index.html esta desatualizado em relacao a site/catalogo.json. Rode tools/build_site.ps1 e commithe o resultado."
         exit 1
     }

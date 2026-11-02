@@ -53,7 +53,31 @@ jobs:
       # FUNDAMENTOS) e os adapters header-only, que e onde um default argument
       # invalido aparece.
       - name: Build Cinzel_VST3
-        run: cmake --build build --target Cinzel_VST3 --parallel
+        run: |
+          set -o pipefail
+          # O log fica em arquivo para o passo de diagnostico poder resumir o
+          # erro: num repositorio publico a API de job log pede token, entao sem
+          # anotacao nao ha como ver o que o GCC reprovou sem abrir a pagina.
+          cmake --build build --target Cinzel_VST3 --parallel 2>&1 | tee build-smoke.log
+
+      - name: Show the compiler errors
+        if: failure()
+        shell: bash
+        run: |
+          set -uo pipefail
+          erros=$(grep -E 'error:|fatal error:|FAILED:|CMake Error|ninja: build stopped' build-smoke.log | head -n 40 || true)
+          if [ -z "$erros" ]; then
+            erros=$(tail -n 30 build-smoke.log)
+          fi
+          {
+            echo '### Smoke falhou no GCC -- erros do compilador'
+            echo '```'
+            printf '%s\n' "$erros"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' "$erros" | head -n 12 | while IFS= read -r linha; do
+            echo "::error::${linha}"
+          done
 
       - name: Guard against the brace-init pattern that GCC rejects
         shell: bash

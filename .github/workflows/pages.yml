@@ -35,7 +35,14 @@ jobs:
       name: github-pages
       url: ${{ steps.pages.outputs.page_url }}
     steps:
+      # fetch-depth: 0 nao e capricho: build_site.ps1 deriva o link de Download de
+      # um produto da tag mais recente daquele prefixo, e o -Checks compara a
+      # pagina gerada com a commitada. Num clone raso (sem tags) o card do rack
+      # sai com /releases em vez de /releases/tag/vrack-<versao> e a validacao
+      # reprova um conteudo que esta correto.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Validate catalog against the repo
         shell: pwsh

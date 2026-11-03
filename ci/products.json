@@ -95,7 +95,7 @@
     "artifactBase": "ForjaPianoforge",
     "tagPrefix": "vpiano-",
     "versionFrom": "1.0.0",
-    "pathFilters": ["Pianos/Pianoforge/Pianoforge"],
+    "pathFilters": ["Pianos/Pianoforge"],
     "testRegex": "^pianoforge_engine$",
     "readme": "docs/instalar/INSTALAR-WINDOWS.txt"
   }

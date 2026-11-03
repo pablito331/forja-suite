@@ -66,7 +66,8 @@ Brasa-Concept-v1/
 # pianoforge/ é um projeto Git autônomo (repo próprio, non-JUCE), irmão da suíte:
 # fica no working tree mas NÃO faz parte do build nem do histórico da Forja.
 # Sem esta linha o Git gravaria um gitlink quebrado do repo embutido.
-pianoforge/
+# Ancorado na raiz: sem a barra inicial engoliria também Pianos/Pianoforge/.
+/pianoforge/
 
 # Scratch files
 compile_tmp.bat

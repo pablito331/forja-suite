@@ -1,8 +1,9 @@
 # Forja — suíte de plugins
 
-São **36 plugins VST3 em quatro linhas**, em JUCE 9 (C++20) para Windows, macOS e Linux: 31
-com DSP adaptado do **Airwindows** (MIT, Chris Johnson) e cinco entregas originais da Forja —
-o rack **FORJARACK**, o sampler **DRUMFORGE** e os minis **CANIVETE**, **MINIDRUM** e
+São **37 plugins VST3 em cinco linhas**, em JUCE 9 (C++20) para Windows, macOS e Linux: 31
+com DSP adaptado do **Airwindows** (MIT, Chris Johnson) e seis entregas originais da Forja —
+o rack **FORJARACK**, o sampler **DRUMFORGE**, o piano de amostras **PIANOFORGE** e os minis
+**CANIVETE**, **MINIDRUM** e
 **MINISAT**. Interface nativa do padrão Forja (sem WebView), painel FUNDAMENTOS em português,
 bypass suavizado, medição e, nas adaptações Airwindows, paridade amostra a amostra contra o
 código original. A suíte entrega o VST3; o build é VST3-only por padrão (o Standalone só
@@ -28,8 +29,9 @@ plataforma com os VST3 e o guia de instalação:
 | Linux | `<produto>-<versão>-linux-x64.zip` | VST3 x64 e `LEIA-ME.txt` |
 
 `<produto>` é `Forja` na tag da suíte e `ForjaRack`, `ForjaMinis`, `ForjaCanivete`,
-`ForjaMinidrum`, `ForjaMinisat`, `ForjaDrumforge` ou `ForjaAirwindows` nas tags de produto
-(`ci/products.json` é o registro). Os pacotes trazem apenas o VST3; o Standalone não é gerado
+`ForjaMinidrum`, `ForjaMinisat`, `ForjaDrumforge`, `ForjaPianoforge` ou `ForjaAirwindows` nas
+tags de produto (`ci/products.json` é o registro). Os pacotes trazem apenas o VST3; o
+Standalone não é gerado
 por padrão (ligue `FORJA_STANDALONE=ON` para abrir um plugin sem DAW).
 
 Os binários também ficam em `C:\Users\pablo\Documents\prototipos` neste ambiente de
@@ -39,11 +41,11 @@ desenvolvimento.
 
 | Item | Estado |
 | --- | --- |
-| Targets locais (`<Nome>_VST3`) | 36 plugins · 36 binários VST3 |
+| Targets locais (`<Nome>_VST3`) | 37 plugins · 37 binários VST3 |
 | Paridade com os originais Airwindows | Verde em todos os executáveis |
 | Guarda de alocação em `process()` | PASS (adaptadores; os produtos Forja têm testes de engine próprios) |
 | Latência por impulso | Medida em todos os modelos |
-| UIs redimensionáveis | 36 editores com aspecto fixo; os 31 da Airwindows conferidos em 100% e 150% |
+| UIs redimensionáveis | 37 editores com aspecto fixo; os 31 da Airwindows conferidos em 100% e 150% |
 | Builds Windows/macOS/Linux | GitHub Actions em tags `v*`, com Smoke de GCC nos pushes de `Forja/Source/**` |
 | Página pública | No ar em <https://pablito331.github.io/forja-suite/> (GitHub Pages + `tools/build_site.ps1`) |
 | Trens de release por produto | CI pronta; nenhum Release de produto publicado ainda — o tag `vrack-1.0.0` aponta para um commit anterior aos consertos |
@@ -53,7 +55,7 @@ desenvolvimento.
 
 ## Produtos
 
-São 36 plugins em quatro linhas. **O catálogo completo — captura, descrição e download de
+São 37 plugins em cinco linhas. **O catálogo completo — captura, descrição e download de
 cada um — fica na página pública**: <https://pablito331.github.io/forja-suite/>. Este README
 fala do repositório: como compilar, testar e instalar.
 
@@ -63,12 +65,13 @@ fala do repositório: como compilar, testar e instalar.
 | FORJARACK | 1 | rack em cadeia estilo Série 500: oito gavetas com os adaptadores já validados, hosting dinâmico e as gavetas MINIDRUM/CANIVETE | [ForjaRack](https://pablito331.github.io/forja-suite/#rack) | `vrack-X.Y.Z` |
 | Minis | 3 | CANIVETE (player SoundFont SF2/SF3 multi-timbral), MINIDRUM (kits do Drumforge em um knob) e MINISAT (a válvula do BRASA em um knob) | [Minis](https://pablito331.github.io/forja-suite/#minis) | `vminis-X.Y.Z` |
 | DRUMFORGE | 1 | sampler de bateria com engine própria: 16 pads, camadas, round-robin, choke, mesa de 16 canais, multi-out e loops MIDI | [Drumforge](https://pablito331.github.io/forja-suite/#drumforge) | `vdrumforge-X.Y.Z` |
+| PIANOFORGE | 1 | piano de amostras com corpo físico: pega um soundfont comum (.sf2/.sf3 ou .pforge) e acrescenta martelo, ressonância simpática, tampa, EQ de corpo, chorus e reverb FDN; 17 parâmetros + aba MOTOR, e gaveta instrument no FORJARACK | [Pianos](https://pablito331.github.io/forja-suite/#pianos) | `vpiano-X.Y.Z` |
 
-A suíte inteira (os 36 plugins) continua saindo da tag sem prefixo, `vX.Y.Z`; tag de produto
+A suíte inteira (os 37 plugins) continua saindo da tag sem prefixo, `vX.Y.Z`; tag de produto
 não bumpa a versão da suíte. Passo a passo dos trens em `docs/RELEASES.md`.
 
 O repositório é organizado por **bases de DSP**: `Airwindows/` (as 31 adaptações MIT),
-`Forjarack/`, `Minis/` e `drumforge/`. Cada plugin é um target CMake próprio; o pipeline
+`Forjarack/`, `Minis/`, `drumforge/` e `Pianos/`. Cada plugin é um target CMake próprio; o pipeline
 vendor → adapter → processor → editor está em `docs/ARQUITETURA.md`.
 
 O detalhe técnico de cada plugin — modelo Airwindows de origem, lista de parâmetros, latência

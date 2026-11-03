@@ -60,6 +60,7 @@ function Get-ForjaFamily {
         "drumforge"  { return "Drumforge" }
         "Forjarack"  { return "Rack" }
         "Minis"      { return "Minis" }
+        "Pianos"     { return "Pianos" }
         default      { return "Outros" }
     }
 }

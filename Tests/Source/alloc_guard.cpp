@@ -30,6 +30,16 @@
 #include "forja/dsp/ForjaTempera.h"
 #include "forja/dsp/ForjaTorno.h"
 
+// Modelagem fisica do PIANOFORGE (engine/dsp/*.h). So os headers das classes de
+// modelo, sem tocar no PianoEngine (que e o TU do tsf).
+#include "engine/dsp/Compressor.h"
+#include "engine/dsp/Filters.h"
+#include "engine/dsp/Hammer.h"
+#include "engine/dsp/Resonance.h"
+#include "engine/dsp/Soundboard.h"
+#include "engine/dsp/Shimmer.h"
+#include "engine/dsp/Space.h"
+
 #include <atomic>
 #include <cmath>
 #include <cstdio>
@@ -160,6 +170,40 @@ bool checkNoAllocations (const char* name, Dsp& dsp)
     return true;
 }
 
+// Variante para as classes que so fazem trabalho com um amount > 0 (o processo
+// real esta atras de um gate): aplica o amount por dentro, antes e depois do
+// guard, para a cascata de biquads ser realmente exercitada no process vigiado.
+template <typename Dsp, typename Tune>
+bool checkNoAllocationsTuned (const char* name, Dsp& dsp, Tune&& tune)
+{
+    constexpr int frames = 1024;
+    std::vector<float> left ((std::size_t) frames, 0.0f);
+    std::vector<float> right ((std::size_t) frames, 0.0f);
+
+    for (int i = 0; i < frames; ++i)
+    {
+        left[(std::size_t) i] = 0.25f * (float) std::sin (0.03 * (double) i);
+        right[(std::size_t) i] = left[(std::size_t) i];
+    }
+
+    dsp.prepare (48000.0);
+    tune (dsp);
+    dsp.process (left.data(), right.data(), frames);
+
+    tripped.store (false, std::memory_order_relaxed);
+    active.store (true, std::memory_order_relaxed);
+    dsp.process (left.data(), right.data(), frames);
+    active.store (false, std::memory_order_relaxed);
+
+    if (tripped.load (std::memory_order_relaxed))
+    {
+        std::printf ("FAIL %s allocated inside process()\n", name);
+        return false;
+    }
+
+    return true;
+}
+
 } // namespace
 
 int main()
@@ -195,6 +239,23 @@ int main()
     forja::dsp::MuralhaDSP muralha;
     forja::dsp::DiqueDSP dique;
 
+    forja::pianoforge::HammerModel hammer;
+    forja::pianoforge::SympatheticResonance symp;
+    forja::pianoforge::SoundboardEQ eq;
+    forja::pianoforge::SoundboardResponse sbr;
+    forja::pianoforge::SoundboardModes sbm;
+    forja::pianoforge::LidFilter lid;
+    forja::pianoforge::Chorus chorus;
+    forja::pianoforge::Reverb reverb;
+    // O compressor do PIANOFORGE virou um compressor ORIGINAL da Forja
+    // (engine/dsp/Compressor.h), com makeup automatico: nao e mais o ImpetoDSP
+    // reusado (a linha "Impeto" acima continua cobrindo o adaptador do plugin
+    // IMPETO da suite). Tem guarda propria abaixo.
+    forja::pianoforge::WorshipCompressor comp;
+    // O Molho e hoje um shimmer espectral autonomo (engine/dsp/Shimmer.h): nao
+    // envolve mais o ClearCoat, entao ha uma unica linha de guarda para ele.
+    forja::pianoforge::Molho molho;
+
     bool ok = true;
     ok = checkNoAllocations ("Tempera", tempera) && ok;
     ok = checkNoAllocations ("Prensa", prensa) && ok;
@@ -226,6 +287,21 @@ int main()
     ok = checkNoAllocations ("Deluxe", deluxe) && ok;
     ok = checkNoAllocations ("Muralha", muralha) && ok;
     ok = checkNoAllocations ("Dique", dique) && ok;
+
+    ok = checkNoAllocations ("Pianoforge Hammer", hammer) && ok;
+    ok = checkNoAllocations ("Pianoforge SympatheticResonance", symp) && ok;
+    ok = checkNoAllocations ("Pianoforge SoundboardEQ", eq) && ok;
+    ok = checkNoAllocationsTuned ("Pianoforge SoundboardResponse", sbr,
+                                  [] (forja::pianoforge::SoundboardResponse& d) { d.setAmount (0.8f); }) && ok;
+    ok = checkNoAllocationsTuned ("Pianoforge SoundboardModes", sbm,
+                                  [] (forja::pianoforge::SoundboardModes& d) { d.setAmount (0.8f); }) && ok;
+    ok = checkNoAllocations ("Pianoforge LidFilter", lid) && ok;
+    ok = checkNoAllocations ("Pianoforge Chorus", chorus) && ok;
+    ok = checkNoAllocations ("Pianoforge Reverb", reverb) && ok;
+    ok = checkNoAllocationsTuned ("Pianoforge Compressor", comp,
+                                  [] (forja::pianoforge::WorshipCompressor& c) { c.setAmount (1.0f); }) && ok;
+    ok = checkNoAllocationsTuned ("Pianoforge Molho", molho,
+                                  [] (forja::pianoforge::Molho& d) { d.setAmount (1.0f); d.setTone (0.6f); d.setTail (0.6f); }) && ok;
 
     std::printf (ok ? "Allocation guard: PASS\n" : "Allocation guard: FAIL\n");
     return ok ? 0 : 1;

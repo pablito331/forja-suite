@@ -61,12 +61,25 @@ target_sources(Forjarack PRIVATE
     ${CMAKE_SOURCE_DIR}/Minis/Canivete/Source/canivete/SoundFontEngine.h
     ${CMAKE_SOURCE_DIR}/Minis/Canivete/Source/canivete/SoundFontEngine.cpp
     ${CMAKE_SOURCE_DIR}/Minis/Canivete/Source/canivete/BankLibrary.h
+
+    # Gaveta instrument PIANOFORGE: mesmo PianoEngine do plugin standalone, com
+    # o seu TU proprio do TSF (TSF_STATIC liga o tsf de forma interna). O
+    # stb_vorbis fica no TU do CANIVETE; FORJA_PIANOFORGE_SHARES_STB abaixo diz
+    # ao PianoEngine para nao re-incluir o decodificador Ogg neste binario.
+    ${CMAKE_SOURCE_DIR}/Pianos/Pianoforge/Source/PianoforgeRackModule.h
+    ${CMAKE_SOURCE_DIR}/Pianos/Pianoforge/Source/PianoforgeRackModule.cpp
+    ${CMAKE_SOURCE_DIR}/Pianos/Pianoforge/Source/engine/PianoEngine.h
+    ${CMAKE_SOURCE_DIR}/Pianos/Pianoforge/Source/engine/PianoEngine.cpp
+    ${CMAKE_SOURCE_DIR}/Pianos/Pianoforge/Source/engine/Bundle.h
+    ${CMAKE_SOURCE_DIR}/Pianos/Pianoforge/Source/engine/Bundle.cpp
+    ${CMAKE_SOURCE_DIR}/Pianos/Pianoforge/Source/engine/Params.h
 )
 
 target_include_directories(Forjarack PRIVATE
     ${CMAKE_SOURCE_DIR}/Minis/Minidrum/Source
     ${CMAKE_SOURCE_DIR}/Minis/Minisat/Source
     ${CMAKE_SOURCE_DIR}/Minis/Canivete/Source
+    ${CMAKE_SOURCE_DIR}/Pianos/Pianoforge/Source
     ${CMAKE_SOURCE_DIR}/drumforge/Drumforge/Source
 )
 
@@ -75,6 +88,7 @@ target_include_directories(Forjarack PRIVATE
 # scan da pasta nao acha nada e a Gaveta fica muda.
 target_compile_definitions(Forjarack PRIVATE
     JUCE_PLUGINHOST_VST3=1
+    FORJA_PIANOFORGE_SHARES_STB=1
     $<$<PLATFORM_ID:Darwin>:JUCE_PLUGINHOST_AU=1>
 )
 

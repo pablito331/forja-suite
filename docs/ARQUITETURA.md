@@ -117,6 +117,42 @@ O DRUMFORGE não segue o pipeline vendor → adapter: o DSP nasce em
   O BPM vem do playhead (`loop_sync`) ou de `loop_bpm`; o fim do loop volta o cursor sem
   cortar as vozes que ainda soam.
 
+## Base Pianos (DSP portado)
+
+A base `Pianos/` é a quinta, de DSP **portado** (não MIT da Airwindows, não paridade de
+vendor): hoje abriga o **PIANOFORGE**. Ele pega um soundfont de piano comum e acrescenta o
+comportamento físico do instrumento. O alvo vem de `forja_add_instrument` (categoria
+`Instrument|Piano`), com APVTS de 17 parâmetros em 0–1 (escolha `reverbType` com passo 0,25
+no estilo da exceção `division`) e editor `ForjaEditorBase` de 1000×540 (cards por grupo +
+aba MOTOR).
+
+Arquitetura em `Pianos/Pianoforge/Source/engine/`:
+
+- **`PianoEngine`** — camada de amostras sobre o `tsf` (um banco por vez, preset único no
+  canal 0), com carga assíncrona e publicação atômica por token (mesmo contrato do CANIVETE)
+  e **fatiamento de eventos por `delayFrames`** (fronteiras fundidas em `kMinSlice = 16`) para
+  a nota soar no instante certo. O pedal de sustain segue a semântica medida do projeto-irmão:
+  não furta voz cujo envelope ainda está preso.
+- **`Bundle`** — leitor do `.pforge` (`PFG1` + diretório + CRC32 + manifest via `juce::JSON`);
+  CRC errado vira erro legível sem derrubar o banco em uso.
+- **`dsp/`** — cadeia portada na ordem fixa: martelo → ressonância simpática → EQ de corpo →
+  tampa → chorus → reverb FDN → master (largura, trim, volume, soft-clip), com smoothing
+  **por frames** e buffers pré-dimensionados para 192 kHz (nenhum `static`, nenhuma alocação
+  no RT).
+
+**Coexistência de `tsf` no FORJARACK**: o `PianoEngine.cpp` compila o TinySoundFont no seu
+próprio translation unit e usa `TSF_STATIC` (ligação interna) para poder ser linkado junto da
+`SoundFontEngine` do CANIVETE no mesmo binário, sem símbolos duplicados. O `stb_vorbis` (SF3)
+vive num único TU por binário: no FORJARACK o alvo define `FORJA_PIANOFORGE_SHARES_STB` e a
+gaveta PIANOFORGE não re-inclui o decodificador (o SF3 da gaveta fica desligado nesse alvo;
+o plugin standalone e os testes continuam com SF3). O PIANOFORGE entra no `ModuleCatalog` do
+FORJARACK como **gaveta instrument** (registro append-only, carga assíncrona colhida em
+`idle()`).
+
+**Referência histórica — `pianoforge/`**: o repo autônomo non-JUCE homônimo foi o berço do
+DSP; agora é só **referência**, portado (não linkado) para o produto `Pianos/Pianoforge`. Ele
+não entra no `CMakeLists.txt` raiz nem no build da suíte; o `.gitignore` o ignora.
+
 ## Testes e paridade
 
 `Tests/Source/parity_common.h` fornece:

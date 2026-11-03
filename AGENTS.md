@@ -5,7 +5,7 @@ Ele explica de onde vem o DSP, qual padrão a suíte segue e o que **não** pode
 
 ## O que é a Forja
 
-Forja é uma suíte de 36 plugins VST3 em JUCE 9 (C++20) para Windows,
+Forja é uma suíte de 37 plugins VST3 em JUCE 9 (C++20) para Windows,
 macOS e Linux, organizada em bases de DSP. A base `Airwindows/` adapta plugins da
 [Airwindows](https://www.airwindows.com/vsts/) de **Chris Johnson**, licenciado em MIT.
 A base `drumforge/` é a de DSP original: o **DRUMFORGE**, sampler de bateria com engine
@@ -13,7 +13,9 @@ própria, mesa e multi-out. A base `Forjarack/` entrega o **FORJARACK**, um rack
 estilo Série 500 que hospeda adaptadores Airwindows já validados. A base `Minis/` entrega
 os minis Forja de propósito único: **CANIVETE** (player de soundfont SF2/SF3),
 **MINIDRUM** (leitor de kits do Drumforge com um knob de
-volume) e **MINISAT** (saturador de um knob que reusa o adaptador do BRASA). A Forja
+volume) e **MINISAT** (saturador de um knob que reusa o adaptador do BRASA). A base `Pianos/` entrega
+o **PIANOFORGE**, piano de amostras que pega um soundfont comum e acrescenta o corpo físico
+do instrumento. A Forja
 acrescenta interface nativa (sem WebView), painel
 FUNDAMENTOS em português, bypass suavizado, medição, presets/estado via APVTS e validação
 de paridade amostra a amostra contra o código original nas adaptações Airwindows.
@@ -43,6 +45,9 @@ Minis/                             base 4: minis Forja de propósito único (CAN
   Canivete/Source/canivete/        player SF2/SF3 (tsf + stb_vorbis no vendor)
   Minidrum/Source/minidrum/        wrapper do engine Drumforge como plugin autônomo
   Minisat/Source/minisat/          wrapper do adaptador do BRASA como plugin e módulo de rack
+Pianos/                            base 5: pianos Forja de amostras + modelo físico (PIANOFORGE)
+  Pianoforge/Source/engine/        PianoEngine (tsf num TU próprio), Bundle (.pforge), dsp portado
+  Pianoforge/Source/               processor APVTS (17 params), editor (cards + MOTOR), gaveta do rack
 Forja/                             biblioteca compartilhada forja_ui + DSP + vendor
   Source/forja/dsp/                adapters header-only (Forja<Modelo>.h)
   Source/forja/ui/                 chrome nativo (topBar, statusBar, cards, knobs, painel)
@@ -80,15 +85,24 @@ tools/                             scaffold, capturas, gerador/validador do site
   registro no catálogo do ForjaRack. A família **MINIS** no catálogo é mais ampla que a
   pasta: agrupa esses minis Forja e os one-knobs MIT, que continuam em
   `Airwindows/OneKnob/` por regra de proveniência.
-- **Exceção registrada — `pianoforge/`**: é um projeto **autônomo e separado** (repo
-  Git próprio, `github.com/pablito331/pianoforge`), **não** uma base Forja. É **non-JUCE**
-  (SDK VST3 cru da Steinberg + backend de janela Win32/Cocoa/X11 próprio, C++17), tem
-  engine de soundfont (tsf/sfizz), formato de bundle `.pforge`, parâmetros próprios e
-  painel FUNDAMENTOS caseiro. **Não** entra no `CMakeLists.txt` raiz, **não** usa
-  `forja_add_plugin`/`ForjaEditorBase`/APVTS/`utf8()` e **não** compartilha a UI da suíte.
-  Está ignorado no `.gitignore` da Forja (o repo da suíte não rastreia seu conteúdo, para
-  não gravar um gitlink quebrado). As regras deste arquivo **não** se aplicam a ele; quem
-  mexer no pianoforge segue o guia dentro do próprio repo.
+- `Pianos/` — base dos pianos Forja de amostras + modelo físico. Hoje abriga o
+  **PIANOFORGE**, produto próprio (não é adaptação Airwindows nem tem paridade MIT): pega
+  um soundfont de piano comum (`.sf2`/`.sf3` via `tsf` num TU próprio, como o CANIVETE) ou um
+  bundle `.pforge` do projeto-irmão e acrescenta a cadeia física portada — transiente de
+  martelo, ressonância simpática, EQ de corpo, tampa, chorus, reverb FDN e master. Segue o
+  padrão da suíte (JUCE 9, `forja_add_instrument`, APVTS com 17 parâmetros em 0–1,
+  `ForjaEditorBase`, painel FUNDAMENTOS, bypass 10 ms, zero alocação no RT). O `tsf` do
+  PIANOFORGE usa `TSF_STATIC` para coexistir com o do CANIVETE dentro do FORJARACK, onde o
+  PIANOFORGE também entra como **gaveta instrument** (registro append-only, carga assíncrona).
+- **Referência histórica — `pianoforge/`**: era o projeto **autônomo e separado** (repo Git
+  próprio, `github.com/pablito331/pianoforge`), **non-JUCE** (SDK VST3 cru da Steinberg +
+  backend de janela Win32/Cocoa/X11, C++17), com engine de soundfont, o formato `.pforge` e
+  painel FUNDAMENTOS caseiro. Esse repo **não** é base da suíte, **não** entra no
+  `CMakeLists.txt` raiz e **não** é compilado: ele **passou a ser referência de DSP** — o
+  código foi *portado* (não linkado) para o produto **PIANOFORGE** em `Pianos/`. Continua
+  ignorado no `.gitignore` da Forja (o repo da suíte não rastreia seu conteúdo, para não
+  gravar um gitlink quebrado). As regras deste arquivo **não** se aplicam a ele; o caminho
+  SFZ/sfizz e o empacotador `.pforge` dentro do plugin ficam registrados como expansão futura.
 - Uma base nova é uma pasta irmã com `CMakeLists.txt` listando suas famílias/plugins e
   `add_subdirectory(<Base>)` na raiz. `forja_add_plugin` já é agnóstico de pasta; os
   geradores `tools/new_plugin.*` são específicos da base Airwindows.

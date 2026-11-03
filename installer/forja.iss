@@ -156,6 +156,15 @@ Name: "minidrum"; Description: "Minidrum - toca-kit de bateria"; Types: full cus
 #if defined(ForjaColhido_Minisat)
 Name: "minisat"; Description: "Minisat - saturador de um knob"; Types: full custom
 #endif
+; Base Pianos.
+#if defined(ForjaColhido_Pianos)
+Name: "pianos"; Description: "Pianos - Pianoforge, piano de soundfont com corpo fisico"; Types: full custom
+#endif
+; Trem de plugin unico da base Pianos: com -OnlyPath descendo ate a pasta do
+; plugin (Pianos/Pianoforge/Pianoforge), o coletor agrupa pelo nome do plugin.
+#if defined(ForjaColhido_Pianoforge)
+Name: "pianoforge"; Description: "Pianoforge - piano de soundfont com corpo fisico"; Types: full custom
+#endif
 
 [Files]
 ; Cada familia copia seus .vst3 direto para a raiz VST3 ({app}), achatando o
@@ -205,6 +214,12 @@ Source: "payload/Minidrum/*"; DestDir: "{app}"; Components: minidrum; Flags: rec
 #endif
 #if defined(ForjaColhido_Minisat)
 Source: "payload/Minisat/*"; DestDir: "{app}"; Components: minisat; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
+#if defined(ForjaColhido_Pianos)
+Source: "payload/Pianos/*"; DestDir: "{app}"; Components: pianos; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
+#if defined(ForjaColhido_Pianoforge)
+Source: "payload/Pianoforge/*"; DestDir: "{app}"; Components: pianoforge; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
 #endif
 
 ; Licenca e LEIA-ME num lugar limpo (fora da raiz VST3), sempre junto. O

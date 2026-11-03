@@ -4,12 +4,14 @@
     { "slug": "rack", "nome": "ForjaRack", "resumo": "Oito gavetas em cadeia: encaixe módulos Airwindows e monte uma fileira completa sem sair de um único plug-in.", "imagem": "assets/forjarack.png", "release": "rack" },
     { "slug": "minis", "nome": "Minis", "resumo": "Instrumentos de gaveta: player de soundfont, tocador de kits e saturador de válvula.", "imagem": "assets/canivete.png", "release": "minis" },
     { "slug": "drumforge", "nome": "Drumforge", "resumo": "Sampler de bateria com dezesseis pads, round-robin e uma mesa completa.", "imagem": "assets/drumforge.png", "release": "drumforge" },
+    { "slug": "pianos", "nome": "Pianos", "resumo": "Pianos de amostras com corpo físico modelado: o PIANOFORGE.", "imagem": "", "release": "pianoforge" },
     { "slug": "airwindows", "nome": "Airwindows forjados", "resumo": "Trinta e um plugins de mixagem derivados do código MIT de Chris Johnson, com interface Forja.", "imagem": "assets/cinzel.png", "release": "airwindows" }
   ],
   "familias": [
     { "slug": "Rack", "nome": "ForjaRack" },
     { "slug": "Minis", "nome": "Minis" },
     { "slug": "Drumforge", "nome": "Drumforge" },
+    { "slug": "Pianos", "nome": "Pianos" },
     { "slug": "Eq", "nome": "Equalização" },
     { "slug": "Dynamics", "nome": "Dinâmica" },
     { "slug": "Saturation", "nome": "Saturação" },
@@ -36,6 +38,7 @@
     { "slug": "minidrum", "nome": "MINIDRUM", "familia": "Minis", "linha": "minis", "sub": "TOCADOR DE KITS", "resumo": "MINIDRUM é o Drumforge em formato de gaveta: puxa um kit da biblioteca compartilhada, toca o premix gravado no próprio arquivo e manda no nível com um único knob.", "estado": "publicado", "imagem": "assets/minidrum.png", "video": "", "release": "suite" },
     { "slug": "minisat", "nome": "MINISAT", "familia": "Minis", "linha": "minis", "sub": "SATURADOR DE VÁLVULAS", "resumo": "MINISAT é a válvula do BRASA (Airwindows Tube2) em formato de gaveta: um único knob DRIVE leva o sinal do pad documentado ao sinal cheio, sem makeup gain e sem mesa de três knobs.", "estado": "publicado", "imagem": "assets/minisat.png", "video": "", "release": "suite" },
     { "slug": "drumforge", "nome": "DRUMFORGE", "familia": "Drumforge", "linha": "drumforge", "sub": "SAMPLER DE BATERIA", "resumo": "Dezesseis pads, camadas de velocidade, round-robin e uma mesa completa: o kit entra, o groove sai. Sem latência e sem depender de biblioteca externa.", "estado": "publicado", "imagem": "assets/drumforge.png", "video": "", "release": "suite" },
+    { "slug": "pianoforge", "nome": "PIANOFORGE", "familia": "Pianos", "linha": "pianos", "sub": "PIANO DE AMOSTRAS + MODELO FÍSICO", "resumo": "PIANOFORGE pega um soundfont de piano comum e acrescenta o comportamento físico do instrumento: o transiente do martelo, a ressonância das cordas, a tampa, o corpo e o espaço — o que um player só de amostras não tem.", "estado": "publicado", "imagem": "", "video": "", "release": "suite" },
     { "slug": "cinzel", "nome": "CINZÉL", "familia": "Eq", "linha": "airwindows", "sub": "EQUALIZADOR PARAMÉTRICO DINÂMICO", "resumo": "Três bandas paramétricas com ressonância musical e uma camada dinâmica opcional que só existe na Forja: esculpe sem estourar.", "estado": "publicado", "imagem": "assets/cinzel.png", "video": "", "release": "suite" },
     { "slug": "lima", "nome": "LIMA", "familia": "Eq", "linha": "airwindows", "sub": "EQUALIZADOR DE BUS", "resumo": "Quatro bandas largas separadas por crossovers suaves, sem saturação: o ajuste que o bus inteiro aceita sem soar mexido.", "estado": "publicado", "imagem": "assets/lima.png", "video": "", "release": "suite" },
     { "slug": "torno", "nome": "TORNO", "familia": "Eq", "linha": "airwindows", "sub": "SHELVES DE TOM", "resumo": "Dois shelves Bessel entrelaçados e um estágio de Console: o tom muda de forma contínua, sem degraus e sem dureza.", "estado": "publicado", "imagem": "assets/torno.png", "video": "", "release": "suite" },

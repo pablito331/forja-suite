@@ -9,6 +9,7 @@
 #include "minisat/MiniSatRackModule.h"
 #include "canivete/CaniveteRackModule.h"
 #include "canivete/BankLibrary.h"
+#include "PianoforgeRackModule.h"
 
 namespace
 {
@@ -106,6 +107,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout ForjarackAudioProcessor::cre
         hosted.face = ModuleFace::generic;
         ModuleCatalog::registerModule (hosted);
     }
+
+    // PIANOFORGE entra ACRESCENTADO ao fim, depois do HOSPEDADO, para nao mexer
+    // no indice de nenhuma gaveta ja publicada (o slot grava o indice no APVTS).
+    forja::pianoforge::registerPianoforgeModule();
 
     juce::StringArray choices;
 

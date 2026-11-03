@@ -87,5 +87,16 @@
     "pathFilters": ["Airwindows"],
     "testRegex": "^(parity_|legacy_parity)|^alloc_guard$",
     "readme": "docs/instalar/INSTALAR-WINDOWS.txt"
+  },
+
+  "pianoforge": {
+    "display": "Pianoforge",
+    "kind": "product",
+    "artifactBase": "ForjaPianoforge",
+    "tagPrefix": "vpiano-",
+    "versionFrom": "1.0.0",
+    "pathFilters": ["Pianos/Pianoforge/Pianoforge"],
+    "testRegex": "^pianoforge_engine$",
+    "readme": "docs/instalar/INSTALAR-WINDOWS.txt"
   }
 }

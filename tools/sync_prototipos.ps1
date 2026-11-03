@@ -9,7 +9,7 @@
     INSTALAR-BATERIA.txt do DRUMFORGE.
 
     A lista de plugins vem dos CMakeLists (forja_add_plugin / forja_add_instrument)
-    de todas as bases (Airwindows, drumforge, Forjarack e Minis) e o texto de cada
+    de todas as bases (Airwindows, drumforge, Forjarack, Minis e Pianos) e o texto de cada
     um vem do README do plugin. Assim o guia acompanha a suite sozinho: plugin novo
     entra na conta e na lista sem edicao manual.
 
@@ -50,9 +50,10 @@ $familyKeyMap = @{
     'Amp'          = 'AMP'
     'Bateria'      = 'BATERIA'
     'Minis'        = 'MINIS'
+    'Pianos'       = 'PIANOS'
 }
 $familyOrder = @('Saturacao', 'EQ', 'Dinamica', 'Channel Strip', 'Fita', 'Espaco',
-                 'Lo-Fi', 'Mix', 'Amp', 'Bateria', 'Minis')
+                 'Lo-Fi', 'Mix', 'Amp', 'Bateria', 'Minis', 'Pianos')
 
 function ConvertTo-AsciiText {
     param([string]$Text)
@@ -98,6 +99,7 @@ function Get-SuitePlugins {
     $manifests += Get-ChildItem -Path (Join-Path $Root "drumforge\*\CMakeLists.txt") -ErrorAction SilentlyContinue
     $manifests += Get-ChildItem -Path (Join-Path $Root "Forjarack\*\CMakeLists.txt") -ErrorAction SilentlyContinue
     $manifests += Get-ChildItem -Path (Join-Path $Root "Minis\*\CMakeLists.txt") -ErrorAction SilentlyContinue
+    $manifests += Get-ChildItem -Path (Join-Path $Root "Pianos\*\CMakeLists.txt") -ErrorAction SilentlyContinue
 
     $found = @()
     foreach ($manifest in $manifests) {
@@ -157,6 +159,7 @@ function Get-SuitePlugins {
         if ($manifest.FullName -match '\\drumforge\\') { $base = 'drumforge' }
         if ($manifest.FullName -match '\\Forjarack\\') { $base = 'forjarack' }
         if ($manifest.FullName -match '\\Minis\\') { $base = 'minis' }
+        if ($manifest.FullName -match '\\Pianos\\') { $base = 'pianos' }
 
         # Titulos do README as vezes comecam em minuscula ("de-esser dinamico").
         if ($description.Length -gt 1 -and $description[0] -cmatch '[a-z]') {
@@ -212,8 +215,9 @@ if ($installed.Count -eq 0) { throw "nenhum .vst3 encontrado em $Dest" }
 
 $airwindows = @($installed | Where-Object { $_.Base -eq 'airwindows' })
 $instruments = @($installed | Where-Object { $_.Base -ne 'airwindows' })
-$ownForja = @($installed | Where-Object { $_.Base -in @('drumforge', 'forjarack', 'minis') })
+$ownForja = @($installed | Where-Object { $_.Base -in @('drumforge', 'forjarack', 'minis', 'pianos') })
 $drumforge = @($installed | Where-Object { $_.Base -eq 'drumforge' })
+$pianos = @($installed | Where-Object { $_.Base -eq 'pianos' })
 
 $families = @()
 foreach ($name in $familyOrder) {
@@ -244,7 +248,7 @@ if (-not $Verify) {
 
     if ($instruments.Count -gt 0) {
         $lines += ''
-        $lines += Get-WrappedText -Text ("Sao {0} adaptacoes MIT da Airwindows (Chris Johnson) e {1} plugin de DSP proprio da Forja (bases drumforge, Forjarack e Minis): {2}." -f $airwindows.Count, $ownForja.Count, (($ownForja | ForEach-Object { $_.Product }) -join ', '))
+        $lines += Get-WrappedText -Text ("Sao {0} adaptacoes MIT da Airwindows (Chris Johnson) e {1} plugin de DSP proprio da Forja (bases drumforge, Forjarack, Minis e Pianos): {2}." -f $airwindows.Count, $ownForja.Count, (($ownForja | ForEach-Object { $_.Product }) -join ', '))
     }
 
     $lines += ''
@@ -305,6 +309,17 @@ if (-not $Verify) {
         $lines += Get-WrappedText -Text "Secao master com trim de entrada e saida (+-24 dB) e inversao de fase do canal direito. Bypass global com rampa de 10 ms. Latencia 0 (PDC): reverb e delay tem atraso musical, como nos originais."
         $lines += Get-WrappedText -Text "O plugin aceita MIDI e o registro de modulos e expansivel: futuros instrumentos (leitor de soundfont sf2/sf3, mini drum que le os kits .dfkit do Drumforge, outros mini plugins) entram como gavetas que somam sua voz na cadeia, sem instalar plugins separados."
         $lines += Get-WrappedText -Text "O rack tambem funciona em faixa de instrumento, sem entrada de audio: a saida e a voz das gavetas MINIDRUM/CANIVETE, tocando pelo teclado ao vivo como no plugin solto. O led MIDI da secao MASTER acende quando o MIDI chega em qualquer bloco: aceso e sem som e problema de roteamento/monitoramento da faixa; apagado e o teclado nao esta chegando ao plugin. O medidor de ENTRADA so mede audio, entao nao vale como prova de MIDI."
+    }
+
+    if ($pianos.Count -gt 0) {
+        $lines += ''
+        $lines += 'PIANOFORGE'
+        $lines += ('-' * 10)
+        $lines += Get-WrappedText -Text ("O {0} e o piano de amostras com modelo fisico proprio da Forja (base Pianos): pega um soundfont de piano comum e acrescenta o comportamento do instrumento - transiente de martelo, ressonancia simpatica, tampa, EQ de corpo, chorus, reverb FDN e master. Nao e adaptacao Airwindows nem tem paridade MIT." -f (($pianos | ForEach-Object { $_.Product }) -join ', '))
+        $lines += Get-WrappedText -Text "Os pianos que aparecem no seletor BANK sao exatamente os arquivos que voce salvou na pasta da biblioteca; nada vem embutido e nada de teste aparece. Deposite seus .sf2, .sf3 e .pforge (o bundle do projeto-irmao) em Documentos\Forja\Pianoforge e clique ATUALIZAR. A carga roda em segundo plano."
+        $lines += Get-WrappedText -Text "Cada nota soa no instante certo (o bloco e fatiado pelos tempos do MIDI) e o pedal de sustain segue a semantica medida: nao corta voz que o envelope ainda segura. O PIANOFORGE tambem entra como gaveta instrument dentro do FORJARACK, lendo a mesma pasta."
+        $lines += 'Os pianos ficam em:'
+        $lines += '      Documentos\Forja\Pianoforge'
     }
 
     $lines += ''

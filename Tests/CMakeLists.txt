@@ -1,3 +1,9 @@
+# Os executaveis de teste ligam os modulos JUCE crus (add_executable, sem o wrapper
+# juce_add_plugin), e JUCE_WEB_BROWSER default 1 faz juce_gui_extra incluir
+# gtk/webkit no Linux, headers que nem existem no runner. Teste headless nao
+# precisa de navegador nem curl; desliga os dois antes de qualquer alvo.
+add_compile_definitions(JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+
 set(FORJA_VENDOR "${CMAKE_SOURCE_DIR}/Forja/Source/forja/vendor/airwindows")
 
 set(BUTTERCOMP2_SOURCES
@@ -157,7 +163,10 @@ add_test(NAME parity_legacy COMMAND forja_parity)
 add_custom_target(forja_parity_legacy DEPENDS forja_parity)
 
 add_executable(forja_alloc_guard Source/alloc_guard.cpp)
-target_include_directories(forja_alloc_guard PRIVATE ${CMAKE_SOURCE_DIR}/Forja/Source)
+target_include_directories(forja_alloc_guard PRIVATE
+    ${CMAKE_SOURCE_DIR}/Forja/Source
+    ${CMAKE_SOURCE_DIR}/Pianos/Pianoforge/Source)
+target_link_options(forja_alloc_guard PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/STACK:16777216>)
 target_compile_features(forja_alloc_guard PRIVATE cxx_std_20)
 add_test(NAME alloc_guard COMMAND forja_alloc_guard)
 
@@ -254,6 +263,9 @@ add_executable(forja_forjarack_processor
     ${CMAKE_SOURCE_DIR}/Minis/Minisat/Source/minisat/MiniSat.cpp
     ${CMAKE_SOURCE_DIR}/Minis/Canivete/Source/canivete/CaniveteRackModule.cpp
     ${CMAKE_SOURCE_DIR}/Minis/Canivete/Source/canivete/SoundFontEngine.cpp
+    ${CMAKE_SOURCE_DIR}/Pianos/Pianoforge/Source/PianoforgeRackModule.cpp
+    ${CMAKE_SOURCE_DIR}/Pianos/Pianoforge/Source/engine/PianoEngine.cpp
+    ${CMAKE_SOURCE_DIR}/Pianos/Pianoforge/Source/engine/Bundle.cpp
     ${CMAKE_SOURCE_DIR}/drumforge/Drumforge/Source/engine/DrumEngine.cpp
     ${CMAKE_SOURCE_DIR}/drumforge/Drumforge/Source/engine/SampleStore.cpp)
 
@@ -263,6 +275,7 @@ target_include_directories(forja_forjarack_processor PRIVATE
     ${CMAKE_SOURCE_DIR}/Minis/Minidrum/Source
     ${CMAKE_SOURCE_DIR}/Minis/Minisat/Source
     ${CMAKE_SOURCE_DIR}/Minis/Canivete/Source
+    ${CMAKE_SOURCE_DIR}/Pianos/Pianoforge/Source
     ${CMAKE_SOURCE_DIR}/drumforge/Drumforge/Source)
 
 forja_link_soundfont_vendor(forja_forjarack_processor)
@@ -270,8 +283,10 @@ forja_link_soundfont_vendor(forja_forjarack_processor)
 target_compile_definitions(forja_forjarack_processor PRIVATE
     _USE_MATH_DEFINES
     JUCE_MODAL_LOOPS_PERMITTED=1
-    JUCE_PLUGINHOST_VST3=1)
+    JUCE_PLUGINHOST_VST3=1
+    FORJA_PIANOFORGE_SHARES_STB=1)
 target_compile_options(forja_forjarack_processor PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+target_link_options(forja_forjarack_processor PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/STACK:16777216>)
 target_compile_features(forja_forjarack_processor PRIVATE cxx_std_20)
 
 target_link_libraries(forja_forjarack_processor PRIVATE
@@ -405,6 +420,42 @@ target_link_libraries(forja_canivete PRIVATE
     juce::juce_recommended_config_flags)
 
 add_test(NAME canivete COMMAND forja_canivete)
+
+# Pianoforge: piano de samples (TinySoundFont MIT) + cadeia DSP modelada portada
+# do projeto-irmao. PianoEngine.cpp e o unico TU com TSF_IMPLEMENTATION do piano
+# (mantem o caminho GM do CANIVETE intacto). O teste gera um SF2 minimo em disco,
+# empacota-lo num .pforge (PFG1) proprio e cobre adocao/troca com reap, pedal de
+# sustain, fatiamento de eventos, monotonia de tampa/martelo, escala do martelo,
+# mapa bit-exato dos 17 params, rejeicao de CRC errado, rampa de bypass, latencia
+# por impulso e ausencia de alocacao.
+add_executable(forja_pianoforge_engine
+    Source/pianoforge_engine.cpp
+    ${CMAKE_SOURCE_DIR}/Pianos/Pianoforge/Source/engine/PianoEngine.cpp
+    ${CMAKE_SOURCE_DIR}/Pianos/Pianoforge/Source/engine/Bundle.cpp
+    ${CMAKE_SOURCE_DIR}/Pianos/Pianoforge/Source/PianoforgeRackModule.cpp
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source/rack/ModuleCatalog.cpp)
+
+target_include_directories(forja_pianoforge_engine PRIVATE
+    ${CMAKE_SOURCE_DIR}/Pianos/Pianoforge/Source
+    ${CMAKE_SOURCE_DIR}/Forjarack/Forjarack/Source
+    ${CMAKE_SOURCE_DIR}/Forja/Source)
+
+forja_link_soundfont_vendor(forja_pianoforge_engine)
+
+target_compile_definitions(forja_pianoforge_engine PRIVATE _USE_MATH_DEFINES JUCE_MODAL_LOOPS_PERMITTED=1)
+target_compile_options(forja_pianoforge_engine PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+target_link_options(forja_pianoforge_engine PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/STACK:16777216>)
+target_compile_features(forja_pianoforge_engine PRIVATE cxx_std_20)
+
+target_link_libraries(forja_pianoforge_engine PRIVATE
+    juce::juce_audio_basics
+    juce::juce_audio_formats
+    juce::juce_events
+    juce::juce_graphics
+    juce::juce_gui_basics
+    juce::juce_recommended_config_flags)
+
+add_test(NAME pianoforge_engine COMMAND forja_pianoforge_engine)
 
 # One parity executable per model: each compiles only its own vendored sources,
 # so a failure in one model never masks another.

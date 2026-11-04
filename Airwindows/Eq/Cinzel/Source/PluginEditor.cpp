@@ -186,6 +186,10 @@ void CinzelAudioProcessorEditor::updateTelemetry()
     gainReductionMeter.setBypassed (bypassed);
     curve.setBypassed (bypassed);
 
+    std::array<float, static_cast<std::size_t> (forja::ui::ForjaSpectrum::bandCount)> bands;
+    processor.readSpectrum (bands.data(), forja::ui::ForjaSpectrum::bandCount);
+    curve.setSpectrum (bands.data(), static_cast<int> (bands.size()));
+
     const float inDb = juce::jmax (forja::ui::linearToDb (snapshot.inPeakL),
                                    forja::ui::linearToDb (snapshot.inPeakR));
 
@@ -266,7 +270,7 @@ void CinzelAudioProcessorEditor::refreshCurve (bool force)
         { bandFrequency (values[6], 2200.0, 20.0), 0.0f, "MB", "lowMid", true }
     });
 
-    curve.setCaption (u ("curva est\u00e1tica \u00b7 arraste os n\u00f3s \u00b7 dyn = 0"));
+    curve.setCaption (u ("curva est\u00e1tica \u00b7 rta na entrada \u00b7 arraste os n\u00f3s \u00b7 dyn = 0"));
 }
 
 void CinzelAudioProcessorEditor::beginMarkerDrag (const juce::String& id)

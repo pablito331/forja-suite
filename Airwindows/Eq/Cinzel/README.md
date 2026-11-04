@@ -64,8 +64,11 @@ estático é fiel; `dyn > 0` é comportamento Forja.
   Bandas (3 × 3 knobs: frequência, ganho e ressonância por banda) e
   Dinâmica (mistura, dinâmica, medidor de redução e bypass).
 - A curva é medida em nível baixo (−60 dBFS) e rotulada **curva estática ·
-  dyn = 0**; os nós A / MA / MB indicam os centros das bandas em tempo real e
+  rta na entrada · dyn = 0**; os nós A / MA / MB indicam os centros das bandas em tempo real e
   são arrastáveis: horizontal muda a frequência, vertical muda o ganho da banda.
+- Atrás da curva, o **RTA de entrada** (medição Forja) pinta em tempo real o
+  espectro do sinal antes do EQ: 32 bandas log, FFT própria em janela de 2048
+  amostras, sem alocação no caminho de áudio e sem alterar o som.
 - O chip REDES aparece no topo quando `forja::ui::kSocialUrl` está preenchido.
 - Badge de estado, SR, buffer, resumo de parâmetros e linha de DSP/latência na
   barra inferior. FUNDAMENTOS abre o painel nativo (sem WebView).

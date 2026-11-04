@@ -64,6 +64,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout CinzelAudioProcessor::create
 void CinzelAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     dsp.prepare (sampleRate);
+    analyser.prepare (sampleRate);
     monoScratch.setSize (1, juce::jmax (1, samplesPerBlock), false, false, true);
 
     meterInL.store (0.0f);
@@ -114,6 +115,8 @@ void CinzelAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
 
     if (numInputChannels <= 0 || numSamples <= 0)
         return;
+
+    analyser.pushSamples (buffer.getArrayOfReadPointers(), numInputChannels, numSamples);
 
     forja::dsp::CinzelDSP::Parameters parameters;
     parameters.highFreq = apvts.getRawParameterValue ("highFreq")->load();

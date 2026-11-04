@@ -5,6 +5,7 @@
 #include <atomic>
 
 #include "forja/dsp/ForjaLima.h"
+#include "forja/ui/ForjaSpectrum.h"
 
 class LimaAudioProcessor final : public juce::AudioProcessor
 {
@@ -48,6 +49,7 @@ public:
     };
 
     MeterSnapshot readMeters();
+    void readSpectrum (float* out, int count) const noexcept { analyser.readBands (out, count); }
     void resetClip();
     bool isBypassed() const;
 
@@ -58,6 +60,7 @@ private:
     static void publishMax (std::atomic<float>& target, float value) noexcept;
 
     forja::dsp::LimaDSP dsp;
+    forja::ui::ForjaSpectrum analyser;
     juce::AudioBuffer<float> monoScratch;
 
     std::atomic<float> meterInL { 0.0f };

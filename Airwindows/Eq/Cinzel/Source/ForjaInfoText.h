@@ -75,7 +75,10 @@ inline ui::ForjaInfo makeForjaInfo()
                "MISTURA permite equilibrar o EQ processado com o seco. O bot\u00e3o BYPASS desvia "
                "o DSP sem clique e os medidores continuam ativos."),
             u ("Na curva, arraste os n\u00f3s A, MA e MB: na horizontal o n\u00f3 muda a frequ\u00eancia "
-               "da banda e na vertical o ganho. Os knobs acompanham o arraste em tempo real.")
+               "da banda e na vertical o ganho. Os knobs acompanham o arraste em tempo real."),
+            u ("Atr\u00e1s da curva, o RTA desenha em tempo real o espectro da entrada, antes "
+               "do EQ. \u00c9 medica\u00e7\u00e3o da camada Forja: n\u00e3o altera o som e segue ativo "
+               "no bypass.")
         }
     });
 

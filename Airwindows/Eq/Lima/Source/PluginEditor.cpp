@@ -158,6 +158,10 @@ void LimaAudioProcessorEditor::updateTelemetry()
     outputMeter.setClip (snapshot.outClip);
     curve.setBypassed (bypassed);
 
+    std::array<float, static_cast<std::size_t> (forja::ui::ForjaSpectrum::bandCount)> bands;
+    processor.readSpectrum (bands.data(), forja::ui::ForjaSpectrum::bandCount);
+    curve.setSpectrum (bands.data(), static_cast<int> (bands.size()));
+
     const float inDb = juce::jmax (forja::ui::linearToDb (snapshot.inPeakL),
                                    forja::ui::linearToDb (snapshot.inPeakR));
 
@@ -237,7 +241,7 @@ void LimaAudioProcessorEditor::refreshCurve (bool force)
         { bandFrequency (bassF), 0.0f, "G", "bassF", true, true }
     });
 
-    curve.setCaption (u ("curva est\u00e1tica \u00b7 arraste os n\u00f3s \u00b7 4 bandas"));
+    curve.setCaption (u ("curva est\u00e1tica \u00b7 rta na entrada \u00b7 arraste os n\u00f3s \u00b7 4 bandas"));
 }
 
 void LimaAudioProcessorEditor::applyMarkerDrag (const juce::String& id, float frequency)

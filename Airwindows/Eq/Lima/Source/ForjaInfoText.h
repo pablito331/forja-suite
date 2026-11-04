@@ -58,7 +58,10 @@ inline ui::ForjaInfo makeForjaInfo()
                "Duplo clique devolve ao padr\u00e3o. BYPASS compara com o sinal seco sem clique."),
             u ("Na curva, arraste os n\u00f3s A, M e G na horizontal para mover os tr\u00eas "
                "crossovers. Como cada parametro de frequ\u00eancia participa de mais de um "
-               "crossover, o arraste resolve a combina\u00e7\u00e3o e os knobs acompanham.")
+               "crossover, o arraste resolve a combina\u00e7\u00e3o e os knobs acompanham."),
+            u ("Atr\u00e1s da curva, o RTA desenha em tempo real o espectro da entrada, antes "
+               "do EQ. \u00c9 medica\u00e7\u00e3o da camada Forja: n\u00e3o altera o som e segue ativo "
+               "no bypass.")
         }
     });
 

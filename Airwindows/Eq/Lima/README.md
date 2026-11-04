@@ -52,9 +52,12 @@ SmoothEQ2:
 - Janela fixa de 1000 × 540 px; topo FORJA / DE EQUALIZADORES / LIMA.
 - Cards: Curva (curva por FFT do próprio filtro + peak meter + CLIP),
   Ganhos (4 knobs) e Frequências (4 knobs + bypass).
-- A curva é medida em nível baixo (−60 dBFS) e rotulada **curva estática ·
-  4 bandas**; os nós A / M / G marcam os três crossovers e são arrastáveis na
+- A curva é medida em nível baixo (−60 dBFS) e rotulada **curva estática · rta
+  na entrada · 4 bandas**; os nós A / M / G marcam os três crossovers e são arrastáveis na
   horizontal para reposicionar as frequências (os knobs acompanham).
+- Atrás da curva, o **RTA de entrada** (medição Forja) pinta em tempo real o
+  espectro do sinal antes do EQ: 32 bandas log, FFT própria em janela de 2048
+  amostras, sem alocação no caminho de áudio e sem alterar o som.
 - Badge de estado, SR, buffer, resumo de parâmetros e linha de DSP/latência na
   barra inferior. FUNDAMENTOS abre o painel nativo (sem WebView).
 

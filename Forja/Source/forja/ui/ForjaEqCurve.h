@@ -30,6 +30,7 @@ public:
     ForjaEqCurve();
 
     void setCurve (std::vector<Point> points);
+    void setSpectrum (const float* bandDb, int count);
     void setMarkers (std::vector<Marker> markers);
     void setCaption (juce::String text);
     void setBypassed (bool shouldBeBypassed);
@@ -57,6 +58,7 @@ private:
     int findMarkerAt (juce::Point<float> position, juce::Rectangle<float> plot) const;
 
     std::vector<Point> curve;
+    std::vector<float> spectrum;
     std::vector<Marker> markers;
     juce::String caption;
     bool bypassed = false;

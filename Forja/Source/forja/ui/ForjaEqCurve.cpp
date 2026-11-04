@@ -1,5 +1,6 @@
 #include "ForjaEqCurve.h"
 
+#include "ForjaSpectrum.h"
 #include "ForjaTheme.h"
 
 #include <algorithm>
@@ -47,6 +48,16 @@ ForjaEqCurve::ForjaEqCurve()
 void ForjaEqCurve::setCurve (std::vector<Point> points)
 {
     curve = std::move (points);
+    repaint();
+}
+
+void ForjaEqCurve::setSpectrum (const float* bandDb, int count)
+{
+    spectrum.resize (static_cast<std::size_t> (std::max (0, count)));
+
+    for (int i = 0; i < count; ++i)
+        spectrum[static_cast<std::size_t> (i)] = bandDb[i];
+
     repaint();
 }
 
@@ -179,6 +190,40 @@ void ForjaEqCurve::paint (juce::Graphics& g)
         g.drawText (db > 0.0f ? "+" + juce::String ((int) db) : juce::String ((int) db),
                     0, juce::roundToInt (point.y) - 6, 21, 12,
                     juce::Justification::centredRight, false);
+    }
+
+    if (! spectrum.empty())
+    {
+        // RTA atras da curva: e mediacao da entrada, escala propria do piso
+        // do analisador ate 0 dBFS, desenhado como area discreta para nao
+        // competir com a curva em ember.
+        const int bands = static_cast<int> (spectrum.size());
+        const float floor = ForjaSpectrum::floorDb;
+
+        juce::Path area;
+        const auto bandX = [bands, &plot] (int i)
+        {
+            const float norm = (static_cast<float> (i) + 0.5f) / static_cast<float> (bands);
+            return plot.getX() + norm * plot.getWidth();
+        };
+
+        area.startNewSubPath (bandX (0), plot.getBottom());
+
+        for (int i = 0; i < bands; ++i)
+        {
+            const float norm = std::clamp ((spectrum[static_cast<std::size_t> (i)] - floor)
+                                           / (0.0f - floor), 0.0f, 1.0f);
+            area.lineTo (bandX (i), plot.getBottom() - norm * plot.getHeight());
+        }
+
+        area.lineTo (bandX (bands - 1), plot.getBottom());
+        area.closeSubPath();
+
+        g.setGradientFill (juce::ColourGradient (colour::muted.withAlpha (0.22f),
+                                                 plot.getCentreX(), plot.getY(),
+                                                 colour::muted.withAlpha (0.05f),
+                                                 plot.getCentreX(), plot.getBottom(), false));
+        g.fillPath (area);
     }
 
     if (caption.isNotEmpty())

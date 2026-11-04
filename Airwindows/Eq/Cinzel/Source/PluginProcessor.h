@@ -5,6 +5,7 @@
 #include <atomic>
 
 #include "forja/dsp/ForjaCinzel.h"
+#include "forja/ui/ForjaSpectrum.h"
 
 class CinzelAudioProcessor final : public juce::AudioProcessor
 {
@@ -49,6 +50,7 @@ public:
     };
 
     MeterSnapshot readMeters();
+    void readSpectrum (float* out, int count) const noexcept { analyser.readBands (out, count); }
     void resetClip();
     bool isBypassed() const;
 
@@ -60,6 +62,7 @@ private:
     static void publishMin (std::atomic<float>& target, float value) noexcept;
 
     forja::dsp::CinzelDSP dsp;
+    forja::ui::ForjaSpectrum analyser;
     juce::AudioBuffer<float> monoScratch;
 
     std::atomic<float> meterInL { 0.0f };

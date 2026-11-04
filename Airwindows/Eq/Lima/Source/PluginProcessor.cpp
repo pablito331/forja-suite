@@ -58,6 +58,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout LimaAudioProcessor::createPa
 void LimaAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     dsp.prepare (sampleRate);
+    analyser.prepare (sampleRate);
     monoScratch.setSize (1, juce::jmax (1, samplesPerBlock), false, false, true);
 
     meterInL.store (0.0f);
@@ -107,6 +108,8 @@ void LimaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
 
     if (numInputChannels <= 0 || numSamples <= 0)
         return;
+
+    analyser.pushSamples (buffer.getArrayOfReadPointers(), numInputChannels, numSamples);
 
     forja::dsp::LimaDSP::Parameters parameters;
     parameters.high = apvts.getRawParameterValue ("high")->load();

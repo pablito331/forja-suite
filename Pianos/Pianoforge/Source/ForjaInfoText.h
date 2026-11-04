@@ -15,10 +15,15 @@ inline ui::ForjaInfo makeForjaInfo()
     ui::ForjaInfo info;
     info.title = "PIANOFORGE";
     info.subtitle = u ("PIANO DE AMOSTRAS + MODELO F\u00cdSICO \u00b7 FORJA");
-    info.tagline = u ("PIANOFORGE pega um soundfont de piano comum e acrescenta o "
-                      "comportamento f\u00edsico do instrumento: o transiente do "
-                      "martelo, a resson\u00e2ncia das cordas, a tampa, o corpo e o "
-                      "espa\u00e7o \u2014 o que um player s\u00f3 de amostras n\u00e3o tem.");
+    info.tagline = u ("Cansado de ca\u00e7ar o piano perfeito entre VSTs gratuitos, a "
+                      "descoberta \u00e9 simples: existem bons soundfonts de piano \u2014 o "
+                      "que falta \u00e9 o corpo do instrumento. O PIANOFORGE \u00e9 um leitor "
+                      "de soundfont feito especificamente para pianos: voc\u00ea carrega o "
+                      "seu pr\u00f3prio .sf2 ou .sf3 e ele gera simula\u00e7\u00f5es f\u00edsicas em "
+                      "tempo real \u2014 o transiente do martelo, a resson\u00e2ncia das cordas, "
+                      "o movimento da tampa, o corpo de madeira e o espa\u00e7o \u2014 "
+                      "modificando o som para um piano mais realista e encorpado. "
+                      "Basta ler os seus soundfonts: eles j\u00e1 soam melhor.");
 
     info.sections.push_back ({
         u ("O que faz"),

@@ -300,7 +300,7 @@ jobs:
             libxrandr-dev libxcursor-dev libxcomposite-dev libxrender-dev \
             libxi-dev libgtk-3-dev \
             libfreetype6-dev libfontconfig1-dev libglu1-mesa-dev \
-            libcurl4-openssl-dev
+            libcurl4-openssl-dev xvfb
 
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DFORJA_LTO=OFF -DFORJA_STANDALONE=OFF
@@ -310,16 +310,19 @@ jobs:
           set -o pipefail
           cmake --build build --parallel 2>&1 | tee build-linux.log
 
+      # xvfb-run: os testes que tocam MessageManager/PluginFormatManager/editor
+      # (rack hosted, vst3_midi, canivete em gaveta, minidrum, pianoforge)
+      # abortam sem DISPLAY no runner; o X virtual resolve todos de uma vez.
       - name: Test
         run: |
           set -o pipefail
-          ctest --test-dir build --output-on-failure 2>&1 | tee test-linux.log
+          xvfb-run -a ctest --test-dir build --output-on-failure 2>&1 | tee test-linux.log
 
       - name: Mostrar a falha
         if: failure()
         uses: ./.github/actions/diagnostico
         with:
-          logs: build-linux.log test-linux.log
+          logs: test-linux.log build-linux.log
           titulo: Linux falhou
 
       - name: Package

@@ -13,8 +13,11 @@ inline ui::ForjaInfo makeForjaInfo()
     ui::ForjaInfo info;
     info.title = "Brasa";
     info.subtitle = u ("SATURADOR DE V\u00c1LVULA \u00b7 FORJA");
-    info.tagline = u ("Um modelador de v\u00e1lvula assim\u00e9trico para calor, cola e compress\u00e3o natural. "
-                      "O sinal ganha peso harm\u00f4nico sem perder o ataque.");
+    info.tagline = u ("Brasa \u00e9 o modelador de v\u00e1lvula assim\u00e9trico \u2014 o Tube2 da "
+                      "Airwindows: acrescenta harm\u00f4nicos de segunda e terceira ordem, comprime "
+                      "os picos de forma assim\u00e9trica e suaviza a transi\u00e7\u00e3o entre eles. "
+                      "O sinal ganha peso harm\u00f4nico e uni\u00e3o sem perder o ataque, bom para "
+                      "vocais, graves e bus de mixagem.");
 
     info.sections.push_back ({
         u ("O que faz"),

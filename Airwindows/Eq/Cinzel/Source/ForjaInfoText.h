@@ -13,8 +13,11 @@ inline ui::ForjaInfo makeForjaInfo()
     ui::ForjaInfo info;
     info.title = u ("CINZ\u00c9L");
     info.subtitle = u ("EQUALIZADOR PARAM\u00c9TRICO DIN\u00c2MICO \u00b7 FORJA");
-    info.tagline = u ("Tr\u00eas bandas param\u00e9tricas com resson\u00e2ncia musical e uma camada "
-                      "din\u00e2mica opcional que s\u00f3 existe na Forja: esculpe sem estourar.");
+    info.tagline = u ("Cinzel \u00e9 o equalizador param\u00e9trico de tr\u00eas bandas com curvas "
+                      "largas e musicais: d\u00e1 corpo, remove dureza e desenha a presen\u00e7a de "
+                      "uma fonte ou de um bus. As bandas trabalham sobre o sinal seco, ent\u00e3o "
+                      "realces e cortes soam suaves \u2014 e a Forja acrescenta uma camada din\u00e2mica "
+                      "opcional que s\u00f3 existe aqui: esculpe sem estourar.");
 
     info.sections.push_back ({
         u ("O que faz"),

@@ -13,8 +13,11 @@ inline ui::ForjaInfo makeForjaInfo()
     ui::ForjaInfo info;
     info.title = "BIGORNA";
     info.subtitle = u ("CHANNEL STRIP COMPLETO \u00b7 FORJA");
-    info.tagline = u ("A bigorna molda a pe\u00e7a inteira: EQ de tr\u00eas bandas, filtros, "
-                      "compressor e uma sa\u00edda que tamb\u00e9m aquece. Um strip, um caminho.");
+    info.tagline = u ("Bigorna \u00e9 o channel strip completo: EQ de tr\u00eas bandas com "
+                      "crossover ajust\u00e1vel, filtros passa-baixo e passa-alto, compressor "
+                      "estilo ButterComp e sa\u00edda com ganho e satura\u00e7\u00e3o Spiral. Molda "
+                      "uma fonte de ponta a ponta em um s\u00f3 insert; o compressor s\u00f3 liga "
+                      "quando COMPRESS\u00c3O passa de 0.");
 
     info.sections.push_back ({
         u ("O que faz"),

@@ -13,8 +13,11 @@ inline ui::ForjaInfo makeForjaInfo()
     ui::ForjaInfo info;
     info.title = "LIMA";
     info.subtitle = u ("EQUALIZADOR DE BUS \u00b7 FORJA");
-    info.tagline = u ("Quatro bandas largas separadas por crossovers suaves, sem satura\u00e7\u00e3o: "
-                      "o ajuste que o bus inteiro aceita sem soar mexido.");
+    info.tagline = u ("Lima \u00e9 o equalizador de quatro bandas para bus e masteriza\u00e7\u00e3o: "
+                      "bandas largas separadas por crossovers suaves, com os ganhos aplicados "
+                      "depois do crossover \u2014 corrige sem criar artefatos de fase agressivos. "
+                      "Sem satura\u00e7\u00e3o nem colora\u00e7\u00e3o escondida: o ajuste que o bus "
+                      "inteiro aceita sem soar mexido.");
 
     info.sections.push_back ({
         u ("O que faz"),

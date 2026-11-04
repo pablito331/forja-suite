@@ -13,8 +13,10 @@ inline ui::ForjaInfo makeForjaInfo()
     ui::ForjaInfo info;
     info.title = u ("ESC\u00d3RIA");
     info.subtitle = u ("DE-ESSER DIN\u00c2MICO \u00b7 FORJA");
-    info.tagline = u ("Esc\u00f3ria \u00e9 o res\u00edduo que sobra do metal. Aqui, \u00e9 o agudo "
-                      "que incomoda: o detector acha os transientes e devolve o resto intacto.");
+    info.tagline = u ("Esc\u00f3ria \u00e9 o de-esser de transientes: age sobre a diferen\u00e7a entre "
+                      "o sinal e uma vers\u00e3o filtrada dele e doma a dureza que viaja nos picos "
+                      "\u2014 sibil\u00e2ncia, estalos de boca, chiado de pratos \u2014 sem comprimir a "
+                      "faixa inteira. Em voz, bateria e guitarra; em 0 o sinal passa intacto.");
 
     info.sections.push_back ({
         u ("O que faz"),

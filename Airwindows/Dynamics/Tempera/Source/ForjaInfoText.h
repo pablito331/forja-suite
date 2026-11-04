@@ -13,8 +13,11 @@ inline ui::ForjaInfo makeForjaInfo()
     ui::ForjaInfo info;
     info.title = u ("T\u00c9MPERA");
     info.subtitle = u ("COMPRESSOR DE BUS \u00b7 FORJA");
-    info.tagline = u ("Quatro compressores paralelos que se alternam a cada amostra para colar o "
-                      "bus sem apagar o ataque. O movimento \u00e9 suave e o car\u00e1ter, musical.");
+    info.tagline = u ("T\u00eampera \u00e9 o compressor de cola: quatro compressores paralelos que "
+                      "se alternam a cada amostra unem os elementos do bus e arredondam transientes "
+                      "sem apagar o ataque. O movimento \u00e9 suave e o car\u00e1ter, musical \u2014 "
+                      "pensado para mix bus, bus de bateria e grupos onde o objetivo \u00e9 uni\u00e3o, "
+                      "n\u00e3o impacto.");
 
     info.sections.push_back ({
         u ("O que faz"),

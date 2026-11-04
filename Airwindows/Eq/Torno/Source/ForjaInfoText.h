@@ -13,8 +13,11 @@ inline ui::ForjaInfo makeForjaInfo()
     ui::ForjaInfo info;
     info.title = "TORNO";
     info.subtitle = u ("SHELVES DE TOM \u00b7 FORJA");
-    info.tagline = u ("Dois shelves Bessel entrela\u00e7ados e um est\u00e1gio de Console: o tom "
-                      "muda de forma cont\u00ednua, sem degraus e sem dureza.");
+    info.tagline = u ("Torno \u00e9 um EQ de tom de duas bandas \u2014 agudos e graves \u2014 com "
+                      "dois shelves Bessel entrela\u00e7ados e um est\u00e1gio de Console: a "
+                      "inclina\u00e7\u00e3o musical para abrir ou encorpar uma fonte sem mexer no "
+                      "centro do espectro. O ganho de entrada empurra o Console e muda o "
+                      "timbre junto.");
 
     info.sections.push_back ({
         u ("O que faz"),

@@ -13,8 +13,10 @@ inline ui::ForjaInfo makeForjaInfo()
     ui::ForjaInfo info;
     info.title = "DIQUE";
     info.subtitle = u ("CLIPE DE PICO \u00b7 FORJA");
-    info.tagline = u ("A \u00faltima comporta antes da sa\u00edda: o FinalClip arredonda picos "
-                      "extremos acima de +4,18 dBFS. Abaixo disso, o sinal passa intacto.");
+    info.tagline = u ("Dique \u00e9 a \u00faltima comporta antes da sa\u00edda: sem nenhum controle, "
+                      "arredonda picos extremos acima de +4,18 dBFS e deixa tudo abaixo passar "
+                      "intacto. N\u00e3o \u00e9 um limitador de 0 dBFS \u2014 isso \u00e9 papel do Muralha; "
+                      "o Dique segura o que ainda passar do teto depois da cadeia.");
 
     info.sections.push_back ({
         u ("O que faz"),

@@ -13,8 +13,11 @@ inline ui::ForjaInfo makeForjaInfo()
     ui::ForjaInfo info;
     info.title = "CADINHO";
     info.subtitle = u ("STRIP DE BUS \u00b7 FORJA");
-    info.tagline = u ("No cadinho o metal se mistura: quatro bandas entrela\u00e7adas, "
-                      "compress\u00e3o de bandas e ClipOnly3 na sa\u00edda. Feito para bus e master.");
+    info.tagline = u ("Cadinho \u00e9 o strip de bus de quatro bandas \u2014 agudos, m\u00e9dio-alto, "
+                      "m\u00e9dio-baixo e graves \u2014 com um est\u00e1gio din\u00e2mico que segura a "
+                      "soma e um fader ClipOnly3 no fim do caminho. \u00c9 o par de bus do Bigorna: "
+                      "onde o Bigorna molda uma fonte, o Cadinho equilibra a mistura inteira, do "
+                      "bus principal a um grupo.");
 
     info.sections.push_back ({
         u ("O que faz"),

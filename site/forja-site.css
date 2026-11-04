@@ -560,36 +560,38 @@ h2 {
 
 /* ------------------------------------------------------------------ destaque */
 
-/* Seção com um card só (ForjaRack, Drumforge): em telas largas o card deita e
-   usa a largura toda — imagem à esquerda, texto e ações à direita. */
+/* Seção com um card só das linhas Forja (ForjaRack, Drumforge, Pianos): em
+   telas largas o card deita e usa a largura toda — imagem à esquerda, texto e
+   ações à direita. Os Airwindows ficam de fora: um plugin MIT sozinho na
+   família (BRASA, GRANALHA) não merece card gigante com resumo curto. */
 @media (min-width: 900px) {
   .grade:has(> .card:only-child) {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .grade > .card:only-child {
+  .grade > .card:only-child:not([data-linha="airwindows"]) {
     display: grid;
     grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
     align-items: stretch;
   }
 
-  .grade > .card:only-child .card__fig {
+  .grade > .card:only-child:not([data-linha="airwindows"]) .card__fig {
     border-bottom: none;
     border-right: var(--forja-border);
     align-self: center;
   }
 
-  .grade > .card:only-child .card__corpo {
+  .grade > .card:only-child:not([data-linha="airwindows"]) .card__corpo {
     gap: var(--forja-space-3);
     justify-content: center;
     padding: var(--forja-space-4) var(--forja-space-5);
   }
 
-  .grade > .card:only-child .card__nome {
+  .grade > .card:only-child:not([data-linha="airwindows"]) .card__nome {
     font-size: 30px;
   }
 
-  .grade > .card:only-child .card__resumo {
+  .grade > .card:only-child:not([data-linha="airwindows"]) .card__resumo {
     font-size: 15px;
     line-height: 1.65;
   }

@@ -13,8 +13,11 @@ inline ui::ForjaInfo makeForjaInfo()
     ui::ForjaInfo info;
     info.title = "PRENSA";
     info.subtitle = u ("COMPRESSOR VARI-MU \u00b7 FORJA");
-    info.tagline = u ("Densidade e car\u00e1ter vari-mu com detector est\u00e9reo linkado. "
-                      "Apressa o sinal sem perder o corpo.");
+    info.tagline = u ("Prensa \u00e9 um compressor de densidade: aperta o sinal de forma "
+                      "musical, escurece picos e aumenta a sensa\u00e7\u00e3o de corpo. O detector "
+                      "\u00e9 est\u00e9reo linkado e o comportamento, vari-mu \u2014 indicado para "
+                      "vocais, baixo, guitarra e bus onde se busca car\u00e1ter, n\u00e3o "
+                      "transpar\u00eancia.");
 
     info.sections.push_back ({
         u ("O que faz"),

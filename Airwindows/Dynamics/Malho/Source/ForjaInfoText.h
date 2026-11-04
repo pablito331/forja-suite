@@ -13,8 +13,11 @@ inline ui::ForjaInfo makeForjaInfo()
     ui::ForjaInfo info;
     info.title = "MALHO";
     info.subtitle = u ("COMPRESSOR DE IMPACTO \u00b7 FORJA");
-    info.tagline = u ("Ataque e soltura separados, envelopes independentes por canal e um drive "
-                      "que deixou o sinal na frente. Feito para bateria e bus de impacto.");
+    info.tagline = u ("Malho \u00e9 o compressor de impacto: ataque e soltura separados, envelopes "
+                      "independentes por canal e um drive que coloca o sinal na frente. Segura o "
+                      "pico e devolve o som com presen\u00e7a, mantendo o transiente definido \u2014 "
+                      "feito para bateria, percuss\u00e3o e bus de rock onde o ataque precisa "
+                      "continuar existindo.");
 
     info.sections.push_back ({
         u ("O que faz"),

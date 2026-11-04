@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pianos &#183; Forja</title>
+<meta name="description" content="Bons soundfonts de piano já existem; o corpo é que falta. O PIANOFORGE lê os seus e acrescenta o modelo físico.">
+<meta name="color-scheme" content="dark">
+<link rel="stylesheet" href="../forja-site.css?v=2">
+</head>
+<body>
+
+<header class="pagina__topo">
+  <a class="pagina__voltar" href="../index.html">&#8592; Cat&#225;logo Forja</a>
+  <p class="pagina__marca">Pianos</p>
+</header>
+
+<main class="conteudo pagina">
+  <div class="pagina__hero">
+    <h1>Pianos</h1>
+    <p>Bons soundfonts de piano já existem; o corpo é que falta. O PIANOFORGE lê os seus e acrescenta o modelo físico.</p>
+    <p class="card__acoes"><a class="botao" href="https://github.com/pablito331/forja-suite/releases/tag/vpiano-1.0.3">Download</a></p>
+  </div>
+
+  <section class="produto" id="pianoforge">
+    <h2>PIANOFORGE</h2>
+    <p class="produto__sub">PIANO DE AMOSTRAS + MODELO FÍSICO · FORJA</p>
+    <p class="produto__tagline">Cansado de caçar o piano perfeito entre VSTs gratuitos, a descoberta é simples: existem bons soundfonts de piano — o que falta é o corpo do instrumento. O PIANOFORGE é um leitor de soundfont feito especificamente para pianos: você carrega o seu próprio .sf2 ou .sf3 e ele gera simulações físicas em tempo real — o transiente do martelo, a ressonância das cordas, o movimento da tampa, o corpo de madeira e o espaço — modificando o som para um piano mais realista e encorpado. Basta ler os seus soundfonts: eles já soam melhor.</p>
+    <h3 class="produto__secao">O que faz</h3>
+    <p>Abre um banco .sf2/.sf3 solto ou um .pforge (o container do projeto-irmão) e o toca como piano de amostras, sobrepondo uma cadeia de modelagem física na ordem fixa: transiente de martelo (click do feltro + thump da caixa, calibrado por nota, mais brilhante e mais seco no fortissimo), ressonância simpática por banco de ressonadores, resposta do tampo (a curva de radiação do corpo de um piano de cauda: peito no baixo-médio, articulação no bridge, ar, sub domado), modos da madeira (o anel que continua vibrando depois da nota), EQ de corpo em 3 bandas, filtro da tampa, chorus, reverb FDN e estágio master com largura, trim, volume e soft-clip.</p>
+    <p>A curva de dinâmica é aplicada antes do sampler e o pedal de sustain segue a semântica medida do projeto antigo: não furta voz que o envelope ainda segura. Cada nota soa no instante certo: o bloco é fatiado nos tempos dos eventos MIDI.</p>
+    <p>Por cima da cadeia física, duas camadas de 'molho' de worship, ambas opt-in: um Compressor de um knob — o MESMO compressor de canal do mixer do Drumforge, DSP original da Forja, com attack finito e ganho suavizado (nada modula dentro do ciclo, por isso não degrada), ratio fixa em 5:1, que ACHATA a macro-dinâmica enquanto um makeup de laço fechado segura o nível percebido (girar não derruba o volume) —, e um Molho que é um shimmer espectral — não um transpositor no tempo, mas um resonador no domínio da frequência: o sinal é cortado em grãos (janela de Hann, sobreposição 4x), a energia (magnitude) de cada bin é guardada num espectro que decai exponencialmente e reconstruída com FASE ALEATÓRIA — é a fase aleatória que dissolve formantes e transientes e mata a voz robotizada do shimmer granular. Sobre esse espectro roda o SHIFT de intervalo FIXO: uma cópia da energia difusa é reposicionada uma oitava acima (bin k → 2k, exatamente +12) e, na dose da quinta, uma décima-segunda acima (k → 3k, oitava + 5ª). A cópia não é realimentada no espectro, então o intervalo não compõe nem sobe escada — halo sempre harmônico, com salto previsível (resposta a &quot;quantas +12 eu pulo?&quot;: exatamente uma, mais a 12ª da Quinta). Técnica reimplementada do Atlantis Reverb (Geraint Luff), sem copiar código. Três controles: MOLHO = nível/intensidade do halo (0 = off; no talo dosado a 30% do ganho antigo), QUINTA = dose da 12ª por cima da oitava (0 = só oitava), CAUDA = tempo (RT) do resonador. Auto-pan lento no halo. Roda no barramento depois do reverb. Em 0% cada camada é bypass honesto, amostra a amostra.</p>
+    <h3 class="produto__secao">Como funciona</h3>
+    <p>Por baixo das amostras toca o TinySoundFont v0.9 (MIT, Bernhard Schelling), um sintetizador SoundFont2 de um único header. O banco é lido em thread de background e publicado no áudio por token; o preset único e as vozes são pré-alocados na carga para o processBlock nunca alocar memória.</p>
+    <p>A cadeia física é portada do projeto-irmão pianoforge (não é paridade MIT como os adaptadores Airwindows): martelo, ressonadores, EQ, tampa, chorus, FDN e master em classes próprias no espaço forja::pianoforge, com smoothing por frames (o conserto documentado do repo antigo) e buffers pré-dimensionados para 192 kHz sem alocação em tempo real.</p>
+    <p>O formato .pforge continua legível aqui: o leitor confere o CRC32 de cada entrada e entrega o SF2 dentro; bundle corrompido vira erro legível, nunca o banco no ar derrubado. Latência medida por impulso nos testes da suíte.</p>
+    <h3 class="produto__secao">Operação</h3>
+    <p>Deposite os .sf2/.sf3/.pforge em Documentos/Forja/Pianoforge, toque ATUALIZAR e escolha o banco. A carga roda em segundo plano; o status mostra o resultado. Cinco cards trazem os controles audíveis (Dinâmica, Corpo, Equalização, Molho e Espaço). Os cards Corpo e Molho ficam achatados para ceder palco ao piano de cauda desenhado — agora em VISTA DE FRENTE (perspectiva de quem toca): teclado embaixo, a tampa levantando atrás conforme o parâmetro Tampa, e a partitura no atril mostrando o NOME do banco carregado. A aba MOTOR abre os dez discos de ajuste fino (tampa, curva de velocity, sala, trim, largura, abafar soltura, brilho do martelo, afinação da ressonância, afinação global e a dose do molho). BYPASS silencia com rampa de 10 ms sem parar as vozes.</p>
+    <h3 class="produto__secao">Controles</h3>
+    <table class="produto__tabela">
+      <thead><tr><th>Controle</th><th>Faixa</th><th>O que faz</th></tr></thead>
+      <tbody>
+        <tr><td>Volume</td><td>0% a 100% · padrão 82%</td><td>Nível de saída, aplicado no estágio master antes do soft-clip.</td></tr>
+        <tr><td>Martelo</td><td>0% a 100% · padrão 16%</td><td>Nível do transiente físico do ataque (click do feltro + thump da caixa), calibrado por nota.</td></tr>
+        <tr><td>Dinâmica</td><td>0% a 100% · padrão 50%</td><td>Curva de velocity aplicada antes do sampler; 50% é linear.</td></tr>
+        <tr><td>Ressonância</td><td>0% a 100% · padrão 45%</td><td>Ganho do banco de ressonadores simpáticos ligados às teclas ativas e ao pedal.</td></tr>
+        <tr><td>Tampa</td><td>0% a 100% · padrão 52%</td><td>Abertura da tampa: lowpass de 2,5 kHz (fechada) a 16 kHz (aberta); transparente em 100%. É o mesmo valor que levanta a tampa do piano desenhado na tela PIANO.</td></tr>
+        <tr><td>Corpo</td><td>0% a 100% · padrão 62%</td><td>Resposta do tampo: a curva de radiação do corpo de um piano de cauda (peito +5,5 dB em 92 Hz, articulação no bridge, ar, sub domado). Unity em 0%, então não destrói a amostra.</td></tr>
+        <tr><td>Madeira</td><td>0% a 100% · padrão 50%</td><td>Modos do tampo: dez ressonadores de alto Q nas frequências modais da madeira, que continuam vibrando depois da nota. Aditivo puro, bypass em 0%.</td></tr>
+        <tr><td>Graves/Médios/Agudos</td><td>±8 dB · padrão 0 dB</td><td>EQ de corpo: low shelf 120 Hz, peak 1 kHz Q0,8, high shelf 5 kHz.</td></tr>
+        <tr><td>Chorus</td><td>0% a 100% · padrão 0%</td><td>Chorus de 2 vozes, LFO 0,8 Hz.</td></tr>
+        <tr><td>Reverb</td><td>0% a 100% · padrão 12%</td><td>Mistura do reverb FDN de concerto.</td></tr>
+        <tr><td>Compressor</td><td>achatar 0% a 100% · padrão 0% (off, opt-in)</td><td>Um knob — compressor ORIGINAL da Forja (engine/dsp/Compressor.h), não o Dyno/Ímpeto: é o MESMO compressor de canal do mixer do Drumforge (mesmo algoritmo) — detector de pico estéreo-linkado com decaimento, joelho de 6 dB e a redução suavizada em dB por dois tempos (attack ~3 ms / release ~120 ms), então o ganho não modula dentro do ciclo e não degrada. Ratio fixa em 5:1 (cada 1 dB acima do limiar vira 5 dB de redução); o knob só aprofunda o threshold (de 0 a −40 dB). Um makeup de laço fechado (camada Forja) segura o nível percebido, então girar ACHATA a macro-dinâmica sem derrubar o volume. Gesto invertido na UI: gire para a ESQUERDA para achatar mais; a direita é o off (0%, bypass honesto — saída = entrada).</td></tr>
+        <tr><td>Molho</td><td>0% a 100% · padrão 0% (opt-in)</td><td>Nível/intensidade do halo espectral: o resonador corta o sinal em grãos (Hann, sobreposição 4x), guarda a energia por bin e reconstrói com fase aleatória (dissolve formantes, mata a voz robotizada); uma cópia dessa energia difusa é deslocada exatamente uma oitava (+12) e somada por cima do seco — o salto é fixo, não sobe escada, sempre harmônico. Técnica reimplementada do Atlantis Reverb (Geraint Luff), sem copiar código. No talo dosado a 30% do ganho antigo. Auto-pan lento abre o halo no campo. Roda no barramento depois do reverb. Em 0% é bypass honesto.</td></tr>
+        <tr><td>Quinta</td><td>0% a 100% · padrão 0% (opt-in)</td><td>Dose da décima-segunda (oitava + 5ª) somada por cima da oitava no shift (bin k → 3k, além do k → 2k). Como o shift não é realimentado, a 12ª nunca recompõe (nada de 9ª/27ª dissonante). 0% = só oitava (+12 limpo); 100% = 12ª tão presente quanto a oitava, som mais denso. Só age com o molho aberto.</td></tr>
+        <tr><td>Cauda</td><td>0% a 100% · padrão 50%</td><td>Tempo (RT) do resonador espectral por onde o shimmer passa: 0 = halo de decay curto, 1 = pad de cauda longa. É o comprimento do halo, não eco que repete a tecla. Só age com o molho aberto; mora no MOTOR.</td></tr>
+        <tr><td>MOTOR</td><td>10 discos</td><td>Tampa, Curva de velocity, Sala (4 tipos), Trim (±12 dB), Largura (0–2), Abafar soltura, Brilho do martelo, Afin. da ressonância, Afin. global (±100 cents) e a dose do molho (Cauda).</td></tr>
+      </tbody>
+    </table>
+    <h3 class="produto__secao">Proven&#238;ncia</h3>
+    <dl class="produto__prov">
+      <dt>Fonte</dt><dd>TinySoundFont v0.9 (schellingb/TinySoundFont); tecnica de shimmer espectral reimplementada do Atlantis Reverb (Geraint Luff), sem copiar codigo</dd>
+      <dt>Autor</dt><dd>Bernhard Schelling (tsf); Forja (cadeia física, compressor de um knob, shimmer espectral e UI); Geraint Luff (inspiracao de tecnica do Atlantis)</dd>
+      <dt>Licen&#231;a</dt><dd>MIT (tsf). O compressor de um knob e o shimmer espectral sao DSP original da Forja. O shimmer foi reimplementado a partir da tecnica publica do Atlantis (nenhum codigo copiado; a licença do Atlantis nao e MIT, entao nada dele e vendorizado). SF3 usa stb_vorbis, domínio público. Sem FluidSynth (LGPL) por regra da suíte.</dd>
+      <dt>Commit</dt><dd>vendor byte-exato em Forja/Source/forja/vendor/soundfont (SHA-256 em PROVENANCE.md); cadeia portada do projeto-irmão pianoforge; compressor é DSP original da Forja e o MESMO compressor de canal do mixer do Drumforge (mesmo algoritmo) em Pianos/Pianoforge/Source/engine/dsp/Compressor.h (detector de pico com decaimento, joelho 6 dB e redução suavizada em dB por dois tempos — ganho que não degrada —, ratio fixa em 5:1, threshold −40→0 dB — faixa do canal —, mais makeup de laço fechado (camada Forja); sem vendor e sem paridade de disco); shimmer é engine espectral proprio em Pianos/Pianoforge/Source/engine/dsp/Shimmer.h (FFT radix-2 + energia por bin com decaimento + fase aleatoria + shift fixo de oitava/quinta), tecnica reimplementada do Atlantis, sem vendor e sem paridade de disco</dd>
+      <dt>Notas</dt><dd>O PIANOFORGE é o produto da suíte; o repositório irmão pianoforge fica como referência histórica de DSP. Não há paridade com a Airwindows — o compressor de um knob e o shimmer são DSP original da Forja (o shimmer nao e mais o reverb ClearCoat: e um resonador espectral original). Aqui os testes cobrem adoção de banco com reap, sustain, fatiamento de eventos, monotonia de tampa/martelo, o mapeamento bit-exato dos 23 parâmetros, a prova de energia no peito (banda 80–500 Hz) para corpo e madeira, a prova de que o compressor não degrada (THD baixo num seno puro, attack finito e ganho suavizado) e ainda assim ACHATA a macro-dinâmica segurando o nível (range alto/baixo cai, RMS no lugar) e que a CAUDA dosar o RT do halo espectral (halo que floresce, não eco que repete), a rejeição de .pforge com CRC errado e a ausência de alocação no áudio.</dd>
+    </dl>
+    <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/tag/vpiano-1.0.3">Download</a></p>
+  </section>
+</main>
+
+<footer class="rodape">
+  <p>Pianos &#183; Forja &#8212; <a href="../index.html">voltar ao cat&#225;logo</a></p>
+</footer>
+</body>
+</html>

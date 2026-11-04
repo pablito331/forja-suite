@@ -93,7 +93,7 @@
   </p>
   <div class="grade grade--linhas">
 <!--FORJA:LINHAS-->
-    <article class="card card--linha" data-estado="publicado">
+    <article class="card card--linha" id="linha-rack" data-estado="publicado">
       <div class="card__fig"><img src="assets/forjarack.png" alt="Interface de ForjaRack" width="1250" height="675" loading="lazy"></div>
       <div class="card__corpo">
         <div class="card__cabeca">
@@ -101,11 +101,11 @@
           <span class="selo">disponível</span>
         </div>
         <p class="card__resumo">Oito gavetas em cadeia: encaixe módulos Airwindows e monte uma fileira completa sem sair de um único plug-in.</p>
-        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/tag/vrack-1.0.5">Download</a></p>
+        <p class="card__acoes"><a class="botao botao--sm" href="plugins/rack.html">Saiba mais</a></p>
       </div>
     </article>
 
-    <article class="card card--linha" data-estado="publicado">
+    <article class="card card--linha" id="linha-minis" data-estado="publicado">
       <div class="card__fig"><img src="assets/canivete.png" alt="Interface de Minis" width="700" height="325" loading="lazy"></div>
       <div class="card__corpo">
         <div class="card__cabeca">
@@ -113,11 +113,11 @@
           <span class="selo">disponível</span>
         </div>
         <p class="card__resumo">Instrumentos de gaveta: player de soundfont, tocador de kits e saturador de válvula.</p>
-        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/tag/vminis-1.0.2">Download</a></p>
+        <p class="card__acoes"><a class="botao botao--sm" href="plugins/minis.html">Saiba mais</a></p>
       </div>
     </article>
 
-    <article class="card card--linha" data-estado="publicado">
+    <article class="card card--linha" id="linha-drumforge" data-estado="publicado">
       <div class="card__fig"><img src="assets/drumforge.png" alt="Interface de Drumforge" width="1250" height="675" loading="lazy"></div>
       <div class="card__corpo">
         <div class="card__cabeca">
@@ -125,11 +125,11 @@
           <span class="selo">disponível</span>
         </div>
         <p class="card__resumo">Sampler de bateria com dezesseis pads, round-robin e uma mesa completa.</p>
-        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/tag/vdrumforge-1.0.2">Download</a></p>
+        <p class="card__acoes"><a class="botao botao--sm" href="plugins/drumforge.html">Saiba mais</a></p>
       </div>
     </article>
 
-    <article class="card card--linha" data-estado="publicado">
+    <article class="card card--linha" id="linha-pianos" data-estado="publicado">
       <div class="card__fig card__fig--sem-imagem">sem captura</div>
       <div class="card__corpo">
         <div class="card__cabeca">
@@ -137,11 +137,11 @@
           <span class="selo">disponível</span>
         </div>
         <p class="card__resumo">Bons soundfonts de piano já existem; o corpo é que falta. O PIANOFORGE lê os seus e acrescenta o modelo físico.</p>
-        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/tag/vpiano-1.0.2">Download</a></p>
+        <p class="card__acoes"><a class="botao botao--sm" href="plugins/pianos.html">Saiba mais</a></p>
       </div>
     </article>
 
-    <article class="card card--linha" data-estado="publicado">
+    <article class="card card--linha" id="linha-airwindows" data-estado="publicado">
       <div class="card__fig"><img src="assets/cinzel.png" alt="Interface de Airwindows forjados" width="1250" height="675" loading="lazy"></div>
       <div class="card__corpo">
         <div class="card__cabeca">
@@ -149,7 +149,7 @@
           <span class="selo">disponível</span>
         </div>
         <p class="card__resumo">Trinta e um plugins de mixagem derivados do código MIT de Chris Johnson, com interface Forja.</p>
-        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases">Download</a></p>
+        <p class="card__acoes"><a class="botao botao--sm" href="#eq">Saiba mais</a></p>
       </div>
     </article>
 <!--/FORJA:LINHAS-->
@@ -169,7 +169,7 @@
         </div>
         <p class="card__sub">RACK SÉRIE 500</p>
         <p class="card__resumo">Oito gavetas em cadeia: encaixe módulos Airwindows MIT e monte uma fileira de timbre, dinâmica, EQ, ambiente e lo-fi sem sair de um único plug-in.</p>
-        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+        <p class="card__acoes"><a class="botao botao--sm" href="plugins/rack.html#forjarack">Saiba mais</a></p>
       </div>
     </article>
   </div>
@@ -187,7 +187,7 @@
         </div>
         <p class="card__sub">PLAYER SF2/SF3</p>
         <p class="card__resumo">CANIVETE é o player de soundfont da suíte: abre bancos .sf2 (e .sf3 quando o build traz o decodificador Ogg) e toca 16 canais GM pelo MIDI da DAW.</p>
-        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+        <p class="card__acoes"><a class="botao botao--sm" href="plugins/minis.html#canivete">Saiba mais</a></p>
       </div>
     </article>
 
@@ -200,7 +200,7 @@
         </div>
         <p class="card__sub">TOCADOR DE KITS</p>
         <p class="card__resumo">MINIDRUM é o Drumforge em formato de gaveta: puxa um kit da biblioteca compartilhada, toca o premix gravado no próprio arquivo e manda no nível com um único knob.</p>
-        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+        <p class="card__acoes"><a class="botao botao--sm" href="plugins/minis.html#minidrum">Saiba mais</a></p>
       </div>
     </article>
 
@@ -213,7 +213,7 @@
         </div>
         <p class="card__sub">SATURADOR DE VÁLVULAS</p>
         <p class="card__resumo">MINISAT é a válvula do BRASA (Airwindows Tube2) em formato de gaveta: um único knob DRIVE leva o sinal do pad documentado ao sinal cheio, sem makeup gain e sem mesa de três knobs.</p>
-        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+        <p class="card__acoes"><a class="botao botao--sm" href="plugins/minis.html#minisat">Saiba mais</a></p>
       </div>
     </article>
   </div>
@@ -231,7 +231,7 @@
         </div>
         <p class="card__sub">SAMPLER DE BATERIA</p>
         <p class="card__resumo">Dezesseis pads, camadas de velocidade, round-robin e uma mesa completa: o kit entra, o groove sai. Sem latência e sem depender de biblioteca externa.</p>
-        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/latest">Download</a></p>
+        <p class="card__acoes"><a class="botao botao--sm" href="plugins/drumforge.html#drumforge">Saiba mais</a></p>
       </div>
     </article>
   </div>
@@ -249,7 +249,7 @@
         </div>
         <p class="card__sub">PIANO DE AMOSTRAS + MODELO FÍSICO</p>
         <p class="card__resumo">Cansado de caçar o piano perfeito entre VSTs gratuitos, a descoberta é simples: existem bons soundfonts de piano — o que falta é o corpo do instrumento. O PIANOFORGE é um leitor de soundfont feito especificamente para pianos: você carrega o seu próprio .sf2 ou .sf3 e ele gera simulações físicas em tempo real — o transiente do martelo, a ressonância das cordas, o movimento da tampa, o corpo de madeira e o espaço — modificando o som para um piano mais realista e encorpado. Basta ler os seus soundfonts: eles já soam melhor.</p>
-        <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/tag/vpiano-1.0.2">Download</a></p>
+        <p class="card__acoes"><a class="botao botao--sm" href="plugins/pianos.html#pianoforge">Saiba mais</a></p>
       </div>
     </article>
   </div>

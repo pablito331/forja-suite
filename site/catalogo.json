@@ -1,10 +1,10 @@
 {
   "_notas": "Fonte de conteudo da pagina. Edite aqui, rode tools/build_site.ps1 e tools/validate_site.ps1. estado: publicado | video | breve (breve sai sem link de download). release: slug de produto em ci/products.json.",
   "linhas": [
-    { "slug": "rack", "nome": "ForjaRack", "resumo": "Oito gavetas em cadeia: encaixe módulos Airwindows e monte uma fileira completa sem sair de um único plug-in.", "imagem": "assets/forjarack.png", "release": "rack" },
-    { "slug": "minis", "nome": "Minis", "resumo": "Instrumentos de gaveta: player de soundfont, tocador de kits e saturador de válvula.", "imagem": "assets/canivete.png", "release": "minis" },
-    { "slug": "drumforge", "nome": "Drumforge", "resumo": "Sampler de bateria com dezesseis pads, round-robin e uma mesa completa.", "imagem": "assets/drumforge.png", "release": "drumforge" },
-    { "slug": "pianos", "nome": "Pianos", "resumo": "Bons soundfonts de piano já existem; o corpo é que falta. O PIANOFORGE lê os seus e acrescenta o modelo físico.", "imagem": "", "release": "pianoforge" },
+    { "slug": "rack", "nome": "ForjaRack", "resumo": "Oito gavetas em cadeia: encaixe módulos Airwindows e monte uma fileira completa sem sair de um único plug-in.", "imagem": "assets/forjarack.png", "release": "rack", "pagina": true },
+    { "slug": "minis", "nome": "Minis", "resumo": "Instrumentos de gaveta: player de soundfont, tocador de kits e saturador de válvula.", "imagem": "assets/canivete.png", "release": "minis", "pagina": true },
+    { "slug": "drumforge", "nome": "Drumforge", "resumo": "Sampler de bateria com dezesseis pads, round-robin e uma mesa completa.", "imagem": "assets/drumforge.png", "release": "drumforge", "pagina": true },
+    { "slug": "pianos", "nome": "Pianos", "resumo": "Bons soundfonts de piano já existem; o corpo é que falta. O PIANOFORGE lê os seus e acrescenta o modelo físico.", "imagem": "", "release": "pianoforge", "pagina": true },
     { "slug": "airwindows", "nome": "Airwindows forjados", "resumo": "Trinta e um plugins de mixagem derivados do código MIT de Chris Johnson, com interface Forja.", "imagem": "assets/cinzel.png", "release": "airwindows" }
   ],
   "familias": [
@@ -29,6 +29,7 @@
   },
   "rotulos": {
     "download": "Download",
+    "saibaMais": "Saiba mais",
     "video": "Ver vídeo",
     "semImagem": "sem captura"
   },

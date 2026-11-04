@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minis &#183; Forja</title>
+<meta name="description" content="Instrumentos de gaveta: player de soundfont, tocador de kits e saturador de válvula.">
+<meta name="color-scheme" content="dark">
+<link rel="stylesheet" href="../forja-site.css?v=2">
+</head>
+<body>
+
+<header class="pagina__topo">
+  <a class="pagina__voltar" href="../index.html">&#8592; Cat&#225;logo Forja</a>
+  <p class="pagina__marca">Minis</p>
+</header>
+
+<main class="conteudo pagina">
+  <div class="pagina__hero">
+    <h1>Minis</h1>
+    <p>Instrumentos de gaveta: player de soundfont, tocador de kits e saturador de válvula.</p>
+    <p class="card__acoes"><a class="botao" href="https://github.com/pablito331/forja-suite/releases/tag/vminis-1.0.3">Download</a></p>
+  </div>
+
+  <section class="produto" id="canivete">
+    <h2>CANIVETE</h2>
+    <p class="produto__sub">PLAYER SF2/SF3 · FORJA</p>
+    <figure class="produto__fig"><img src="../assets/canivete.png" alt="Interface do plugin CANIVETE" width="700" height="325" loading="lazy"></figure>
+    <p class="produto__tagline">CANIVETE é o player de soundfont da suíte: abre bancos .sf2 (e .sf3 quando o build traz o decodificador Ogg) e toca 16 canais GM pelo MIDI da DAW.</p>
+    <h3 class="produto__secao">O que faz</h3>
+    <p>Lê um banco da biblioteca Documents/Forja/Canivete e o expõe como instrumento multi-timbral: cada canal MIDI carrega um preset próprio, o programa 10 (canal 9) é tratado como bateria do GM, e program change, bank select MSB/LSB, CC e pitch bend seguem a norma. O knob BANK escolhe o arquivo, o seletor INSTRUMENTO escolhe o preset do canal melódico 1 e o VOLUME manda no trim do master.</p>
+    <p>É o caminho rápido para tocar curadorias em SoundFont (arquivos de Polyphone, sf2edit ou bancos GM da vida) sem DAW de amostras separada.</p>
+    <h3 class="produto__secao">Como funciona</h3>
+    <p>Por dentro toca o TinySoundFont v0.9 (MIT, Bernhard Schelling), um sintetizador SoundFont2 de um único header, envolvido pelo adapter forja::canivete::SoundFontEngine. O bank é lido em thread de background e entra no áudio trocado por token; os 16 canais e o pool de 128 vozes são pré-criados na carga para o processBlock nunca alocar memória.</p>
+    <p>SF3 (amostras em Ogg/Vorbis) só existe quando a pasta de vendor traz o stb_vorbis — o build detecta e acende o formato sozinho. Nada de FluidSynth: a suíte mantém o binário livre de GPL.</p>
+    <p>É um instrumento: não processa o áudio da DAW, só gera o seu. Latência medida: 0 amostras. O mesmo engine serve a gaveta de instrumento do ForjaRack.</p>
+    <h3 class="produto__secao">Operação</h3>
+    <p>Deposite os .sf2/.sf3 em Documentos/Forja/Canivete, toque ATUALIZAR e escolha o bank. A carga roda em segundo plano; o status mostra o resultado. No banco carregado, o seletor INSTRUMENTO lista os presets e escolhe o do canal 1 — um program change da DAW assume o canal e o seletor acompanha. BYPASS silencia com rampa de 10 ms sem parar as vozes.</p>
+    <h3 class="produto__secao">Controles</h3>
+    <table class="produto__tabela">
+      <thead><tr><th>Controle</th><th>Faixa</th><th>O que faz</th></tr></thead>
+      <tbody>
+        <tr><td>Bank</td><td>lista da biblioteca · padrão none</td><td>Arquivo .sf2/.sf3 tocado, lido de Documents/Forja/Canivete.</td></tr>
+        <tr><td>Instrumento</td><td>preset do banco · padrão o primeiro</td><td>Escolhe o preset tocado no canal melódico 1. Um program change da DAW assume o canal e o seletor passa a mostrá-lo. Os demais canais seguem o MIDI recebido.</td></tr>
+        <tr><td>Volume</td><td>-24 a +24 dB · padrão 0 dB</td><td>Trim do master sobre a saída do sintetizador.</td></tr>
+        <tr><td>Bypass</td><td>ligado/desligado · padrão desligado</td><td>Silencia a saída com rampa de 10 ms.</td></tr>
+      </tbody>
+    </table>
+    <h3 class="produto__secao">Proven&#238;ncia</h3>
+    <dl class="produto__prov">
+      <dt>Fonte</dt><dd>TinySoundFont v0.9 (schellingb/TinySoundFont)</dd>
+      <dt>Autor</dt><dd>Bernhard Schelling (tsf); Forja (adapter e UI)</dd>
+      <dt>Licen&#231;a</dt><dd>MIT (tsf). SF3 usa stb_vorbis, domínio público. Sem FluidSynth (LGPL) por regra da suíte.</dd>
+      <dt>Commit</dt><dd>vendor byte-exato em Forja/Source/forja/vendor/soundfont (SHA-256 registrado em PROVENANCE.md)</dd>
+      <dt>Notas</dt><dd>A Forja não altera o DSP do TinySoundFont: o adapter apenas envolve a API pública (carga em background, canais, render) e acrescenta a camada padrão da suíte — bypass com crossfade, trim do master, medidores e estado via APVTS. Sem paridade com vendor Airwindows: os testes cobrem carga de bank, MIDI multi-timbral, estado e ausência de alocação no áudio.</dd>
+    </dl>
+    <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/tag/vminis-1.0.3">Download</a></p>
+  </section>
+
+  <section class="produto" id="minidrum">
+    <h2>MINIDRUM</h2>
+    <p class="produto__sub">TOCADOR DE KITS · FORJA</p>
+    <figure class="produto__fig"><img src="../assets/minidrum.png" alt="Interface do plugin MINIDRUM" width="700" height="325" loading="lazy"></figure>
+    <p class="produto__tagline">MINIDRUM é o Drumforge em formato de gaveta: puxa um kit da biblioteca compartilhada, toca o premix gravado no próprio arquivo e manda no nível com um único knob.</p>
+    <h3 class="produto__secao">O que faz</h3>
+    <p>Carrega kits .dfkit, drumkit.txt do drumlabooh ou pastas de samples e toca o kit pelo MIDI da DAW. Onde o Drumforge abre a mesa de 16 canais, o mini respeita a mix gravada no kit: se o .dfkit chegou premixado, essa mix é o som. O knob VOLUME manda no trim do master.</p>
+    <p>A biblioteca é a mesma do Drumforge (Documentos/Forja/Drumforge/Kits mais as pastas do drumlabooh na raiz da conta). O que você salvar lá, o mini toca aqui sem copiar nada.</p>
+    <h3 class="produto__secao">Como funciona</h3>
+    <p>Por dentro toca o mesmo engine validado do Drumforge: 16 pads, 64 vozes, camadas, round-robin, choke e o limiter do master. A carga dos samples acontece em thread de background e o kit entra no áudio trocado por token, sem alocar no caminho de áudio e sem estalo.</p>
+    <p>É um instrumento: não processa o áudio da DAW, só gera o seu. Latência medida: 0 amostras. O mesmo caminho de áudio será aproveitado pela gaveta de instrumento do ForjaRack.</p>
+    <h3 class="produto__secao">Operação</h3>
+    <p>Toque PUXAR KIT e escolha um kit da biblioteca (arquivo ou pasta). A foto do kit aparece no cartão quando o arquivo a traz. Para mudar o som de verdade, abra o kit no Drumforge, ajuste a mesa e salve premixado; o mini passa a tocar essa mix. BYPASS silencia com rampa de 10 ms sem parar as vozes.</p>
+    <h3 class="produto__secao">Controles</h3>
+    <table class="produto__tabela">
+      <thead><tr><th>Controle</th><th>Faixa</th><th>O que faz</th></tr></thead>
+      <tbody>
+        <tr><td>Volume</td><td>-24 a +24 dB · padrão 0 dB</td><td>Trim do master. A mix dos pads vem gravada no kit.</td></tr>
+        <tr><td>Bypass</td><td>ligado/desligado · padrão desligado</td><td>Silencia a saída com rampa de 10 ms.</td></tr>
+      </tbody>
+    </table>
+    <h3 class="produto__secao">Proven&#238;ncia</h3>
+    <dl class="produto__prov">
+      <dt>Fonte</dt><dd>Forja Drumforge (engine)</dd>
+      <dt>Autor</dt><dd>Forja</dd>
+      <dt>Licen&#231;a</dt><dd>MIT. DSP original da suíte, sem vendor Airwindows.</dd>
+      <dt>Commit</dt><dd>engine do Drumforge, reutilizado como bloco proprio</dd>
+      <dt>Notas</dt><dd>O wrapper forja::minidrum::MiniDrum reúne o engine do Drumforge, o leitor de kits e a foto de preview em um tocador de saída estéreo única. Sem paridade com vendor: os testes cobrem carga de kit, MIDI, estado e ausência de alocação no áudio.</dd>
+    </dl>
+    <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/tag/vminis-1.0.3">Download</a></p>
+  </section>
+
+  <section class="produto" id="minisat">
+    <h2>MINISAT</h2>
+    <p class="produto__sub">SATURADOR DE VÁLVULAS · FORJA</p>
+    <figure class="produto__fig"><img src="../assets/minisat.png" alt="Interface do plugin MINISAT" width="700" height="325" loading="lazy"></figure>
+    <p class="produto__tagline">MINISAT é a válvula do BRASA (Airwindows Tube2) em formato de gaveta: um único knob DRIVE leva o sinal do pad documentado ao sinal cheio, sem makeup gain e sem mesa de três knobs.</p>
+    <h3 class="produto__secao">O que faz</h3>
+    <p>Satura o áudio da DAW com o modelador assimétrico de válvula do Tube2, na mesma configuração validada do BRASA. O knob DRIVE vai de 0 a 1: no 0 o plugin está exatamente no default documentado do BRASA (pad de entrada 0,50); no 1 o sinal chega à válvula sem pad. Mais drive = mais amostras no clamp da válvula = som mais grosso.</p>
+    <p>Não há compensação de nível: a camada Forja não adiciona makeup gain, normalização ou oversampling. O medidor mostra o que a válvula entrega de verdade.</p>
+    <h3 class="produto__secao">Como funciona</h3>
+    <p>Por dentro roda o mesmo adaptador forja::BrasaDSP do BRASA, porta fiel de processDoubleReplacing do Tube2 de Chris Johnson (MIT): pad de entrada, modelador assimétrico, iterações de potência, histerese, clamp em ±0,52 e dither de 32 bits. Nada do DSP foi alterado.</p>
+    <p>O DRIVE é uma camada Forja documentada que mapeia um knob sobre dois parâmetros originais: entrada = 0,5 + 0,5 × drive e válvula fixa em 0,50 (default do BRASA), com trim de saída em 0 dB. Onde a UI do BRASA mostra três controles, o mini expõe só essa curva.</p>
+    <h3 class="produto__secao">Operação</h3>
+    <p>Suba o DRIVE até o ponto em que a cor do timbre te agrada; o cartão de curva mostra o joelho da válvula no mapa atual. CLIP no badge significa saída acima de 0 dBFS: baixe o DRIVE ou controle o nivel na DAW. BYPASS crossfada com rampa de 10 ms.</p>
+    <h3 class="produto__secao">Controles</h3>
+    <table class="produto__tabela">
+      <thead><tr><th>Controle</th><th>Faixa</th><th>O que faz</th></tr></thead>
+      <tbody>
+        <tr><td>Drive</td><td>0 a 1 · padrão 0</td><td>Camada Forja: mapeia o pad de entrada original (Entrada de 0,50 a 1,00) com Válvula 0,50 e Saída 0 dB fixos nos defaults do BRASA.</td></tr>
+        <tr><td>Bypass</td><td>ligado/desligado · padrão desligado</td><td>Sinal seco com rampa de 10 ms.</td></tr>
+      </tbody>
+    </table>
+    <h3 class="produto__secao">Proven&#238;ncia</h3>
+    <dl class="produto__prov">
+      <dt>Fonte</dt><dd>Airwindows Tube2 (BRASA)</dd>
+      <dt>Autor</dt><dd>Chris Johnson (Airwindows)</dd>
+      <dt>Licen&#231;a</dt><dd>MIT · Chris Johnson (Airwindows).</dd>
+      <dt>Commit</dt><dd>b110fac3991fff7c4655cc2d25d6a3e221f9799c</dd>
+      <dt>Notas</dt><dd>O DSP é o adaptador forja::BrasaDSP compartilhado com o BRASA (Forja/Source/forja/dsp/ForjaBrasa.h), validado por paridade no BRASA. A camada Forja deste mini é só o mapeamento do knob DRIVE; os nomes originais Entrada, Válvula e Saída ficam acima. Sem teste de paridade próprio: a paridade mora no BRASA e os testes do mini cobrem o mapeamento, o bypass, a ausência de alocação e a gaveta do rack.</dd>
+    </dl>
+    <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/tag/vminis-1.0.3">Download</a></p>
+  </section>
+</main>
+
+<footer class="rodape">
+  <p>Minis &#183; Forja &#8212; <a href="../index.html">voltar ao cat&#225;logo</a></p>
+</footer>
+</body>
+</html>

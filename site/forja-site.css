@@ -609,3 +609,150 @@ h2 {
     margin: 0;
   }
 }
+
+/* --------------------------------------------------- paginas de produto */
+/* site/plugins/<linha>.html: topo simples + secoes por produto, geradas do
+   FUNDAMENTOS. Reusa os tokens do tema; sem regras novas de cor. */
+
+.pagina__topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--forja-space-3);
+  padding: var(--forja-space-4) 0;
+  border-bottom: var(--forja-border);
+}
+
+.pagina__voltar {
+  color: var(--forja-muted);
+  font: 600 12px/1.3 var(--forja-font-ui);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.pagina__voltar:hover {
+  color: var(--forja-ember-pale);
+}
+
+.pagina__marca {
+  margin: 0;
+  color: var(--forja-ember);
+  font: 400 18px/1.2 var(--forja-font-display);
+  letter-spacing: .06em;
+}
+
+.pagina {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.pagina__hero h1 {
+  margin: 0 0 var(--forja-space-2);
+  color: var(--forja-text);
+  font: 400 clamp(30px, 1.6rem + 2vw, 46px)/1.15 var(--forja-font-display);
+  letter-spacing: .04em;
+}
+
+.pagina__hero > p {
+  max-width: 78ch;
+  color: var(--forja-muted);
+  font: 400 clamp(15px, 0.9rem + 0.3vw, 17px)/1.65 var(--forja-font-ui);
+}
+
+.produto {
+  margin: 0 0 var(--forja-space-5);
+  padding: var(--forja-space-5) 0 0;
+  border-top: var(--forja-border);
+  scroll-margin-top: var(--forja-space-4);
+}
+
+.produto h2 {
+  margin: 0 0 var(--forja-space-1);
+}
+
+.produto p {
+  max-width: 78ch;
+  color: var(--forja-muted);
+}
+
+.produto__sub {
+  margin: 0 0 var(--forja-space-3);
+  color: var(--forja-dim);
+  font: 600 10px/1.3 var(--forja-font-ui);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.produto__fig {
+  margin: 0 0 var(--forja-space-4);
+}
+
+.produto__fig img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: var(--forja-border);
+  border-radius: var(--forja-radius-md);
+}
+
+.produto__tagline {
+  margin-bottom: var(--forja-space-4);
+  color: var(--forja-text);
+  font: 400 clamp(15px, 0.9rem + 0.3vw, 17px)/1.65 var(--forja-font-ui);
+}
+
+.produto__secao {
+  margin: var(--forja-space-4) 0 var(--forja-space-2);
+  color: var(--forja-ember-soft);
+  font: 600 12px/1.3 var(--forja-font-ui);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.produto__tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font: 400 14px/1.55 var(--forja-font-ui);
+}
+
+.produto__tabela th,
+.produto__tabela td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: var(--forja-border);
+  color: var(--forja-muted);
+  vertical-align: top;
+}
+
+.produto__tabela th {
+  color: var(--forja-dim);
+  font: 600 11px/1.3 var(--forja-font-ui);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.produto__tabela td:first-child {
+  color: var(--forja-text);
+  white-space: nowrap;
+}
+
+.produto__prov {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px var(--forja-space-3);
+  margin: 0;
+  font: 400 14px/1.55 var(--forja-font-ui);
+}
+
+.produto__prov dt {
+  color: var(--forja-dim);
+  font-weight: 600;
+}
+
+.produto__prov dd {
+  margin: 0;
+  color: var(--forja-muted);
+  overflow-wrap: anywhere;
+}

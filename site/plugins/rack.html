@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ForjaRack &#183; Forja</title>
+<meta name="description" content="Oito gavetas em cadeia: encaixe módulos Airwindows e monte uma fileira completa sem sair de um único plug-in.">
+<meta name="color-scheme" content="dark">
+<link rel="stylesheet" href="../forja-site.css?v=2">
+</head>
+<body>
+
+<header class="pagina__topo">
+  <a class="pagina__voltar" href="../index.html">&#8592; Cat&#225;logo Forja</a>
+  <p class="pagina__marca">ForjaRack</p>
+</header>
+
+<main class="conteudo pagina">
+  <div class="pagina__hero">
+    <h1>ForjaRack</h1>
+    <p>Oito gavetas em cadeia: encaixe módulos Airwindows e monte uma fileira completa sem sair de um único plug-in.</p>
+    <p class="card__acoes"><a class="botao" href="https://github.com/pablito331/forja-suite/releases/tag/vrack-1.0.5">Download</a></p>
+  </div>
+
+  <section class="produto" id="forjarack">
+    <h2>FORJARACK</h2>
+    <p class="produto__sub">RACK SÉRIE 500 · FORJA</p>
+    <figure class="produto__fig"><img src="../assets/forjarack.png" alt="Interface do plugin FORJARACK" width="1250" height="675" loading="lazy"></figure>
+    <p class="produto__tagline">Oito gavetas em cadeia: encaixe módulos Airwindows MIT e monte uma fileira de timbre, dinâmica, EQ, ambiente e lo-fi sem sair de um único plug-in.</p>
+    <h3 class="produto__secao">O que faz</h3>
+    <p>O ForjaRack e um roteador em cadeia estilo Serie 500. Cada um dos oito slots hospeda um modulo que envolve um adaptador Airwindows ja validado por paridade na suíte. O sinal percorre os slots da esquerda para a direita; um slot vazio ou em bypass e pass-through exato.</p>
+    <p>Nao inventamos DSP: o timbre de cada gaveta vem do modelo original. O que e explicitamente da Forja e a cadeia, as chaves de slot e a secao master, todas descritas abaixo.</p>
+    <h3 class="produto__secao">Como funciona</h3>
+    <p>O rack mantem um grafo de modulos montado na thread de mensagens; ao escolher um modulo o grafo e refeito sob suspensao do audio e os knobs assumem os defaults documentados daquele modelo. A gaveta passa a tocar sozinha quando recebe um modulo: a unica chave de on/off dela e o bypass. O controle por bloco (bypass, solo, parametros e master) chega por um snapshot POD lido no caminho de audio, que nao aloca.</p>
+    <p>Solo em qualquer gaveta tira as demais da cadeia; o solo de uma gaveta ja em bypass nao conta, para nao silenciar o rack inteiro.</p>
+    <p>Cada gaveta mostra um led de saida com o pico do proprio modulo; o master mede entrada e saida do barramento em estereo.</p>
+    <p>O catalogo de modulos e um registro expansível: cada módulo tem um id estável, knobs declarados e uma fábrica. Além dos efeitos Airwindows, o rack já aceita módulos de instrumento (papel 'instrument'): recebem MIDI por bloco e somam sua voz à cadeia. É a porta de entrada para futuras expansões, como leitor de sf2/sf3 e uma mini drum que lê os kits do Drumforge.</p>
+    <h3 class="produto__secao">FX em cadeia ou instrumento</h3>
+    <p>O rack aceita os dois usos pela mesma instancia. Numa faixa com audio (entrada esterio ativa), a cadeia processa o sinal que entra e sai efeitos em serie. Numa faixa de instrumento (sem entrada de audio), o barramento de entrada e tratado como silêncio e a saida passa a ser a voz dos slots-instrumento (MINIDRUM, CANIVETE e plugins hospedados), que recebem o MIDI da faixa e somam em cima.</p>
+    <p>É assim que o teclado ao vivo toca o instrumento dentro do rack, como toca no plugin solto: coloque o ForjaRack numa faixa de instrumento e escolha o modulo na gaveta. Mantenha a entrada ligada apenas quando quiser encadear efeitos sobre audio.</p>
+    <p>Para as DAWs que separam efeito de instrumento, o ForjaRack aparece nas duas listas: a cadeia de FX continua funcionando sobre o audio da faixa e as gavetas de instrumento recebem o MIDI.</p>
+    <p>O led MIDI na secao MASTER acende quando um bloco chega com MIDI (nota, CC ou pitch bend) para qualquer gaveta. Ele existe porque o medidor de ENTRADA so mostra audio: numa faixa de instrumento a entrada e silencio, entao o led e a unica forma de ver se o teclado esta de fato chegando ao plug-in. Led aceso e gaveta muda = problema de som do modulo; led apagado = o MIDI nao esta entrando na faixa.</p>
+    <h3 class="produto__secao">Gaveta HOSPEDADA</h3>
+    <p>A ficha HOSPEDADO no seletor abre a gaveta dinâmica: qualquer plug-in VST3 (Audio Unit no macOS) solto na pasta Documentos/Forja/Rack aparece no menu ARQUIVO da gaveta e roda ali dentro, sem recompilar a suíte. O botão BUSCAR revarre a pasta.</p>
+    <p>O rack expõe os knobs do plugin vivo: nome, quantidade e valor vêm do próprio plugin. Se o plugin traz editor, EDITAR abre essa UI em janela separada; enquanto ela estiver aberta o rack não escreve nos parâmetros. Sem editor, EDITAR abre a lista genérica de parâmetros.</p>
+    <p>Plugins hospedados mantêm a própria licença: não são copiados, nem compilados, nem ligados à suíte; são carregados em tempo de execução, como em qualquer DAW. Efeitos processam o barramento; instrumentos recebem o MIDI da faixa e somam sua voz; a latência reportada pelo plugin sobe para o host (PDC).</p>
+    <h3 class="produto__secao">Banda de arquivos (instrumentos)</h3>
+    <p>As gavetas de instrumento com biblioteca propria (MINIDRUM, lendo os kits .dfkit do Drumforge, e CANIVETE, lendo soundfonts .sf2/.sf3) mostram um seletor com o conteudo da pasta Documentos/Forja/Drumforge/Kits ou Documentos/Forja/Canivete. Escolher pela lista sincroniza o knob de indice e o material passa a ser comandado por ele; a escolha fica gravada no preset do rack.</p>
+    <p>O botão ARQUIVO abre um kit/bank fora da biblioteca, direto do disco (FileChooser nativo). Enquanto o arquivo externo toca, o knob de indice fica mudo; a escolha pela lista devolve o comando a ele. Some o arquivo, a gaveta volta ao knob em silencio.</p>
+    <p>A gaveta CANIVETE ganha uma segunda fileira, INSTRUMENTO, quando o bank assenta: a lista de presets do soundfont carregado, como no plugin solto. A escolha é gravada no preset do rack pelo nome (o indice nao é estável entre banks) e volta ao primeiro preset quando o bank muda. Durante a carga em segundo plano a fileira some; ela reaparece sozinha quando o bank fica tocável.</p>
+    <h3 class="produto__secao">Modulos e origem</h3>
+    <p>COR · CERA (PurestWarm): calor suave de um knob. MEL (Sweeten): adocar os agudos. CORPO (Mojo): encorpado de um knob. IMPETO (Dyno): transiente/punch.</p>
+    <p>DRIVE · LIXA (PurestDrive): drive/grao. OXIDO (IronOxide5): faixa de fita com flutter e ruido. REBARBA (Slew3): suaviza as arestas. LAMINADOR (ToTape9): fita de nove knobs com vies, flutter e cabecote.</p>
+    <p>DINAMICA · TEMPERA (ButterComp2): glue de barramento. MURALHA (Dynamics): limitador com teto e modo. DIQUE (FinalClip): limiter de teto fixo, sem knob. MALHO (Pop2): compressor punch. PRENSA (Pressure5): compressor de barramento. ESCORIA (DeBess): de-esser/controle de graves.</p>
+    <p>EQ · CINZEL (Parametric): tres bandas com ganho e frequencia e mix. TORNO (Baxandall3): grave e agudo com entrada. LIMA (SmoothEQ2): quatro bandas com frequencia propria.</p>
+    <p>LOFI · GRANALHA (DeRez5): degradação digital — taxa, bits, quadrado, brillo e graveza.</p>
+    <p>AMBIENTE · FOLEGO (kStation): sala curta. SALAO (kRockstar2): reverb de salao. REPIQUE (TapeDelay2): delay fita. ECO (Echojam): eco/spatial de quatro knobs.</p>
+    <h3 class="produto__secao">Camada Forja e desvios</h3>
+    <p>Secao master (trim de entrada, trim de saida a +-24 dB, inversao de fase do direito) e as chaves por slot (bypass e solo) sao camada Forja de roteamento, nao DSP do modelo.</p>
+    <p>SALAO roda com room tone desligado para o master nao assobiar em silencio; REPIQUE e ECO rodam assincronos, o tempo vem do knob. DIQUE (FinalClip) nao expoe parametro no modelo original e so roteja. Bypass de slot e pass-through; o bypass global usa rampa de 10 ms.</p>
+    <p>Latencia reportada: 0 amostras (PDC). Reverb e delay tem atraso musical, nao compensacao automatica, como nos originais da familia Space.</p>
+    <h3 class="produto__secao">Controles</h3>
+    <table class="produto__tabela">
+      <thead><tr><th>Controle</th><th>Faixa</th><th>O que faz</th></tr></thead>
+      <tbody>
+        <tr><td>Seletor de modulo</td><td>vazio, CERA ... ECO, HOSPEDADO</td><td>Escolhe o adaptador do slot e aplica seus defaults. HOSPEDADO carrega um plugin da pasta Rack.</td></tr>
+        <tr><td>Bypass da gaveta</td><td>ligado/desligado</td><td>Unica chave de on/off do slot: ligada, a gaveta e pass-through exato.</td></tr>
+        <tr><td>Solo da gaveta</td><td>ligado/desligado</td><td>Tira as demais gavetas da cadeia. Nao conta se a propria gaveta estiver em bypass.</td></tr>
+        <tr><td>Knobs do modulo</td><td>0,00 a 1,00</td><td>Escalonamento no DSP de cada modelo.</td></tr>
+        <tr><td>Arquivo hospedado</td><td>nenhum / plugin listado</td><td>Escolhe o plug-in carregado na gaveta HOSPEDADO.</td></tr>
+        <tr><td>Arquivo da gaveta</td><td>kit / soundfont listado</td><td>Escolhe o material tocado na gaveta de instrumento com biblioteca (MINIDRUM, CANIVETE).</td></tr>
+        <tr><td>Instrumento</td><td>preset do bank</td><td>Escolhe o preset (instrumento) do soundfont carregado na gaveta CANIVETE; some enquanto o bank carrega.</td></tr>
+        <tr><td>BUSCAR</td><td>botão</td><td>Revarre a pasta Documentos/Forja/Rack (gaveta HOSPEDADO).</td></tr>
+        <tr><td>ARQUIVO</td><td>botão</td><td>Abre um kit/soundfont fora da biblioteca, direto do disco (gavetas de instrumento).</td></tr>
+        <tr><td>EDITAR</td><td>botão</td><td>Abre a UI nativa do plugin (ou a lista genérica de parâmetros) em janela separada.</td></tr>
+        <tr><td>Entrada / Saida</td><td>0,00 a 1,00 · padrão 0,50</td><td>Trim de +-24 dB do barramento.</td></tr>
+        <tr><td>Inverter fase Ø R</td><td>ligado/desligado</td><td>Inverte o canal direito na saida do rack.</td></tr>
+        <tr><td>MIDI</td><td>led</td><td>Acende quando um bloco chega com MIDI da faixa para qualquer gaveta. O medidor de ENTRADA so mostra audio, entao ele e a pista de que o teclado esta entrando.</td></tr>
+        <tr><td>Bypass</td><td>ligado/desligado · padrão desligado</td><td>Comparação A/B com rampa de 10 ms.</td></tr>
+      </tbody>
+    </table>
+    <h3 class="produto__secao">Proven&#238;ncia</h3>
+    <dl class="produto__prov">
+      <dt>Fonte</dt><dd>Airwindows · PurestWarm, Sweeten, PurestDrive, IronOxide5, ButterComp2, Dynamics, Parametric, kStation, kRockstar2, TapeDelay2, Mojo, Dyno, Slew3, FinalClip, Baxandall3, SmoothEQ2, Pop2, Pressure5, DeBess, ToTape9, DeRez5, Echojam</dd>
+      <dt>Autor</dt><dd>Chris Johnson (Airwindows)</dd>
+      <dt>Licen&#231;a</dt><dd>MIT. O código original pode ser usado, copiado, modificado e distribuído mantendo o aviso de copyright.</dd>
+      <dt>Commit</dt><dd>airwindows master b110fac3991fff7c4655cc2d25d6a3e221f9799c</dd>
+      <dt>Notas</dt><dd>Adaptadores reutilizados sem alteracao de timbre. O rack e a camada Forja de cadeia, chaves de slot e master; nao ha paridade do rack em si, apenas dos modulos individuais.</dd>
+    </dl>
+    <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/tag/vrack-1.0.5">Download</a></p>
+  </section>
+</main>
+
+<footer class="rodape">
+  <p>ForjaRack &#183; Forja &#8212; <a href="../index.html">voltar ao cat&#225;logo</a></p>
+</footer>
+</body>
+</html>

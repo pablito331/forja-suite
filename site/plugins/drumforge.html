@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drumforge &#183; Forja</title>
+<meta name="description" content="Sampler de bateria com dezesseis pads, round-robin e uma mesa completa.">
+<meta name="color-scheme" content="dark">
+<link rel="stylesheet" href="../forja-site.css?v=2">
+</head>
+<body>
+
+<header class="pagina__topo">
+  <a class="pagina__voltar" href="../index.html">&#8592; Cat&#225;logo Forja</a>
+  <p class="pagina__marca">Drumforge</p>
+</header>
+
+<main class="conteudo pagina">
+  <div class="pagina__hero">
+    <h1>Drumforge</h1>
+    <p>Sampler de bateria com dezesseis pads, round-robin e uma mesa completa.</p>
+    <p class="card__acoes"><a class="botao" href="https://github.com/pablito331/forja-suite/releases/tag/vdrumforge-1.0.3">Download</a></p>
+  </div>
+
+  <section class="produto" id="drumforge">
+    <h2>DRUMFORGE</h2>
+    <p class="produto__sub">SAMPLER DE BATERIA · FORJA</p>
+    <figure class="produto__fig"><img src="../assets/drumforge.png" alt="Interface do plugin DRUMFORGE" width="1250" height="675" loading="lazy"></figure>
+    <p class="produto__tagline">Dezesseis pads, camadas de velocidade, round-robin e uma mesa completa: o kit entra, o groove sai. Sem latência e sem depender de biblioteca externa.</p>
+    <h3 class="produto__secao">O que faz</h3>
+    <p>Drumforge é um sampler de bateria de 16 pads fixos. Cada pad aceita camadas de velocidade e várias tomadas em round-robin, escolhidas pelo toque e giradas a cada golpe. O kit pode vir de um kit de texto do drumlabooh (drumkit.txt ou drumkit.labooh, que já trazem o mapa MIDI e as camadas), de uma pasta de samples (o plugin varre a pasta e as subpastas e classifica pelo nome do arquivo) ou de um arquivo .dfkit, texto no estilo drumlabooh que a própria importação grava na biblioteca.</p>
+    <p>O áudio sai em cinco barramentos estéreo: MAIN e AUX 1 a 4. Cada pad escolhe para onde vai, o que permite gravar a bateria em canais separados na DAW mantendo o mix do plugin.</p>
+    <p>A mesa tem um canal por pad: ganho de entrada, compressor de um controle, EQ de três bandas, pan, mute, solo, inversão de fase, dois envios e fader com medidor. O master soma os retornos dos dois efeitos, aquece, comprime e limita.</p>
+    <p>A aba LOOPS MIDI lê grooves .mid da biblioteca, desenha os golpes numa grade de 1/16 e toca o preview no BPM do host ou num BPM manual, sem depender da DAW para ouvir o loop.</p>
+    <h3 class="produto__secao">Como funciona</h3>
+    <p>O motor mantém 64 vozes. Cada golpe pega uma camada pela velocity, avança o round-robin daquela camada e toca o sample com interpolação linear, corrigindo a taxa de amostragem do arquivo para a da sessão. Quando todas as vozes estão ocupadas, a mais antiga cede o lugar, então toques rápidos nunca ficam mudos.</p>
+    <p>Grupos de choke desligam uma peça quando outra começa: o chimbal aberto corta na mesma hora em que o fechado soa, com rampa de 5 ms. O fechamento usa um envelope curto por voz, sem alocar memória.</p>
+    <p>O MIDI é dividido nos pontos exatos dos eventos, então a peça começa na amostra certa e não no início do bloco. O mapeamento padrão segue a General MIDI (36 bumbo, 38 caixa, 42 chimbal fechado, 46 aberto, 49 prato e assim por diante); pads sem nota ficam reservados para os sons de percussão importados.</p>
+    <p>Os samples são lidos em uma thread de fundo e entregues prontos. O motor só vê o kit por um ponteiro somente leitura trocado por token, e o kit anterior só é liberado depois que o áudio confirma a troca. Nada aloca no caminho do áudio.</p>
+    <h3 class="produto__secao">Loops MIDI</h3>
+    <p>A aba LOOPS lê arquivos .mid e .midi de Documentos/Forja/Drumforge/Loops; cada pasta ou subpasta vira categoria no filtro PACOTE, então dá para separar ritmos, fills e refrões em subpastas (o filtro de uma mãe traz a árvore inteira). O arquivo é convertido para beats na leitura, então o mesmo groove toca em qualquer BPM sem reescrever nada. O tempo do meta-evento define o BPM de origem e o loop fecha no compasso inteiro seguinte ao último golpe.</p>
+    <p>O preview enfileira cada golpe com o deslocamento exato em amostras, no mesmo caminho do MIDI ao vivo. Com SYNC DAW ligado ele segue o BPM do host; desligado, usa o BPM manual de 40 a 240. No fim do loop o cursor volta ao início sem cortar as vozes que ainda estão soando.</p>
+    <p>A grade mostra uma faixa por pad que o arquivo realmente toca e uma coluna por 1/16, até quatro compassos. Golpes em notas fora do mapa do kit atual aparecem como aviso em vez de sumirem em silêncio; ARRASTAR MIDI entrega o arquivo selecionado para a DAW.</p>
+    <h3 class="produto__secao">Canal e master</h3>
+    <p>A cadeia de cada pad é trim (ganho de entrada) → passa-altos → compressor → EQ de três bandas → pan → fader. O compressor é estéreo-linkado, com joelho suave de 6 dB; o EQ usa um shelf de 80 Hz, um sino em 1,2 kHz e um shelf de 8 kHz, todos fixos, cada um com ganho de −15 a +15 dB. Os envios são pós-fader, como em uma mesa; como o SALÃO devolve 100% molhado, o SEND 1 dosa com curva quadrada e teto de −12 dB — um dedo no botão mal injeta sala, a sala cresce conforme o giro. O SEND 2 (saturação) segue linear porque ali o nível é drive, não dose de retorno.</p>
+    <p>O master soma os envios, aplica o trim, o compressor ButterComp (bloco TÊMPERA, adaptado do Airwindows) e o limitador. O limitador é camada Forja: teto de −0,3 dBFS, ataque instantâneo e retorno de 80 ms, sem lookahead e portanto sem latência adicional.</p>
+    <p>FX 1 é o SALÃO (kRockstar2), um espaço estéreo com regen e posição; FX 2 é a LIXA (PurestDrive), saturação para dar corpo ao kit. Os dois são compartilhados: o quanto cada pad manda é definido em SEND 1 e SEND 2. O SALÃO do master roda sem o piso de ruído de sala do original, então a mesa fica em silêncio com nada tocando. Todos os blocos de DSP têm latência 0.</p>
+    <h3 class="produto__secao">Os controles</h3>
+    <p>No canal: TRIM move a entrada de −24 a +24 dB; HPF abre um passa-altos de 20 a 400 Hz (em 0 fica desligado); LO, MID e HI são os três ganhos do EQ; THR e RATIO definem o compressor (threshold de −40 a 0 dB, razão de 1:1 a 20:1); SEND 1 dosa o ambiente com curva quadrada (topo em −12 dB) e SEND 2 dosa a saturação; M, S e Ø são mute, solo e fase; e o chip de saída alterna entre MAIN e AUX 1 a 4.</p>
+    <p>No master: TRIM, COMP (ButterComp, desligado em 0), LIMITER, FX 1 REGEN e FX 1 POS (tamanho e posição do espaço) e FX 2 DRIVE (saturação). O medidor estéreo mostra o pico de saída; ao lado dele, dois rails verticais separam a atuação: C é a redução do compressor e L, a do limitador (cada um de 0 a −24 dB), com o total em dB abaixo.</p>
+    <p>Os knobs da mesa têm cor por função, sempre dentro da paleta: ganho e dinâmica em brasa, HPF em âmbar, o EQ em gradiente por faixa (graves verdes, medios cinza, agudos laranja do medidor), envios em branco e, no master, FX 1 em âmbar e FX 2 em laranja. Ao lado de cada fader, um rail vertical mostra a redução de ganho do compressor do canal (0 a −24 dB).</p>
+    <p>Na aba KITS ficam a biblioteca, a importação e o mapa dos 16 pads: clicar em um pad dispara o sample com velocity conforme a posição vertical do clique. A aba MIXER mostra os 16 canais com medidor e redução de ganho e, à direita, o master com o medidor estéreo. A aba LOOPS traz a biblioteca de grooves, a grade e o transporte do preview.</p>
+    <h3 class="produto__secao">Operação</h3>
+    <p>Para montar um kit: arraste uma pasta de samples para a aba KITS ou use IMPORTAR PASTA. O plugin procura .wav, .aif, .aiff e .flac, classifica pelo nome (kick, snare, tom, floor, hat, open, crash, ride, rim, clap) e lê os marcadores vl/v, vel, layer para camada de velocity e rr, rt, take para round-robin. Exemplo: Kick_vl2_rr1.wav e Kick_vl2_rr2.wav formam a camada 2 com duas tomadas.</p>
+    <p>Kit de texto do drumlabooh: se a pasta tem um drumkit.txt (o formato do drumlabooh e dos kits do drum_sklad), ele manda. A linha [36]&gt;Bass Drum=bass/b01.wav,bass/b02.wav declara a nota MIDI, o modo e as tomadas. Sem nota, o nome da peça escolhe o pad; a lista separada por vírgula é lida da camada mais suave para a mais forte, e '&gt;' e '*' viram round-robin. Um item pode apontar uma subpasta ou um .txt com um arquivo por linha, e o info.txt da pasta vira a descrição do kit. O drumkit.labooh (XML do drumlabooh, com um &lt;sample&gt; por peça) é convertido nas mesmas linhas e lido igual; só o SFZ não é lido.</p>
+    <p>A importação também grava um .dfkit na pasta Documentos/Forja/Drumforge/Kits, que passa a aparecer na biblioteca. O .dfkit é texto no estilo drumlabooh, uma peça por linha com os marcadores Forja '@' (pad) e '~' (choke); um .dfkit antigo em XML ainda abre. ABRIR KIT carrega qualquer .dfkit, drumkit.txt ou drumkit.labooh de outra pasta; ATUALIZAR relê a biblioteca. Kits do drumlabooh guardados nas pastas drum_sklad, drumlabooh-kits ou drumrox-kits da sua conta aparecem na lista sem precisar copiar nada. Se a pasta do kit tem a foto de convenção (image.png ou image.jpg), ela aparece como preview no card KIT.</p>
+    <p>Kit premixado: o .dfkit pode trazer a mix junto, em linhas de comentário #mix@N e #master com os mesmos valores 0–1 dos knobs (trim, fader, pan, HPF, os três EQs, o compressor e os dois envios de cada pad, mais o master). Como são comentários '#', um leitor de kit do drumlabooh ignora essas linhas e continua lendo o kit normal; mute, solo, fase e a saída não entram, porque são decisão de sessão. A mix só se aplica na carga manual: kit com mix assume os knobs, kit sem mix devolve a mesa ao neutro. Ao reabrir a sessão, o estado que a DAW salvou vence a mix do arquivo, para não brigar com o preset e a automação do projeto. O botão SALVAR KIT fecha o ciclo: com qualquer kit aberto, inclusive um vindo do drumlabooh ou de uma pasta de samples, ele captura a mix atual do mixer e cria um pacote portável — uma pasta com o nome do kit levando o .dfkit premixado, a subpasta samples/ com uma cópia de cada áudio (sem duplicar quem se repete entre pads) e a foto normalizada como image.png ou image.jpg. Os caminhos ficam relativos à própria pasta, então o pacote é autônomo: pode ser movido ou enviado para outra máquina que o kit abre sozinho, sem depender dos WAVs originais.</p>
+    <p>Para o multi-out, habilite as saídas AUX no canal do plugin na DAW e escolha o barramento no chip de saída de cada pad. Duplo clique em qualquer controle devolve o padrão; o bypass do host usa rampa de 10 ms e não corta as vozes em andamento.</p>
+    <p>Para os loops: arraste .mid ou pastas inteiras para a aba LOOPS, ou use IMPORTAR MIDI — pastas entram preservando as subpastas de categoria. A busca e o filtro PACOTE reduzem a lista, e escolher uma linha carrega o loop no preview. ABRIR PASTA revela a biblioteca no sistema e ATUALIZAR relê a pasta depois de copiar arquivos por fora.</p>
+    <h3 class="produto__secao">Controles</h3>
+    <table class="produto__tabela">
+      <thead><tr><th>Controle</th><th>Faixa</th><th>O que faz</th></tr></thead>
+      <tbody>
+        <tr><td>Trim</td><td>0,00 a 1,00 · padrão 0,50</td><td>Ganho de entrada do canal, de −24 a +24 dB.</td></tr>
+        <tr><td>Fader</td><td>0,00 a 1,00 · padrão 0,91</td><td>Nível de saída, de −60 a +6 dB; 0,91 fica em 0 dB.</td></tr>
+        <tr><td>Pan</td><td>0,00 a 1,00 · padrão 0,50</td><td>Posição estéreo com lei de potência constante.</td></tr>
+        <tr><td>HPF</td><td>0,00 a 1,00 · padrão 0,00</td><td>Passa-altos de 20 a 400 Hz; em 0 o filtro fica aberto.</td></tr>
+        <tr><td>Lo, Mid, Hi</td><td>0,00 a 1,00 · padrão 0,50</td><td>Ganhos do EQ em 80 Hz, 1,2 kHz e 8 kHz, de −15 a +15 dB.</td></tr>
+        <tr><td>Thr / Ratio</td><td>0,00 a 1,00 · padrão 0,70 / 0,10</td><td>Threshold de −40 a 0 dB e razão de 1:1 a 20:1.</td></tr>
+        <tr><td>Send 1 / Send 2</td><td>0,00 a 1,00 · padrão 0,00</td><td>Envios pós-fader para o espaço (FX 1) e a saturação (FX 2).</td></tr>
+        <tr><td>Saída</td><td>MAIN, AUX 1 a 4 · padrão MAIN</td><td>Barramento de destino do canal no multi-out.</td></tr>
+        <tr><td>Comp do master</td><td>0,00 a 1,00 · padrão 0,00</td><td>ButterComp no bus; em 0 o compressor não processa.</td></tr>
+        <tr><td>Limiter</td><td>ligado/desligado · padrão ligado</td><td>Teto de −0,3 dBFS sem latência.</td></tr>
+        <tr><td>FX 1 Regen / Pos</td><td>0,00 a 1,00 · padrão 0,50 / 1,00</td><td>Quantidade e posição do espaço SALÃO.</td></tr>
+        <tr><td>FX 2 Drive</td><td>0,00 a 1,00 · padrão 0,20</td><td>Saturação LIXA aplicada aos envios do FX 2.</td></tr>
+        <tr><td>Loop Sync</td><td>ligado/desligado · padrão ligado</td><td>Faz o preview do loop seguir o BPM do host; desligado usa o BPM manual.</td></tr>
+        <tr><td>Loop BPM</td><td>0,00 a 1,00 · padrão 0,40 · 40 a 240 BPM</td><td>BPM do preview quando o sync com a DAW está desligado.</td></tr>
+        <tr><td>Bypass</td><td>ligado/desligado · padrão desligado</td><td>Silencia a saída com rampa de 10 ms; as vozes continuam.</td></tr>
+      </tbody>
+    </table>
+    <h3 class="produto__secao">Proven&#238;ncia</h3>
+    <dl class="produto__prov">
+      <dt>Fonte</dt><dd>Forja DSP (engine de sampler) + blocos Airwindows adaptados + formato de kit do drumlabooh</dd>
+      <dt>Autor</dt><dd>Forja; blocos de Chris Johnson (Airwindows); especificação de kit de Peter Semiletov (drumlabooh / drum_sklad)</dd>
+      <dt>Licen&#231;a</dt><dd>MIT nos blocos Airwindows: o código original pode ser usado, copiado, modificado e distribuído mantendo o aviso de copyright. O engine de sampler, a interface e os leitores de kit são da Forja.</dd>
+      <dt>Commit</dt><dd>airwindows master b110fac3991fff7c4655cc2d25d6a3e221f9799c</dd>
+      <dt>Notas</dt><dd>O engine de sampler, o mixer, o limiter e a interface são originais da Forja. Os efeitos reutilizam adaptadores já validados da suíte: TÊMPERA (ButterComp2), SALÃO (kRockstar2) e LIXA (PurestDrive). Os leitores de drumkit.txt e drumkit.labooh seguem a especificação de formato do projeto drumlabooh / drum_sklad, de Peter Semiletov; nenhum código de lá entra no plugin, só lemos o formato. Nenhum sample ou biblioteca acompanha o plugin.</dd>
+    </dl>
+    <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/tag/vdrumforge-1.0.3">Download</a></p>
+  </section>
+</main>
+
+<footer class="rodape">
+  <p>Drumforge &#183; Forja &#8212; <a href="../index.html">voltar ao cat&#225;logo</a></p>
+</footer>
+</body>
+</html>

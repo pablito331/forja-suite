@@ -66,6 +66,14 @@ git push origin vrack-1.0.0
 A CI resolve o trem, compila tudo, testa tudo e publica a Release do tag com os artefatos.
 Para a suíte, o procedimento é o mesmo com `vX.Y.Z`.
 
+**Um trem de cada vez.** O `release.yml` declara `concurrency: group: release-trains` com
+`cancel-in-progress: false`: se duas ou mais tags de produto saem no mesmo minuto, o segundo
+trem entra na **fila** atrás do primeiro em vez de rodar em paralelo. Motivo medido: em
+04/11/2026 três tags de produto (minis, drumforge, piano) saíram com 30 s de diferença, os
+três jobs de macOS foram cancelados juntos aos ~15 min (o resto do trem estava verde) e
+nenhum Release publicou. Tags que apontam para commits **anteriores** à serialização ainda
+rodam em paralelo se re-triggeradas — ao retaggar, use sempre o `main` atual.
+
 Antes de taggar, confira o resolve e o instalador localmente, com os mesmos comandos da CI:
 
 ```powershell
@@ -192,7 +200,8 @@ Rack, e assim por diante).
 | Linha | Série | Última versão publicada |
 | --- | --- | --- |
 | suíte | `vX.Y.Z` | `v0.5.1` |
-| ForjaRack | `vrack-X.Y.Z` | — (sem tag) |
-| Minis e cada mini | `vminis-`, `vcanivete-`, `vminidrum-`, `vminisat-` | — |
-| Drumforge | `vdrumforge-` | — |
+| ForjaRack | `vrack-X.Y.Z` | `vrack-1.0.5` (04/11/2026, 4 assets) |
+| Minis e cada mini | `vminis-`, `vcanivete-`, `vminidrum-`, `vminisat-` | — (`vminis-1.0.3` morreu no macOS em fila; retaggar do main) |
+| Drumforge | `vdrumforge-` | — (`vdrumforge-1.0.3` idem) |
+| Pianos | `vpiano-` | — (`vpiano-1.0.3` idem) |
 | Airwindows | `vairwindows-` | — |

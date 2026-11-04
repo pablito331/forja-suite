@@ -301,7 +301,12 @@ Siga `docs/NOVO-PLUGIN.md`. Resumo:
   `tools/validate_site.ps1` PASS (36 plugins em 12 famílias).
 - Site **no ar**: `https://pablito331.github.io/forja-suite/` (Pages com Source: GitHub
   Actions, deploy por `.github/workflows/pages.yml`). `tools/validate_site.ps1` PASS.
-- Trem de produto ainda não publicou Release. O gargalo deixou de ser o código: o job de
+- Trem de produto: **`vrack-1.0.5` publicou** (primeiro Release de um trem, 4 assets).
+  `vminis-`/`vdrumforge-`/`vpiano-1.0.3` estavam verdes em Windows/Linux mas tiveram os
+  três jobs de macOS cancelados juntos — três tags no mesmo minuto lotaram o parque de
+  runners. O `release.yml` agora serializa os trens (`concurrency: release-trains`, fila,
+  sem cancelar): **um trem de cada vez**, e retaggar sempre do `main` atual (tags velhas
+  não têm o bloco de concurrency). O gargalo deixou de ser o código: o job de
   macOS estourava o teto de 6 h do runner (medido: 37 min para o rack, ~8 min por plugin
   pequeno), e por isso hoje compila só o trem. Um tag de suíte `vX.Y.Z` continua parado no
   macOS até o job ser fatiado em shards — falta registrada em `docs/RELEASES.md`.

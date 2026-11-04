@@ -139,6 +139,11 @@ inline double magnitudeDb (const Coeffs& c, double freqHz, double sampleRate) no
     const double cosW = std::cos (w);
     const double cos2W = std::cos (2.0 * w);
 
+    // |H(e^jw)|^2 = |B|^2/|A|^2 com A(z) = 1 + a1 z^-1 + a2 z^-2 na convencao
+    // de funcao de transferencia (a estrutura guarda a1/a2 assim; o biquad so
+    // inverte o sinal no diferencial). Versao fechada do cookbook. Conferida
+    // contra o biquad real no forja_traco (curva vs tom medido em saia, fc do
+    // HP e pico da campainha).
     const double num = c.b0 * c.b0 + c.b1 * c.b1 + c.b2 * c.b2
                      + 2.0 * (c.b0 * c.b1 + c.b1 * c.b2) * cosW
                      + 2.0 * c.b0 * c.b2 * cos2W;
@@ -386,6 +391,9 @@ public:
 
     // Reducao maxima (dB positivos) observada no ultimo bloco processado.
     double gainReductionDb() const noexcept { return blockGrPeak; }
+
+    // Sonda do teste ponta a ponta: o alvo real do primeiro estagio do HP.
+    Coeffs hpTargetCoeffsForTest() const noexcept { return hp.stage[0][0].targetCoeffs(); }
 
     static int latencySamples() noexcept { return 0; }
 

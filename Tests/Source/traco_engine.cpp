@@ -357,6 +357,31 @@ void testCurveAndLatency()
         std::snprintf (info, sizeof (info), "curva %.2f dB vs tom %.2f dB", analytic, measured);
         check (std::fabs (analytic - measured) <= 0.7, "curva do grafico bate com o som", info);
 
+        // Fora do centro a curva e a autoridade do grafico: a saia da campainha
+        // em 500 Hz deve bater com o som medido (pega erro de sinal na formula
+        // de |H|, que no centro e cego porque num ~ den la).
+        const double skirtA = e.responseDbAt (500.0);
+        const double skirtM = toneGainDb (p, 500.0);
+        std::snprintf (info, sizeof (info), "saia curva %.2f dB vs tom %.2f dB", skirtA, skirtM);
+        check (std::fabs (skirtA - skirtM) <= 0.7, "curva bate com o som na saia", info);
+
+        // HP global: a curva em fc de um Butterworth de 2ª ordem e -3.01 dB
+        // fixos; o som tem que bater (mesmo com a1/a2 de sinal invertido no
+        // Coeffs, a formula precisa convir com o biquad real).
+        Params hpP {};
+        hpP.hpOn = true;
+        hpP.hpFreq = 1000.0;
+        hpP.hpSlope24 = true;
+        forja::traco::TracoEngine e2;
+        e2.prepare (testSampleRate);
+        e2.setParams (hpP);
+        const double atFc = e2.responseDbAt (1000.0);
+        std::snprintf (info, sizeof (info), "HP24 em fc: curva %.2f dB", atFc);
+        check (std::fabs (atFc + 6.0) <= 0.5, "curva do HP 24 em fc vale -6 dB", info);
+        const double hpTone = toneGainDb (hpP, 1000.0);
+        std::snprintf (info, sizeof (info), "curva %.2f vs tom %.2f", atFc, hpTone);
+        check (std::fabs (atFc - hpTone) <= 0.7, "curva do HP bate com o som em fc", info);
+
         Params none {};
         e.setParams (none);
         check (std::fabs (e.responseDbAt (999.0)) < 1e-9, "curva zerada sem secoes", "produto != 0");

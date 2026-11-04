@@ -484,6 +484,40 @@ target_compile_features(forja_traco PRIVATE cxx_std_20)
 
 add_test(NAME traco COMMAND forja_traco)
 
+# Traco ponta a ponta no processador real: o caminho que a DAW percorre (APVTS
+# -> paramsFromValues -> engine -> crossfade de bypass -> medidores). Cobre o
+# mapa dos 43 parametros, o passa-tudo bit a bit dos defaults, a latencia zero
+# medida por impulso, o HP global pela saida, o medidor do de-esser, o rampa do
+# bypass sem resetar o filtro, o round-trip de estado e o layout mono. Liga o
+# PluginProcessor e o PluginEditor reais, como o teste do rack.
+add_executable(forja_traco_processor
+    Source/traco_processor.cpp
+    ${CMAKE_SOURCE_DIR}/Traco/Traco/Source/PluginProcessor.cpp
+    ${CMAKE_SOURCE_DIR}/Traco/Traco/Source/PluginEditor.cpp)
+
+target_include_directories(forja_traco_processor PRIVATE
+    ${CMAKE_SOURCE_DIR}/Traco/Traco/Source
+    ${CMAKE_SOURCE_DIR}/Forja/Source)
+
+target_compile_definitions(forja_traco_processor PRIVATE
+    _USE_MATH_DEFINES
+    JUCE_MODAL_LOOPS_PERMITTED=1)
+target_compile_options(forja_traco_processor PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+target_link_options(forja_traco_processor PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/STACK:16777216>)
+target_compile_features(forja_traco_processor PRIVATE cxx_std_20)
+
+target_link_libraries(forja_traco_processor PRIVATE
+    forja_ui
+    juce::juce_audio_processors
+    juce::juce_audio_basics
+    juce::juce_events
+    juce::juce_graphics
+    juce::juce_gui_basics
+    juce::juce_dsp
+    juce::juce_recommended_config_flags)
+
+add_test(NAME traco_processor COMMAND forja_traco_processor)
+
 # One parity executable per model: each compiles only its own vendored sources,
 # so a failure in one model never masks another.
 function(forja_add_parity_model slug model_name vendor_dir)

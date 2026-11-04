@@ -497,7 +497,7 @@ function Render-Pagina {
         }
 
         if ($info.Provenance.Count -gt 0) {
-            Add-Linha $buf '    <h3 class="produto__secao">Proven&#238;ncia</h3>'
+            Add-Linha $buf '    <h3 class="produto__secao">Proven&#234;ncia</h3>'
             Add-Linha $buf '    <dl class="produto__prov">'
             $rotulosProv = @{ source = "Fonte"; author = "Autor"; license = "Licen&#231;a"; commit = "Commit"; notes = "Notas" }
             foreach ($chave in @("source", "author", "license", "commit", "notes")) {

@@ -467,6 +467,23 @@ target_link_libraries(forja_pianoforge_engine PRIVATE
 
 add_test(NAME pianoforge_engine COMMAND forja_pianoforge_engine)
 
+# Traco: EQ grafico original Forja (DSP proprio: biquadrios do Audio EQ
+# Cookbook + de-esser de diferenca de envelope). Sem vendor e sem paridade; o
+# teste mede a resposta por tom puro em regime, a soma em cascata, as
+# inclinacoes 12/24, a curva analitica do grafico, o LISTEN por diferenca, o
+# de-esser (rajada atenuada, tom intocado, range monotonio, medidor) e a
+# ausencia de alocacao no caminho de audio. Nao liga JUCE: engine puro std.
+add_executable(forja_traco Source/traco_engine.cpp)
+
+target_include_directories(forja_traco PRIVATE
+    ${CMAKE_SOURCE_DIR}/Traco/Traco/Source)
+
+target_compile_definitions(forja_traco PRIVATE _USE_MATH_DEFINES)
+target_compile_options(forja_traco PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+target_compile_features(forja_traco PRIVATE cxx_std_20)
+
+add_test(NAME traco COMMAND forja_traco)
+
 # One parity executable per model: each compiles only its own vendored sources,
 # so a failure in one model never masks another.
 function(forja_add_parity_model slug model_name vendor_dir)

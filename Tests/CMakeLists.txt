@@ -154,6 +154,16 @@ target_include_directories(forja_parity PRIVATE
 
 target_compile_definitions(forja_parity PRIVATE _USE_MATH_DEFINES)
 target_compile_features(forja_parity PRIVATE cxx_std_20)
+
+# The original "air noise" block overflows signed int (residue *= residue is
+# ~2.9e12 past INT32_MAX): undefined behavior. MSVC wraps natively and the
+# parity stayed green for a year; GCC -O3 assumes overflow never happens and
+# rewrites the sequence, so the vendor and the adapter (which uses wrapMul on
+# purpose) diverge only on Linux. -fwrapv forces the wrapping the hardware
+# gives and restores bit-exactness. Test target only; the vendor never ships.
+target_compile_options(forja_parity PRIVATE
+    $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:-fwrapv>)
+
 add_test(NAME parity_legacy COMMAND forja_parity)
 
 # Apelido de alvo: o job de macOS do trem de release deriva o alvo CMake do nome

@@ -43,8 +43,16 @@ public:
         int glyph = bell;            // desenho do no
         bool enabled = true;         // off = muted, nao entra na curva
         bool selected = false;
-        bool freqOnly = false;       // y travado em 0 (HP / LP / de-esser)
+        bool freqOnly = false;       // y travado (HP / LP / de-esser)
         bool allowWidth = true;      // Shift-arrasto muda a largura (Q)
+        // Cor do no. Invalido = cai no ember padrao da casa; o host pinta cada
+        // banda com uma cor propria para as bolinhas se distinguirem.
+        juce::Colour accent;
+        // Altura fixa dos nos freqOnly, em dB. 0 deixa na linha do centro;
+        // negativo empurra para baixo (o de-esser mora numa faixa propria).
+        float laneDb = 0.0f;
+
+        float displayDb() const noexcept { return freqOnly ? laneDb : gainDb; }
     };
 
     ForjaEqGraph();
@@ -81,7 +89,7 @@ private:
     float dbForY (float y, juce::Rectangle<float> plot) const;
     int findNodeAt (juce::Point<float> position, juce::Rectangle<float> plot) const;
     void drawGlyph (juce::Graphics& g, juce::Point<float> centre, int glyph, bool active,
-                   bool enabled) const;
+                   bool enabled, juce::Colour accent) const;
     void showTypeMenu (int index, const juce::MouseEvent& event);
 
     std::vector<Node> nodes;

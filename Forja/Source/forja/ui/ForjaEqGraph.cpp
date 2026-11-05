@@ -107,7 +107,7 @@ int ForjaEqGraph::findNodeAt (juce::Point<float> position, juce::Rectangle<float
     for (int i = (int) nodes.size() - 1; i >= 0; --i)
     {
         const auto& node = nodes[(std::size_t) i];
-        const auto screen = toScreen (node.frequency, node.freqOnly ? 0.0f : node.gainDb, plot);
+        const auto screen = toScreen (node.frequency, node.displayDb(), plot);
 
         if (position.getDistanceFrom (screen) <= nodeHitRadius)
             return i;
@@ -117,14 +117,16 @@ int ForjaEqGraph::findNodeAt (juce::Point<float> position, juce::Rectangle<float
 }
 
 void ForjaEqGraph::drawGlyph (juce::Graphics& g, juce::Point<float> centre, int glyph,
-                              bool active, bool enabled) const
+                              bool active, bool enabled, juce::Colour accent) const
 {
     const float radius = active ? 8.5f : 6.5f;
+    const bool hasAccent = accent.getAlpha() > 0;
+    const juce::Colour base = hasAccent ? accent : colour::ember;
     const juce::Colour line = ! enabled ? colour::dim
-                                        : (active ? colour::ember : colour::emberPale.withAlpha (0.85f));
+                                        : (active ? base : base.withAlpha (0.78f));
 
-    // Halo de selecao: no ativo arde em ember, os demais ficam apagados.
-    g.setColour (line.withAlpha (active ? 0.30f : 0.16f));
+    // Halo de selecao: no ativo arde na sua cor, os demais ficam apagados.
+    g.setColour (line.withAlpha (active ? 0.32f : 0.16f));
     g.fillEllipse (centre.x - radius - 3.0f, centre.y - radius - 3.0f,
                    (radius + 3.0f) * 2.0f, (radius + 3.0f) * 2.0f);
 
@@ -306,10 +308,10 @@ void ForjaEqGraph::paint (juce::Graphics& g)
     for (int i = 0; i < (int) nodes.size(); ++i)
     {
         const auto& node = nodes[(std::size_t) i];
-        const auto centre = toScreen (node.frequency, node.freqOnly ? 0.0f : node.gainDb, plot);
+        const auto centre = toScreen (node.frequency, node.displayDb(), plot);
         const bool active = node.selected || i == dragIndex || i == hoverIndex;
 
-        drawGlyph (g, centre, node.glyph, active, node.enabled && ! bypassed);
+        drawGlyph (g, centre, node.glyph, active, node.enabled && ! bypassed, node.accent);
 
         if (node.selected)
         {
@@ -322,7 +324,8 @@ void ForjaEqGraph::paint (juce::Graphics& g)
             if (text.isNotEmpty())
             {
                 g.setFont (monoFont (8.0f));
-                g.setColour (colour::emberPale);
+                g.setColour (node.accent.getAlpha() > 0 ? node.accent.brighter (0.25f)
+                                                         : colour::emberPale);
                 const int textWidth = juce::roundToInt (
                     juce::GlyphArrangement::getStringWidth (monoFont (8.0f), text));
                 const bool placeLeft = centre.x + 11.0f + textWidth > plot.getRight();

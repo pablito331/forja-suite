@@ -307,8 +307,13 @@ public:
                 || np.gainDb != op.gainDb || np.q != op.q)
             {
                 op = np;
-                bands[i].stage[0].setTarget (
-                    coeffsFor (np.type, sampleRate, np.freq, np.gainDb, np.q));
+                const auto c = coeffsFor (np.type, sampleRate, np.freq, np.gainDb, np.q);
+                // Os dois canais precisam do mesmo alvo. Antes so o stage[0]
+                // (esquerda) era retargetado: em estereo a direita ficava com
+                // os coeficientes do prepare (passa-tudo), e no OUVIR a
+                // diferenca do canal direito era ~0 - o solo saia mono.
+                bands[i].stage[0].setTarget (c);
+                bands[i].stage[1].setTarget (c);
             }
             op.on = np.on;
             op.listen = np.listen;

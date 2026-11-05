@@ -61,7 +61,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout TracoAudioProcessor::createP
         // Seis tipos (campainha, prateleira baixa/alta, passa-alta/baixa,
         // notch): cinco degraus, passo 0,2 no mesmo registro da divisao.
         layout.add (makeUnitParameter (n + "Type", "Tipo", 0.0f, 0.2f));
-        layout.add (makeUnitParameter (n + "Freq", "Frequencia", 0.57f));
+        layout.add (makeUnitParameter (n + "Freq", "Frequencia",
+                                       bandDefaultFreqNorm[static_cast<std::size_t> (i - 1)]));
         layout.add (makeUnitParameter (n + "Gain", "Ganho", 0.5f));
         layout.add (makeUnitParameter (n + "Q", "Fator Q", 0.5f));
         layout.add (makeBoolParameter (n + "Listen", "Ouvir banda", false));

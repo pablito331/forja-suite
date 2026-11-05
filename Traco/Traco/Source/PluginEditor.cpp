@@ -82,6 +82,16 @@ TracoAudioProcessorEditor::TracoAudioProcessorEditor (TracoAudioProcessor& p)
     addAndMakeVisible (bypassButton);
     addChildComponent (panelCard);
 
+    // O painel flutua: o usuario arrasta pelo cabecalho para tira-lo da frente
+    // do RTA e puxa o canto para reduce-lo. Uma vez movido por ele, o layout
+    // para de reposicionar o painel no resize da janela.
+    panelCard.setFloatable (true);
+    panelCard.onGeometryChanged = [this]
+    {
+        panelPlacedByUser = true;
+        layoutPanelContents();
+    };
+
     graph.responseSampler = [this] (float frequencyHz) -> float
     {
         const auto params = TracoAudioProcessor::paramsFromValues (
@@ -140,10 +150,14 @@ void TracoAudioProcessorEditor::layoutContent (juce::Rectangle<int> content)
     bypassButton.setBounds (content.getX(), content.getBottom() - globalBarHeight,
                             110, globalBarHeight - 4);
 
-    // Painel contextual flutua centrado sobre a parte de baixo do grafico.
-    const int panelX = graphArea.getCentreX() - panelWidth / 2;
-    const int panelY = graphArea.getBottom() - panelHeight - 10;
-    panelCard.setBounds (juce::jmax (graphArea.getX(), panelX), panelY, panelWidth, panelHeight);
+    // Painel contextual flutua centrado sobre a parte de baixo do grafico,
+    // mas so ate o usuario move-lo ou redimensiona-lo pela primeira vez.
+    if (! panelPlacedByUser)
+    {
+        const int panelX = graphArea.getCentreX() - panelWidth / 2;
+        const int panelY = graphArea.getBottom() - panelHeight - 10;
+        panelCard.setBounds (juce::jmax (graphArea.getX(), panelX), panelY, panelWidth, panelHeight);
+    }
 
     layoutPanelContents();
 }
@@ -193,16 +207,29 @@ void TracoAudioProcessorEditor::refreshGraph()
     nodes.push_back ({ idForSection (1), static_cast<float> (params.lpFreq), 0.0f,
                        forja::ui::ForjaEqGraph::lowPass, params.lpOn, false, true, false });
 
+    // Cada banda ganha uma cor propria para as bolinhas se distinguirem no
+    // grafico; o de-esser fica numa faixa abaixo da linha, fora da curva.
+    const juce::Colour bandPalette[5] = {
+        juce::Colour (0xffff7a18), juce::Colour (0xffe0b34a), juce::Colour (0xff5fb8a8),
+        juce::Colour (0xff5b9fd6), juce::Colour (0xffa878d0)
+    };
+
     for (int i = 0; i < TracoEngine::numBands; ++i)
     {
         const auto& band = params.bands[static_cast<std::size_t> (i)];
-        nodes.push_back ({ idForSection (2 + i), static_cast<float> (band.freq),
-                           static_cast<float> (band.gainDb), glyphForType (band.type), band.on,
-                           false, false, true });
+        forja::ui::ForjaEqGraph::Node node { idForSection (2 + i), static_cast<float> (band.freq),
+                                             static_cast<float> (band.gainDb), glyphForType (band.type),
+                                             band.on, false, false, true };
+        node.accent = bandPalette[i];
+        nodes.push_back (std::move (node));
     }
 
-    nodes.push_back ({ idForSection (7), static_cast<float> (params.essFreq), 0.0f,
-                       forja::ui::ForjaEqGraph::deEsser, params.essOn, false, true, true });
+    forja::ui::ForjaEqGraph::Node deesser { idForSection (7), static_cast<float> (params.essFreq),
+                                            0.0f, forja::ui::ForjaEqGraph::deEsser, params.essOn,
+                                            false, true, true };
+    deesser.accent = juce::Colour (0xffdb6d60);
+    deesser.laneDb = -14.0f;
+    nodes.push_back (std::move (deesser));
 
     for (std::size_t i = 0; i < nodes.size(); ++i)
         nodes[i].selected = (static_cast<int> (i) == selectedSection);
@@ -381,7 +408,8 @@ void TracoAudioProcessorEditor::rebuildPanel()
             [this, id = n + "Type"] (int index) { setParam (id, static_cast<float> (index) / 5.0f); });
 
         knobA = makeKnob (panelWidgets, panelSliderAttachments, state, n + "Freq", u ("FREQ"), "Hz",
-                          [] (double v) { return formatFreq (scaleFreq (v)); }, 0.57);
+                          [] (double v) { return formatFreq (scaleFreq (v)); },
+                          processor.bandDefaultFreqNorm[static_cast<std::size_t> (band)]);
         knobB = makeKnob (panelWidgets, panelSliderAttachments, state, n + "Gain", u ("GAIN"),
                           u ("ganho"),
                           [] (double v) { return forja::ui::formatDb (static_cast<float> (scaleGain (v))); },

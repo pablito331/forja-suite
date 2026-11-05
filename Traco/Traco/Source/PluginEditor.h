@@ -56,6 +56,7 @@ private:
     // tipo conforme a secao, entao sao reconstruidos a cada selecao.
     forja::ui::ForjaCard panelCard { 1, "SECAO" };
     int selectedSection = -1;
+    bool panelPlacedByUser = false; // painel movido/redimensionado: para de centralizar
     std::vector<std::unique_ptr<juce::Component>> panelWidgets;
     // No JUCE 9 os attachments nao herdam de uma base comum: sliders e botoes
     // moram em vetores propios, destruidos juntos na troca de selecao.

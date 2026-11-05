@@ -2,6 +2,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include <functional>
+
 #include "ForjaTheme.h"
 
 namespace forja::ui
@@ -37,6 +39,93 @@ public:
         return getLocalBounds().reduced (9, 0)
                                 .withTrimmedTop (headerHeight + 10)
                                 .withTrimmedBottom (11);
+    }
+
+    // Painel flutuante opcional (usado pelo TRACO): arrastar pelo cabecalho
+    // move o card, arrastar o canto inferior direito redimensiona. Desligado
+    // por padrao, entao os cards fixos das outras bases seguem exatamente como
+    // eram - nenhum mouse handler extra age enquanto floatable e false.
+    void setFloatable (bool shouldBeFloatable)
+    {
+        floatable = shouldBeFloatable;
+        repaint();
+    }
+
+    std::function<void()> onGeometryChanged;
+
+    static constexpr int minFloatWidth = 250;
+    static constexpr int minFloatHeight = 116;
+
+    void mouseDown (const juce::MouseEvent& event) override
+    {
+        if (! floatable)
+        {
+            juce::Component::mouseDown (event);
+            return;
+        }
+
+        const juce::Point<int> local (event.x, event.y);
+        const auto bounds = getLocalBounds();
+        const juce::Rectangle<int> grip (bounds.getRight() - 16, bounds.getBottom() - 16, 16, 16);
+
+        if (grip.contains (local))
+            dragMode = resizeDrag;
+        else if (local.y <= headerHeight)
+            dragMode = moveDrag;
+        else
+            dragMode = noDrag;
+
+        if (dragMode != noDrag)
+        {
+            dragStart = event.getScreenPosition();
+            startBounds = getBounds();
+        }
+    }
+
+    void mouseDrag (const juce::MouseEvent& event) override
+    {
+        if (! floatable || dragMode == noDrag)
+        {
+            juce::Component::mouseDrag (event);
+            return;
+        }
+
+        const auto delta = event.getScreenPosition() - dragStart;
+        auto next = startBounds;
+
+        if (dragMode == moveDrag)
+        {
+            next.setPosition (startBounds.getPosition() + delta);
+        }
+        else
+        {
+            next.setWidth (juce::jmax (minFloatWidth, startBounds.getWidth() + delta.x));
+            next.setHeight (juce::jmax (minFloatHeight, startBounds.getHeight() + delta.y));
+        }
+
+        if (auto* parent = getParentComponent())
+        {
+            const auto pb = parent->getLocalBounds();
+            next.setWidth (juce::jmin (next.getWidth(), pb.getWidth()));
+            next.setHeight (juce::jmin (next.getHeight(), pb.getHeight()));
+            next.setX (juce::jlimit (pb.getX(),
+                                     juce::jmax (pb.getX(), pb.getRight() - next.getWidth()),
+                                     next.getX()));
+            next.setY (juce::jlimit (pb.getY(),
+                                     juce::jmax (pb.getY(), pb.getBottom() - next.getHeight()),
+                                     next.getY()));
+        }
+
+        setBounds (next);
+
+        if (onGeometryChanged != nullptr)
+            onGeometryChanged();
+    }
+
+    void mouseUp (const juce::MouseEvent& event) override
+    {
+        dragMode = noDrag;
+        juce::Component::mouseUp (event);
     }
 
     void paint (juce::Graphics& g) override
@@ -92,12 +181,32 @@ public:
         g.setColour (juce::Colour (0xff8e99a6));
         g.drawText (titleText, juce::Rectangle<float> (x, 0.0f, titleWidth, (float) headerHeight),
                     juce::Justification::centredLeft, false);
+
+        if (floatable)
+        {
+            // Puxador de resize no canto inferior direito: tres hachuras.
+            g.setColour (colour::dim.withAlpha (0.75f));
+            const auto b = getLocalBounds().toFloat();
+
+            for (int i = 0; i < 3; ++i)
+            {
+                const float off = 4.0f + static_cast<float> (i) * 3.5f;
+                g.drawLine (b.getRight() - off, b.getBottom() - 4.0f,
+                            b.getRight() - 4.0f, b.getBottom() - off, 1.0f);
+            }
+        }
     }
 
 private:
     int index = 1;
     juce::String title;
     bool accent = false;
+
+    enum DragMode { noDrag = 0, moveDrag = 1, resizeDrag = 2 };
+    bool floatable = false;
+    int dragMode = noDrag;
+    juce::Point<int> dragStart {};
+    juce::Rectangle<int> startBounds {};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ForjaCard)
 };

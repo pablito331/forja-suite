@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
+#include <array>
 #include <atomic>
 #include <cmath>
 #include <functional>
@@ -42,6 +43,12 @@ public:
 
     static constexpr int numBands = forja::traco::TracoEngine::numBands;
     static constexpr int spectrumBands = forja::ui::ForjaSpectrum::bandCount;
+
+    // Frequencia inicial (0..1 log) de cada banda quando o preset abre.
+    // Espalhadas pelo espectro para os nos nao se empilharem no grafico;
+    // unicas moeda entre o default do APVTS e o reset do knob no editor.
+    static constexpr std::array<float, static_cast<std::size_t> (numBands)>
+        bandDefaultFreqNorm { 0.23f, 0.41f, 0.57f, 0.72f, 0.87f };
 
     struct MeterSnapshot
     {

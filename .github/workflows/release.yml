@@ -24,13 +24,13 @@ on:
 permissions:
   contents: read
 
-# Um trem de cada vez. Tres tags de produto no mesmo minuto lotaram o parque de
-# runners de macOS e os tres jobs universal foram cancelados juntos aos ~15 min
-# (runs 41854905745 / 41854938453 / 41854967797, Windows e Linux verdes; so o
-# macOS morreu). O grupo de concorrencia serializa os trens: o segundo entra na
-# fila atras do primeiro em vez de rodar em paralelo, sem cancelar nada.
+# Um trem por tag: a concurrency protege contra re-trigger acidental da MESMA
+# tag, mas deixa trens DIFERENTES rodarem em paralelo. Com os shards de macOS,
+# cada trem usa jobs curtos (30-60 min) que cabem no parque de runners de um
+# repo publico sem saturar. O grupo global serializava e canibalizava os
+# disparos simultaneos (runs #27-#32, 5/11/2026: 4 dos 6 tags nunca rodaram).
 concurrency:
-  group: release-trains
+  group: release-train-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:

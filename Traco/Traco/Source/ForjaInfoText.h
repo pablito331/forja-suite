@@ -50,7 +50,12 @@ inline ui::ForjaInfo makeForjaInfo()
             u ("Atrás da curva, dois RTAs (a camada de medição Forja "
                "ForjaSpectrum, a mesma do CINZÉL e da LIMA) desenham o espectro "
                "da entrada e o da saída. Medição não altera o som e segue ativa "
-               "no bypass.")
+               "no bypass."),
+            u ("Por enquanto as cinco bandas são estáticas. A evolução natural "
+               "é deixá-las dinâmicas: cada banda podendo reagir ao nível do "
+               "sinal (EQ dinâmico por banda), seguindo a mesma filosofia do "
+               "de-esser. É um caminho de atualização futura, não uma promessa "
+               "de release.")
         }
     });
 
@@ -89,8 +94,11 @@ inline ui::ForjaInfo makeForjaInfo()
     info.provenance.commit = "";
     info.provenance.notes = u ("O conceito de detecção por diferença filtrada "
                                "do de-esser é inspirado no comportamento do "
-                               "ESCÓRIA (Airwindows DeBess, MIT), reimplementado "
-                               "do zero como camada Forja original. A medição "
+                               "ESCÓRIA (Airwindows DeBess, MIT) e na resposta "
+                               "do compressor da ESA Digital / Soundcraft, "
+                               "reimplementados do zero como camada Forja "
+                               "original - inspiração de comportamento, nunca "
+                               "de código. A medição "
                                "RTA reusa o ForjaSpectrum da suíte. O teste "
                                "forja_traco cobre resposta, cascata, de-esser, "
                                "latência e alocação.");

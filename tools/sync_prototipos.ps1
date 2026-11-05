@@ -100,6 +100,7 @@ function Get-SuitePlugins {
     $manifests += Get-ChildItem -Path (Join-Path $Root "Forjarack\*\CMakeLists.txt") -ErrorAction SilentlyContinue
     $manifests += Get-ChildItem -Path (Join-Path $Root "Minis\*\CMakeLists.txt") -ErrorAction SilentlyContinue
     $manifests += Get-ChildItem -Path (Join-Path $Root "Pianos\*\CMakeLists.txt") -ErrorAction SilentlyContinue
+    $manifests += Get-ChildItem -Path (Join-Path $Root "Traco\*\CMakeLists.txt") -ErrorAction SilentlyContinue
 
     $found = @()
     foreach ($manifest in $manifests) {
@@ -160,6 +161,7 @@ function Get-SuitePlugins {
         if ($manifest.FullName -match '\\Forjarack\\') { $base = 'forjarack' }
         if ($manifest.FullName -match '\\Minis\\') { $base = 'minis' }
         if ($manifest.FullName -match '\\Pianos\\') { $base = 'pianos' }
+        if ($manifest.FullName -match '\\Traco\\') { $base = 'traco' }
 
         # Titulos do README as vezes comecam em minuscula ("de-esser dinamico").
         if ($description.Length -gt 1 -and $description[0] -cmatch '[a-z]') {
@@ -215,7 +217,7 @@ if ($installed.Count -eq 0) { throw "nenhum .vst3 encontrado em $Dest" }
 
 $airwindows = @($installed | Where-Object { $_.Base -eq 'airwindows' })
 $instruments = @($installed | Where-Object { $_.Base -ne 'airwindows' })
-$ownForja = @($installed | Where-Object { $_.Base -in @('drumforge', 'forjarack', 'minis', 'pianos') })
+$ownForja = @($installed | Where-Object { $_.Base -in @('drumforge', 'forjarack', 'minis', 'pianos', 'traco') })
 $drumforge = @($installed | Where-Object { $_.Base -eq 'drumforge' })
 $pianos = @($installed | Where-Object { $_.Base -eq 'pianos' })
 
@@ -248,7 +250,7 @@ if (-not $Verify) {
 
     if ($instruments.Count -gt 0) {
         $lines += ''
-        $lines += Get-WrappedText -Text ("Sao {0} adaptacoes MIT da Airwindows (Chris Johnson) e {1} plugin de DSP proprio da Forja (bases drumforge, Forjarack, Minis e Pianos): {2}." -f $airwindows.Count, $ownForja.Count, (($ownForja | ForEach-Object { $_.Product }) -join ', '))
+        $lines += Get-WrappedText -Text ("Sao {0} adaptacoes MIT da Airwindows (Chris Johnson) e {1} plugin de DSP proprio da Forja (bases drumforge, Forjarack, Minis, Pianos e Traco): {2}." -f $airwindows.Count, $ownForja.Count, (($ownForja | ForEach-Object { $_.Product }) -join ', '))
     }
 
     $lines += ''

@@ -1,4 +1,4 @@
-forja_add_plugin(Traco "TRACO EQ" Trac com.forja.traco ${CMAKE_CURRENT_SOURCE_DIR}/Source "Fx|EQ" "Forja - EQ")
+forja_add_plugin(Traco "TRACO" Trac com.forja.traco ${CMAKE_CURRENT_SOURCE_DIR}/Source "Fx|EQ" "Forja - EQ")
 
 # O TRACO nao reusa adaptador Airwindows: o DSP e o engine proprio
 # (engine/TracoEngine.h, header-only). A UI usa os componentes compartilhados

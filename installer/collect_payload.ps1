@@ -61,6 +61,7 @@ function Get-ForjaFamily {
         "Forjarack"  { return "Rack" }
         "Minis"      { return "Minis" }
         "Pianos"     { return "Pianos" }
+        "Traco"      { return "Traco" }
         default      { return "Outros" }
     }
 }

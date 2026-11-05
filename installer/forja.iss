@@ -165,6 +165,10 @@ Name: "pianos"; Description: "Pianos - Pianoforge, piano de soundfont com corpo 
 #if defined(ForjaColhido_Pianoforge)
 Name: "pianoforge"; Description: "Pianoforge - piano de soundfont com corpo fisico"; Types: full custom
 #endif
+; Base Traco (EQ grafico original Forja).
+#if defined(ForjaColhido_Traco)
+Name: "traco"; Description: "Traco - EQ grafico original Forja"; Types: full custom
+#endif
 
 [Files]
 ; Cada familia copia seus .vst3 direto para a raiz VST3 ({app}), achatando o
@@ -220,6 +224,9 @@ Source: "payload/Pianos/*"; DestDir: "{app}"; Components: pianos; Flags: recurse
 #endif
 #if defined(ForjaColhido_Pianoforge)
 Source: "payload/Pianoforge/*"; DestDir: "{app}"; Components: pianoforge; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
+#endif
+#if defined(ForjaColhido_Traco)
+Source: "payload/Traco/*"; DestDir: "{app}"; Components: traco; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
 #endif
 
 ; Licenca e LEIA-ME num lugar limpo (fora da raiz VST3), sempre junto. O

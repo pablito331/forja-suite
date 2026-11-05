@@ -145,6 +145,36 @@ foreach ($prop in $products.PSObject.Properties) {
     }
 }
 
+# macosShards (opcional por trem): matriz de shards do job de macOS. Cada
+# shard e { name, pathFilters[], testRegex }. name precisa ser ascii sem
+# espaco (entra no nome do artifact), pathFilters apontam para pastas que
+# existem no repo, e testRegex casa com pelo menos um teste.
+foreach ($prop in $products.PSObject.Properties) {
+    if ($prop.Name -match '^_') { continue }
+    if (-not ($prop.Value.PSObject.Properties.Name -contains 'macosShards')) { continue }
+    $shards = @($prop.Value.macosShards)
+    if ($shards.Count -eq 0) {
+        $fail++; Write-Host "FAIL $($prop.Name): macosShards esta presente mas vazio" -ForegroundColor Red
+        continue
+    }
+    foreach ($sh in $shards) {
+        foreach ($campo in 'name', 'pathFilters', 'testRegex') {
+            if (-not ($sh.PSObject.Properties.Name -contains $campo)) {
+                $fail++; Write-Host "FAIL $($prop.Name)/shard[$($sh.name)]: falta campo '$campo'" -ForegroundColor Red
+            }
+        }
+        if ($sh.name -match '[\s"]') {
+            $fail++; Write-Host "FAIL $($prop.Name)/shard[$($sh.name)]: name com espaco ou aspas (vai no nome do artifact)" -ForegroundColor Red
+        }
+        foreach ($filter in @($sh.pathFilters)) {
+            $folder = ($filter -split '/')[0]
+            if (-not (Test-Path (Join-Path (Join-Path $PSScriptRoot '..') $folder))) {
+                $fail++; Write-Host "FAIL $($prop.Name)/shard[$($sh.name)]: filtro aponta para pasta inexistente: $filter" -ForegroundColor Red
+            }
+        }
+    }
+}
+
 # O job de macOS nao compila a suite inteira (nao cabe no teto do runner): ele
 # deriva o alvo CMake do nome do teste, que vem do testRegex daqui. Esta conta e
 # feita antes de taggear, lendo Tests/CMakeLists.txt -- sem build e sem generator.

@@ -228,10 +228,12 @@ ctest --test-dir build -C Release --output-on-failure
   `vdrumforge-`, `vairwindows-`) empacota **só aquele produto**. Build e testes correm
   inteiros no Windows e no Linux; só o empacotamento é filtrado (`collect_payload.ps1
   -OnlyPath`, lido de `ci/products.json` — o registro único dos produtos). A exceção é o
-  **macOS**, que compila só os `pathFilters` e roda só os testes do `testRegex` do trem: o
-  runner gratuito não fecha 36 plugins universais dentro do teto de 6 h do job (números da
-  sonda em `docs/RELEASES.md`). Enquanto não houver shards, **tag de suíte para no build do
-  macOS**. Se um trem novo precisar de macOS inteiro, fatiar é o trabalho, não subir o teto.
+  **macOS**, que é fatiado em **shards** (`macos-plan` decide a matriz a partir de
+  `macosShards` em `ci/products.json`; `macos-shard` compila/testa cada shard em paralelo;
+  `macos-merge` junta os artefatos num único zip). O runner gratuito não fecha 36 plugins
+  universais dentro do teto de 6 h do job (números da sonda em `docs/RELEASES.md`); com os
+  shards, suíte e `vairwindows-` voltam a publicar em macOS. Se um trem novo precisar de
+  macOS inteiro e não couber nos shards atuais, fatiar mais é o trabalho, não subir o teto.
   Tag de produto **não** bumpa a versão da suíte. Passo a passo em `docs/RELEASES.md`.
 - **Packages dentro de um trem** (`ci/products.json`): um produto de linha pode declarar
   `packages[]` para empacotar **um artefato por plugin dentro da mesma tag**, sem aggregate.
@@ -320,8 +322,10 @@ Siga `docs/NOVO-PLUGIN.md`. Resumo:
   sem cancelar): **um trem de cada vez**, e retaggar sempre do `main` atual (tags velhas
   não têm o bloco de concurrency). O gargalo deixou de ser o código: o job de
   macOS estourava o teto de 6 h do runner (medido: 37 min para o rack, ~8 min por plugin
-  pequeno), e por isso hoje compila só o trem. Um tag de suíte `vX.Y.Z` continua parado no
-  macOS até o job ser fatiado em shards — falta registrada em `docs/RELEASES.md`.
+  pequeno). O job foi **fatiado em shards** (`macos-plan` / `macos-shard` / `macos-merge`
+  no `release.yml`; `macosShards` em `ci/products.json`): a suíte declara 15 shards e o
+  trem `airwindows` declara 9, o que libera tag de suíte e `vairwindows-` para macOS.
+  Contrato e números em `docs/RELEASES.md`.
 - Sem DAW no ambiente de desenvolvimento: automação/bypass de host seguem pendentes de
   validação manual (ver README).
 - REPIQUE e ECO têm sync de BPM opcional; com `sync = false` o caminho é bit-exato.

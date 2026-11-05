@@ -281,17 +281,62 @@ jobs:
             Forja*.exe
           if-no-files-found: error
 
-  macos:
-    name: macOS universal
+  # macOS e fatiado em shards porque um runner so nao fecha os 36 plugins
+  # universais dentro do teto de 6 h (medicao da sonda em run 41475070630:
+  # subtree do rack 37 min, tres plugins pequenos 24 min, ~8 min por plugin).
+  # macos-plan le ci/products.json e decide a matriz: se o trem declara
+  # `macosShards` usamos eles; senao, um shard implicito com os pathFilters/
+  # testRegex do proprio trem (o que basta para rack, minis, drumforge, piano,
+  # traco e os trens de um plugin). macos-shard compila e testa cada shard em
+  # paralelo e sobe um tar.gz com os bundles daquele subtree, preservando o
+  # caminho relativo a build/. macos-merge baixa todos os shards, descompacta
+  # num merged/ e aplica o mesmo empacotamento do job antigo (aggregate ou
+  # packages[]). O trem da suite sem macosShards declarados parava com a
+  # mensagem "nao cabe"; agora os 14 shards declaram em products.json.
+  macos-plan:
+    name: Plan macOS shards
     needs: resolve
+    runs-on: ubuntu-22.04
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read shards
+        id: plan
+        shell: bash
+        env:
+          SLUG: ${{ needs.resolve.outputs.slug }}
+          TRAIN_PF: ${{ needs.resolve.outputs.pathFilters }}
+          TRAIN_TR: ${{ needs.resolve.outputs.testRegex }}
+        run: |
+          set -euo pipefail
+          # macosShards e opcional por trem. Para a suite, a chave e .suite;
+          # para produtos, .[$s]. empty quando a chave nao existe.
+          SHARDS=$(jq -c --arg s "$SLUG" '
+            if $s == "suite" then .suite.macosShards
+            else .[$s].macosShards end // empty' ci/products.json)
+          if [ -z "$SHARDS" ]; then
+            if [ -z "$TRAIN_PF" ]; then
+              echo "::error::trem sem macosShards e sem pathFilters: nao cabe no teto de 6h do macOS"
+              exit 1
+            fi
+            SHARDS=$(jq -cn --arg pf "$TRAIN_PF" --arg tr "$TRAIN_TR" \
+              '[{name: "full", pathFilters: ($pf | split(",")), testRegex: $tr}]')
+          fi
+          N=$(echo "$SHARDS" | jq 'length')
+          echo "shards=$SHARDS" >> "$GITHUB_OUTPUT"
+          echo "plan: $N shard(s) de macOS"
+
+  macos-shard:
+    name: macOS (${{ matrix.shard.name }})
+    needs: [resolve, macos-plan]
     runs-on: macos-15
-    # Numeros medidos pela sonda (run 41475070630, runner gratuito de macOS):
-    # configure 71 s, subtree do rack 37 min, tres plugins pequenos 24 min
-    # (~8 min por plugin universal). Os 36 plugins + 37 testes passam de 6 h e o
-    # job morria em `cancelled` sem dizer nada. Enquanto o fatiamento nao chega,
-    # o trem de produto compila e testa so o que empacota (Windows e Linux
-    # continuam inteiros) e o trem da suite para na hora com a mensagem abaixo.
     timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJson(needs.macos-plan.outputs.shards) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -307,16 +352,7 @@ jobs:
       - name: Build
         run: |
           set -euo pipefail
-          FILTERS='${{ needs.resolve.outputs.pathFilters }}'
-          if [ -z "$FILTERS" ]; then
-            echo "::error::trem inteiro (36 plugins universais) nao cabe no teto de"
-            echo "::error::6 h do runner de macOS: falta fatiar o job em shards. Os"
-            echo "::error::numeros da sonda estao no comentario deste job."
-            exit 1
-          fi
-          # Cada filtro e uma pasta da arvore de build. O Makefile daquele subtree
-          # compila so aquele produto; forja_ui e JUCE chegam como dependencia.
-          IFS=','
+          FILTERS=$(jq -r '.[]' <<< '${{ toJson(matrix.shard.pathFilters) }}')
           for filtro in $FILTERS; do
             echo "::group::$filtro"
             cmake --build "build/$filtro" --parallel 2>&1 | tee -a build-macos.log
@@ -326,16 +362,14 @@ jobs:
       - name: Test
         run: |
           set -euo pipefail
-          REGEX='${{ needs.resolve.outputs.testRegex }}'
+          REGEX='${{ matrix.shard.testRegex }}'
           if [ -z "$REGEX" ]; then
-            echo "::error::trem sem testRegex nao e empacotado no macOS (ver Build)"
-            exit 1
+            echo "sem testRegex neste shard"
+            exit 0
           fi
-          # O alvo CMake e "forja_<nome do teste>" e o ctest -N sabe os nomes, entao
-          # a lista vem do proprio registro sem duplicar nada. A guarda de presenca
-          # existe porque a regra de nome falha em parity_legacy (alvo forja_parity):
-          # se um nome casar sem alvo correspondente, o trem para em vez de testar
-          # menos do que prometeu.
+          # Mesma guarda do job antigo: o alvo CMake e "forja_<nome>" e o
+          # ctest -N sabe os nomes; parity_legacy e a excecao que falha a
+          # regra e por isso a checagem de presenca existe.
           nomes=$(ctest --test-dir build -N -R "$REGEX" |
             sed -n 's/^[[:space:]]*Test[[:space:]]*#[[:space:]]*[0-9]*:[[:space:]]*//p' |
             tr -d '\r')
@@ -354,54 +388,102 @@ jobs:
         uses: ./.github/actions/diagnostico
         with:
           logs: build-macos.log test-macos.log
-          titulo: macOS falhou
+          titulo: macOS shard ${{ matrix.shard.name }} falhou
 
-      - name: Package
+      - name: Package shard
+        run: |
+          set -euo pipefail
+          # Cada shard sobe um tar.gz com os bundles que construiu, mantendo
+          # o caminho relativo a build/. O merge junta tudo e so ai aplica o
+          # filtro packages/aggregate -- assim o merge sabe de qual subtree
+          # veio cada .vst3.
+          rm -rf shard
+          mkdir -p shard
+          FILTERS=$(jq -r '.[]' <<< '${{ toJson(matrix.shard.pathFilters) }}')
+          while IFS= read -r bundle; do
+            rel="${bundle#build/}"
+            for f in $FILTERS; do
+              case "$rel" in
+                "$f"*)
+                  mkdir -p "shard/$(dirname "$rel")"
+                  cp -R "$bundle" "shard/$rel"
+                  break
+                  ;;
+              esac
+            done
+          done < <(find build -type d -name "*.vst3" -path "*_artefacts*" | sort)
+          (cd shard && tar czf "../macos-shard-${{ matrix.shard.name }}.tar.gz" .)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-shard-${{ matrix.shard.name }}
+          path: macos-shard-${{ matrix.shard.name }}.tar.gz
+          if-no-files-found: error
+
+  macos-merge:
+    name: Merge macOS shards
+    needs: [resolve, macos-plan, macos-shard]
+    # always() + checagem explicita: se um shard falhou, nao ha o que juntar,
+    # mas o job ainda precisa aparecer como "skipped" para o release ver o
+    # resultado dos outros SOs.
+    if: always() && needs.macos-shard.result == 'success'
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: macos-shard-*
+          path: shards
+          merge-multiple: false
+
+      - name: Merge and package
         run: |
           set -euo pipefail
           VERSION='${{ needs.resolve.outputs.version }}'
+          BASE='${{ needs.resolve.outputs.artifactBase }}'
+          KIND='${{ needs.resolve.outputs.kind }}'
+          LEIAM='${{ needs.resolve.outputs.leiam }}'
           PKGS='${{ needs.resolve.outputs.packages }}'
+          rm -rf merged
+          mkdir -p merged
+          for t in $(find shards -name "*.tar.gz" | sort); do
+            tar xzf "$t" -C merged/
+          done
           NPKGS=$(echo "$PKGS" | jq 'length')
           if [ "$NPKGS" -gt 0 ]; then
-            # Um zip por plugin no mesmo tag; sem aggregate. O pathFilter do
-            # package e um prefixo do caminho relativo a build/ (ex.:
-            # Minis/Canivete/Canivete -> Minis/Canivete/Canivete/Canivete_artefacts/...).
+            # Um zip por plugin no mesmo tag; o pathFilter do package e o
+            # prefixo do caminho relativo a build/ (preservado no tar.gz do
+            # shard), entao o filtro casa direto.
             for i in $(seq 0 $((NPKGS - 1))); do
               SLUG=$(echo "$PKGS" | jq -r ".[$i].slug")
               PF=$(echo "$PKGS" | jq -r ".[$i].pathFilter")
-              BASE=$(echo "$PKGS" | jq -r ".[$i].artifactBase")
-              LEIAM=$(echo "$PKGS" | jq -r ".[$i].readme")
+              PBASE=$(echo "$PKGS" | jq -r ".[$i].artifactBase")
+              PLEIAM=$(echo "$PKGS" | jq -r ".[$i].readme")
               echo "::group::package $SLUG"
               rm -rf package
               mkdir -p package/VST3
               while IFS= read -r bundle; do
-                rel="${bundle#build/}"
+                rel="${bundle#merged/}"
                 case "$rel" in "$PF"*) cp -R "$bundle" package/VST3/ ;; esac
-              done < <(find build -type d -name "*.vst3" -path "*_artefacts*" | sort)
-              cp "$LEIAM" package/LEIA-ME.txt
-              (cd package && zip -qry "../${BASE}-${VERSION}-macos-universal.zip" .)
+              done < <(find merged -type d -name "*.vst3" -path "*_artefacts*" | sort)
+              cp "$PLEIAM" package/LEIA-ME.txt
+              (cd package && zip -qry "../${PBASE}-${VERSION}-macos-universal.zip" .)
               echo "::endgroup::"
             done
           else
+            rm -rf package
             mkdir -p package/VST3
-            FILTERS='${{ needs.resolve.outputs.pathFilters }}'
             while IFS= read -r bundle; do
-              rel="${bundle#build/}"
-              if [ -z "$FILTERS" ]; then
-                cp -R "$bundle" package/VST3/
-                continue
-              fi
-              IFS=','; for filter in $FILTERS; do
-                case "$rel" in "$filter"*) cp -R "$bundle" package/VST3/ ;; esac
-              done
-            done < <(find build -type d -name "*.vst3" -path "*_artefacts*" | sort)
-            if [ '${{ needs.resolve.outputs.kind }}' = suite ]; then
+              cp -R "$bundle" package/VST3/
+            done < <(find merged -type d -name "*.vst3" -path "*_artefacts*" | sort)
+            if [ "$KIND" = suite ]; then
               cp docs/instalar/INSTALAR-MACOS.txt package/LEIA-ME.txt
             else
-              cp '${{ needs.resolve.outputs.leiam }}' package/LEIA-ME.txt
+              cp "$LEIAM" package/LEIA-ME.txt
             fi
-            cd package
-            zip -qry "../${{ needs.resolve.outputs.artifactBase }}-${VERSION}-macos-universal.zip" .
+            (cd package && zip -qry "../${BASE}-${VERSION}-macos-universal.zip" .)
           fi
 
       - uses: actions/upload-artifact@v4
@@ -513,7 +595,7 @@ jobs:
   release:
     name: Publish release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [resolve, windows, macos, linux]
+    needs: [resolve, windows, macos-merge, linux]
     permissions:
       contents: write
     runs-on: ubuntu-22.04

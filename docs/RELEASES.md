@@ -170,7 +170,7 @@ público, mas manter a mesma ordem do `site/catalogo.json` ajuda leitura). Não 
 no `forja.iss` se o grupo `<Plugin>` do `pathFilter` já tiver bloco — que é o caso dos três
 minis hoje.
 
-## O teto do runner de macOS
+## O teto do runner de macOS e os shards
 
 Medido em sonda (`workflow_dispatch` de cronômetro, runner gratuito de macOS, build
 universal `arm64;x86_64`, `FORJA_LTO=OFF`):
@@ -184,18 +184,32 @@ universal `arm64;x86_64`, `FORJA_LTO=OFF`):
 
 Ou seja: **um trem de produto fecha em ~1 h**, mas os 36 plugins + os 37 testes passam folgado
 das 6 h de teto de job do runner — e era isso que derrubava o trem inteiro, com o job
-aparecendo como `cancelled` e sem dizer nada (tentativas 3, 5 e 6). Por isso o job de macOS
-compila apenas os `pathFilters` do trem e roda apenas os testes do `testRegex`. Enquanto o
-fatiamento não chegar, **um tag de suíte `vX.Y.Z` para no step de build do macOS com a
-mensagem explicando o teto**; os pacotes de Windows e Linux continuam completos.
+aparecendo como `cancelled` e sem dizer nada (tentativas 3, 5 e 6).
+
+O job de macOS é fatiado em **shards** desde a versão atual do `release.yml`:
+
+- `macos-plan` (ubuntu) lê `ci/products.json` e decide a matriz. Se o trem declara
+  `macosShards` (array de `{name, pathFilters[], testRegex}`), usamos eles; senão, um
+  shard implícito com os `pathFilters`/`testRegex` do trem — o que basta para `rack`,
+  `minis`, `drumforge`, `pianoforge`, `traco` e os trens de um plugin.
+- `macos-shard` (macos-15, matriz) compila e testa cada shard em paralelo e sobe um
+  `macos-shard-<name>.tar.gz` com os bundles daquele subtree, preservando o caminho
+  relativo a `build/`.
+- `macos-merge` (macos-15) baixa todos os shards, descompacta num `merged/` e aplica o
+  mesmo empacotamento do job antigo (aggregate ou `packages[]`), subindo o
+  `forja-macos-universal` que o `release` consome.
+
+A suíte declara 15 shards (9 famílias Airwindows + drumforge + rack + minis + pianos +
+traco + alloc-guard); o trem `airwindows` declara 9 (uma família cada). Com isso o tag
+`vX.Y.Z` e o `vairwindows-` voltam a sair para macOS sem estourar o teto.
 
 Faltas registradas:
 
-1. **Fatiar o job de macOS** em shards por família (matriz de build + um job de
-   empacotamento que junta os artefatos). Só com isso o tag de suíte `vX.Y.Z` e o
-   `vairwindows-` voltam a sair para macOS.
-2. A sonda que produziu os números acima foi removida depois de medir. Precisando de número
+1. A sonda que produziu os números acima foi removida depois de medir. Precisando de número
    novo, recrie um workflow de `workflow_dispatch` com cronômetro em vez de adivinhar.
+2. O teto continua sendo uma limitação física: se um dia uma família crescer demais e não
+   couber num shard, a solução é fatiar aquela família em duas (ex.: `airwindows-dynamics-a`
+   e `airwindows-dynamics-b`), não subir o teto.
 
 ## Ver um trem falhar
 

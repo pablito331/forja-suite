@@ -7,6 +7,7 @@ add_library(forja_ui STATIC
     Source/forja/ui/ForjaGRHistory.cpp
     Source/forja/ui/ForjaInfoPanel.cpp
     Source/forja/ui/ForjaEqCurve.cpp
+    Source/forja/ui/ForjaEqGraph.cpp
     Source/forja/ui/ForjaChoice.cpp
     Source/forja/ui/ForjaTapeArt.cpp
     Source/forja/ui/ForjaEditorBase.cpp
@@ -23,6 +24,7 @@ add_library(forja_ui STATIC
     Source/forja/ui/ForjaInfoContent.h
     Source/forja/ui/ForjaInfoPanel.h
     Source/forja/ui/ForjaEqCurve.h
+    Source/forja/ui/ForjaEqGraph.h
     Source/forja/ui/ForjaEqResponse.h
     Source/forja/ui/ForjaChoice.h
     Source/forja/ui/ForjaTapeArt.h

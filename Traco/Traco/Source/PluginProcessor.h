@@ -62,6 +62,11 @@ public:
     void readSpectrumIn (float* out, int count) const noexcept { analyserIn.readBands (out, count); }
     void readSpectrumOut (float* out, int count) const noexcept { analyserOut.readBands (out, count); }
 
+    // Sample rate que o editor usa para desenhar a curva estatica. getSampleRate()
+    // so e confiavel depois de prepareToPlay via host; com a DAW parada pode vir 0,
+    // entao o grafico usa o ultimo sr conhecido (ou o default do engine).
+    double displaySampleRate() const noexcept { return sr > 0.0 ? sr : 48000.0; }
+
     // Sonda para o teste ponta a ponta: a curva analitica que o engine esta
     // usando agora (mesma funcao que o grafico vai desenhar).
     double probeResponseDbAt (double freqHz) const noexcept { return engine.responseDbAt (freqHz); }

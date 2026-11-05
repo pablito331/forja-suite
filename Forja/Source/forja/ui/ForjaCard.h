@@ -18,6 +18,20 @@ public:
 
     static constexpr int headerHeight = 34;
 
+    // O painel contextual do TRACO reutiliza o mesmo card trocando titulo e
+    // indice conforme a secao selecionada, entao expoe os dois.
+    void setTitle (juce::String newTitle)
+    {
+        title = std::move (newTitle);
+        repaint();
+    }
+
+    void setIndex (int newIndex)
+    {
+        index = newIndex;
+        repaint();
+    }
+
     juce::Rectangle<int> getContentBounds() const
     {
         return getLocalBounds().reduced (9, 0)

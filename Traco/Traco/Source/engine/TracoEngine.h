@@ -359,14 +359,43 @@ public:
     // do RTA. Secao desligada nao entra no produto.
     double responseDbAt (double freqHz) const noexcept
     {
+        return compositeDbAt (par, sampleRate, freqHz);
+    }
+
+    // Mesma soma da curva composta, mas a partir de um Params puro e um sample
+    // rate informados, sem depender do estado vivo de uma instancia. E o que o
+    // editor usa para desenhar a curva guiado pelo APVTS (o engine real so e
+    // atualizado no processBlock, que pode nao rodar com a DAW parada). Os
+    // coeficientes-alvo do engine sao exatamente coeffsFor(...) destes params,
+    // entao compositeDbAt reproduz responseDbAt ponto a ponto.
+    static double compositeDbAt (const Params& p, double sampleRateIn, double freqHz) noexcept
+    {
         double db = 0.0;
-        if (par.hpOn)
-            db += slopeDb (hp, freqHz);
-        if (par.lpOn)
-            db += slopeDb (lp, freqHz);
+
+        if (p.hpOn)
+        {
+            const auto c = coeffsFor (highPass, sampleRateIn, p.hpFreq, 0.0, kButterworthQ);
+            const int stages = p.hpSlope24 ? 2 : 1;
+            for (int s = 0; s < stages; ++s)
+                db += magnitudeDb (c, freqHz, sampleRateIn);
+        }
+        if (p.lpOn)
+        {
+            const auto c = coeffsFor (lowPass, sampleRateIn, p.lpFreq, 0.0, kButterworthQ);
+            const int stages = p.lpSlope24 ? 2 : 1;
+            for (int s = 0; s < stages; ++s)
+                db += magnitudeDb (c, freqHz, sampleRateIn);
+        }
+
         for (int i = 0; i < numBands; ++i)
-            if (par.bands[i].on)
-                db += magnitudeDb (bands[i].stage[0].targetCoeffs(), freqHz, sampleRate);
+        {
+            const auto& b = p.bands[static_cast<std::size_t> (i)];
+            if (! b.on)
+                continue;
+            db += magnitudeDb (coeffsFor (b.type, sampleRateIn, b.freq, b.gainDb, b.q),
+                               freqHz, sampleRateIn);
+        }
+
         return db;
     }
 

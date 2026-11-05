@@ -98,5 +98,16 @@
     "pathFilters": ["Pianos/Pianoforge"],
     "testRegex": "^pianoforge_engine$",
     "readme": "docs/instalar/INSTALAR-WINDOWS.txt"
+  },
+
+  "traco": {
+    "display": "TRACO",
+    "kind": "product",
+    "artifactBase": "ForjaTraco",
+    "tagPrefix": "vtraco-",
+    "versionFrom": "1.0.0",
+    "pathFilters": ["Traco"],
+    "testRegex": "^traco",
+    "readme": "Traco/Traco/README.md"
   }
 }

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TRACO &#183; Forja</title>
+<meta name="description" content="EQ paramétrico de controle pelo gráfico: cortes de esquina, cinco bandas flexíveis e um de-esser na sexta, com RTA de entrada e saída atrás da curva.">
+<meta name="color-scheme" content="dark">
+<link rel="stylesheet" href="../forja-site.css?v=2">
+</head>
+<body>
+
+<header class="pagina__topo">
+  <a class="pagina__voltar" href="../index.html">&#8592; Cat&#225;logo Forja</a>
+  <p class="pagina__marca">TRACO</p>
+</header>
+
+<main class="conteudo pagina">
+  <div class="pagina__hero">
+    <h1>TRACO</h1>
+    <p>EQ paramétrico de controle pelo gráfico: cortes de esquina, cinco bandas flexíveis e um de-esser na sexta, com RTA de entrada e saída atrás da curva.</p>
+    <p class="card__acoes"><a class="botao" href="https://github.com/pablito331/forja-suite/releases">Download</a></p>
+  </div>
+
+  <section class="produto" id="traco">
+    <h2>TRACO</h2>
+    <p class="produto__sub">EQ GRÁFICO · FORJA</p>
+    <p class="produto__tagline">TRACO é o EQ de bancada: cinco bandas que se desenham no gráfico, com cortes de esquina e um de-esser de verdade na sexta - e o espectro da entrada e da saída vivo atrás da curva.</p>
+    <h3 class="produto__secao">O que faz</h3>
+    <p>Equalizador paramétrico de controle gráfico: passa-alto e passa-baixa nas pontas e cinco bandas flexíveis (campainha, prateleira baixa, prateleira alta, passa-alta, passa-baixa e notch). Clicar numa banda abre o painel de controles dela no centro embaixo do gráfico, como no Pro-Q.</p>
+    <p>A sexta banda é um de-esser dedicado: banda-passa 4-12 kHz com detector de excesso, redução até -24 dB só na faixa sibilante e escuta isolada da banda tratada.</p>
+    <h3 class="produto__secao">Como funciona</h3>
+    <p>O DSP é original da Forja: cadeia série de biquadros com coeficientes do Audio EQ Cookbook de Robert Bristow-Johnson (fórmulas públicas), processamento em double e troca de coeficientes com rampa de 10 ms. Nada vem do código Airwindows; por isso o TRACO não tem teste de paridade MIT - o que valida é o forja_traco: resposta medida por tom, cascata, inclinações, de-esser e zero alocação.</p>
+    <p>O de-esser compara o envelope rápido da banda com a média lenta da própria banda: sibilo é excesso relativo, não nível. É o conceito de diferença filtrada já documentado no ESCÓRIA, em implementação própria, sem lookahead - latência zero medida por impulso.</p>
+    <p>Atrás da curva, dois RTAs (a camada de medição Forja ForjaSpectrum, a mesma do CINZÉL e da LIMA) desenham o espectro da entrada e o da saída. Medição não altera o som e segue ativa no bypass.</p>
+    <h3 class="produto__secao">Operação</h3>
+    <p>Arraste o nó para mudar frequência e ganho; o nó selecionado abre o painel de baixo com tipo, Q, liga/desliga e a escuta da banda. Duplo-clique no nó zera a banda.</p>
+    <p>OUVIR toca a diferença entre a saída e a entrada da banda: o que ela está mudando no sinal, isolado. É monitoramento da camada Forja e afeta a saída enquanto estiver ativo.</p>
+    <p>BYPASS crossfada com rampa de 10 ms; o estado do filtro nunca é resetado no bypass.</p>
+    <h3 class="produto__secao">Controles</h3>
+    <table class="produto__tabela">
+      <thead><tr><th>Controle</th><th>Faixa</th><th>O que faz</th></tr></thead>
+      <tbody>
+        <tr><td>Bandas 1-5</td><td>0 a 1 por parâmetro</td><td>Tipo (6 posições, passo 0,2), frequência 20 Hz-20 kHz log, ganho ±18 dB, Q 0,1-10 log, liga e ouvir.</td></tr>
+        <tr><td>HP / LP</td><td>fc e inclinação</td><td>Cortes globais com 12 ou 24 dB por oitava, Q fixo de Butterworth.</td></tr>
+        <tr><td>De-esser</td><td>centro, largura, alcance</td><td>Banda-passa 4-12 kHz, redução até 24 dB e escuta da banda tratada.</td></tr>
+        <tr><td>Bypass</td><td>ligado/desligado · padrão desligado</td><td>Sinal seco com rampa de 10 ms.</td></tr>
+      </tbody>
+    </table>
+    <h3 class="produto__secao">Proven&#234;ncia</h3>
+    <dl class="produto__prov">
+      <dt>Fonte</dt><dd>Audio EQ Cookbook (RBJ) - formulas</dd>
+      <dt>Autor</dt><dd>Robert Bristow-Johnson (matematica); Forja (código)</dd>
+      <dt>Licen&#231;a</dt><dd>Fórmulas de domínio público; implementação e interface originais da Forja (MIT). Nenhum código Airwindows neste plugin.</dd>
+      <dt>Notas</dt><dd>O conceito de detecção por diferença filtrada do de-esser é inspirado no comportamento do ESCÓRIA (Airwindows DeBess, MIT), reimplementado do zero como camada Forja original. A medição RTA reusa o ForjaSpectrum da suíte. O teste forja_traco cobre resposta, cascata, de-esser, latência e alocação.</dd>
+    </dl>
+    <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases">Download</a></p>
+  </section>
+</main>
+
+<footer class="rodape">
+  <p>TRACO &#183; Forja &#8212; <a href="../index.html">voltar ao cat&#225;logo</a></p>
+</footer>
+</body>
+</html>

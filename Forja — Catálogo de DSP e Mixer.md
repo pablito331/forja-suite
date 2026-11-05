@@ -161,6 +161,7 @@ IDs estáveis. Um bloco não muda de ID depois de publicado, mesmo que a impleme
 | `DSP-047` | Limiter de pico | teto −0,3 dBFS, ataque instantâneo e retorno de 80 ms, sem lookahead | própria (`forja::drumforge::MasterBus`) | Forja | parcial: existe no engine do DRUMFORGE; latência 0 medida por impulso | DRUMFORGE |
 | `DSP-048` | Player SoundFont | render SF2/SF3 multi-timbral (16 canais MIDI), escolha de instrumento no canal 0 (camada Forja), carga assíncrona do bank, adoção por token sem alocar no áudio, reap do bank substituído, medidor por bloco e bypass de 10 ms | **TinySoundFont** (Bernhard Schelling) via wrapper `forja::canivete::SoundFontEngine` | MIT · Bernhard Schelling | parcial: DSP, UI, FUNDAMENTOS e teste próprio (`forja_canivete`) prontos; SF3 ativo via `stb_vorbis` v1.22 vendorizado; host pendente | CANIVETE |
 | `DSP-049` | Cadeia física de piano | modelagem portada sobre as amostras, em ordem fixa: transiente de martelo (click de feltro + thump da caixa, calibrado por nota, escala 0,50, mais brilhante/seco no fortissimo), ressonância simpática por banco de ressonadores, **resposta do tampo** (curva de radiação do corpo de um piano de cauda em cascata de biquads: peito +5,5 dB/92 Hz, cavidade/262, scoop/900, bridge/2,8 kHz, ar/7,5 kHz, sub domado/55; knob `body`, unity em 0), **modos da madeira** (dez passa-faixas de alto Q nas frequências modais 70–740 Hz, aditivos, o anel que continua depois da nota; knob `ring`), EQ de corpo em 3 bandas, tampa (lowpass 2,5 kHz–16 kHz), chorus, reverb FDN (4 salas) e master (largura/trim/volume/soft-clip); smoothing por frames, buffers p/ 192 kHz, zero alocação no RT; reaproveita o player de amostras (`DSP-048`) com preset único por banco, fatiamento de eventos (`kMinSlice = 16`) e pedal de sustain que não furta voz em envelope preso | própria (`forja::pianoforge`: `dsp/Hammer`, `Resonance`, `Soundboard`, `Biquad`, `Filters`, `Space`, `Master` + `PianoEngine`/`Bundle` no TU `TSF_STATIC`) | Forja (cadeia portada do repo-irmão `pianoforge/`; camadas de corpo `body`/`ring` acrescentadas pela Forja; amostras via TinySoundFont MIT) | parcial: DSP, UI (1000×540, 19 params, aba MOTOR), FUNDAMENTOS, leitura `.pforge` e teste próprio (`forja_pianoforge_engine`, com prova de energia no peito 80–500 Hz) prontos; entra no FORJARACK como gaveta instrument (append-only); host e paridade de timbre offline pendentes | PIANOFORGE |
+| `DSP-050` | EQ paramétrico gráfico | cascata série de biquadros na ordem fixa HP → LP → 5 bandas → de-esser; coeficientes do Audio EQ Cookbook (RBJ) por tipo (campainha, prateleira baixa/alta, passa-alta/baixa, notch); HP/LP de esquina com 12/24 dB-oct em estágios e Q de Butterworth fixo; bandas ±18 dB, Q 0,1–10 log, 20 Hz–20 kHz; **de-esser** por diferença de envelope rápido/lento na banda 4–12 kHz com redução até −24 dB e escuta isolada, sem lookahead; processamento em double, troca de coeficiente com rampa de 10 ms, latência 0 medida por impulso; curva composta exposta como `compositeDbAt` estático (UI lê sem tocar no engine vivo) | própria (`forja::traco::TracoEngine`, header-only; UI `Forja/Source/forja/ui/ForjaEqGraph`) | Forja (coeficientes RBJ de domínio público; nenhum código Airwindows; RTA reusa `ForjaSpectrum`) | pronto: DSP, UI (1000×540, 42 params, grafo interativo + painel contextual Pro-Q + medidores in/out), FUNDAMENTOS e testes próprios (`forja_traco`, `forja_traco_processor`) verdes; sem paridade MIT por ser DSP original; host pendente | TRACO |
 
 **Estados possíveis:** `existe` · `parcial` · `planejado` · `descartado`.
 Nunca escreva `existe` sem ter rodado no host.
@@ -451,6 +452,23 @@ por mutação: com o `trim()` restaurado a asserção falha com o sintoma relata
 de áudio puro (render da mesma nota com presets diferentes) é auto-calibrada com uma
 captura de controle: se a renderização não se repete na máquina, ela se declara SKIP e
 não conta — sem o controle ela dava falso positivo e aprovava um seletor morto.
+
+**Também fora do catálogo de adaptações:** o **TRACO** (`Traco/Traco/`) é a sexta base da
+suíte e a segunda de DSP 100% próprio — um EQ paramétrico de controle gráfico (HP/LP de
+esquina, cinco bandas flexíveis e de-esser dedicado na sexta) com RTA de entrada e saída
+atrás da curva. O engine (`forja::traco::TracoEngine`, header-only, registrado como
+`DSP-050`) é uma cascata série de biquadros com coeficientes do Audio EQ Cookbook de
+**Robert Bristow-Johnson** (fórmulas de domínio público), processamento em double, rampa de
+10 ms e latência 0 medida por impulso; o de-esser detecta sibilo por diferença de envelope
+rápido/lento na banda — o conceito do ESCÓRIA, reimplementado do zero sem código Airwindows. A
+curva desenhada na UI vem de um `compositeDbAt` estático que reproduz a resposta do engine,
+para o gráfico nunca duplicar a matemática nem tocar no engine vivo da thread de áudio. O
+componente interativo novo é o `ForjaEqGraph` (em `forja_ui`), generico e reutilizável; o
+editor monta o fluxo estilo Pro-Q com painel contextual por seção. Sem paridade MIT por ser
+DSP original: valida-se por `forja_traco` (resposta por tom, cascatas, inclinações, de-esser,
+latência e zero alocação) e pela costura ponta a ponta `forja_traco_processor`. Estado: DSP,
+UI (1000×540, 42 parâmetros), FUNDAMENTOS e testes prontos; host pendente, como nas demais
+bases.
 
 **Pendências, em ordem:**
 

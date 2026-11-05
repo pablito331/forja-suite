@@ -246,6 +246,7 @@ $infoPorSlug = @{
     minisat    = "Minis/Minisat/Source/ForjaInfoText.h"
     drumforge  = "drumforge/Drumforge/Source/ForjaInfoText.h"
     pianoforge = "Pianos/Pianoforge/Source/ForjaInfoText.h"
+    traco      = "Traco/Traco/Source/ForjaInfoText.h"
 }
 
 function Test-LinhaPagina($linha) {

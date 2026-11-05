@@ -151,7 +151,7 @@ jobs:
         run: |
           $pkgsStr = '${{ needs.resolve.outputs.packages }}'
           $packages = @()
-          if ($pkgsStr -and $pkgsStr -ne '[]') { $packages = @($pkgsStr | ConvertFrom-Json) }
+          if ($pkgsStr -and $pkgsStr -ne '[]') { $packages = [array]($pkgsStr | ConvertFrom-Json) }
 
           try {
             if ($packages.Count -gt 0) {
@@ -201,7 +201,7 @@ jobs:
           $version = '${{ needs.resolve.outputs.version }}'
           $pkgsStr = '${{ needs.resolve.outputs.packages }}'
           $packages = @()
-          if ($pkgsStr -and $pkgsStr -ne '[]') { $packages = @($pkgsStr | ConvertFrom-Json) }
+          if ($pkgsStr -and $pkgsStr -ne '[]') { $packages = [array]($pkgsStr | ConvertFrom-Json) }
 
           if ($packages.Count -gt 0) {
             # Um .exe por package: restaura o payload daquele slug, roda o
@@ -249,7 +249,7 @@ jobs:
           $version = '${{ needs.resolve.outputs.version }}'
           $pkgsStr = '${{ needs.resolve.outputs.packages }}'
           $packages = @()
-          if ($pkgsStr -and $pkgsStr -ne '[]') { $packages = @($pkgsStr | ConvertFrom-Json) }
+          if ($pkgsStr -and $pkgsStr -ne '[]') { $packages = [array]($pkgsStr | ConvertFrom-Json) }
 
           if ($packages.Count -gt 0) {
             # Um .zip por package com a mesma cara do aggregate (VST3/ achatado

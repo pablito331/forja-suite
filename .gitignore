@@ -56,6 +56,10 @@ build/_shots/
 # Installer staging: payload coletado e .exe gerado sao saida de build
 installer/payload/
 installer/dist/
+# Trem com packages[] congela um payload por plugin aqui entre collect e ISCC
+installer/staging/
+# Raiz usada pelos steps de Package (windows/macos/linux) do release.yml
+/package/
 
 # Reference material kept locally (not part of the shipped suite)
 _ref/

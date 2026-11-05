@@ -77,6 +77,8 @@ foreach ($prop in $products.PSObject.Properties) {
 # Toda linha de products.json precisa ser utilizavel pelo coletor e pelo .iss:
 # pathFilters nao vazios para produto, readme existente, artifactBase sem espaco.
 $iss = Get-Content (Join-Path $PSScriptRoot "..\installer\forja.iss") -Raw
+$catalogo = Get-Content (Join-Path $PSScriptRoot "..\site\catalogo.json") -Raw -Encoding UTF8 | ConvertFrom-Json
+$slugsCatalogo = @($catalogo.itens | ForEach-Object { $_.slug })
 foreach ($prop in $products.PSObject.Properties) {
     if ($prop.Name -match '^_') { continue }
     $p = $prop.Value
@@ -105,6 +107,39 @@ foreach ($prop in $products.PSObject.Properties) {
         if ($bits.Count -ge 3) {
             if ($iss -notmatch ('#if defined\(ForjaColhido_' + $bits[-1] + '\)')) {
                 $fail++; Write-Host "FAIL $($prop.Name): grupo '$($bits[-1])' sem bloco ForjaColhido_$($bits[-1]) no forja.iss" -ForegroundColor Red
+            }
+        }
+    }
+
+    # packages[]: um plugin por artefato dentro do mesmo tag. Cada package
+    # obedece as mesmas regras dos campos do trem-pai, mais: slug precisa
+    # existir como item em site/catalogo.json (senao o card nao tem para onde
+    # apontar o download).
+    if ($p.kind -eq 'product' -and ($p.PSObject.Properties.Name -contains 'packages') -and $p.packages) {
+        foreach ($pkg in @($p.packages)) {
+            foreach ($campo in 'slug', 'display', 'artifactBase', 'pathFilter', 'testRegex', 'readme') {
+                if (-not ($pkg.PSObject.Properties.Name -contains $campo)) {
+                    $fail++; Write-Host "FAIL $($prop.Name)/pkg[$($pkg.slug)]: falta campo '$campo'" -ForegroundColor Red
+                }
+            }
+            if ($pkg.slug -and $slugsCatalogo -notcontains $pkg.slug) {
+                $fail++; Write-Host "FAIL $($prop.Name)/pkg[$($pkg.slug)]: slug nao existe em site/catalogo.json itens" -ForegroundColor Red
+            }
+            if ($pkg.artifactBase -match '\s') {
+                $fail++; Write-Host "FAIL $($prop.Name)/pkg[$($pkg.slug)]: artifactBase com espaco" -ForegroundColor Red
+            }
+            $bits = ($pkg.pathFilter -replace '\\', '/') -split '/'
+            if ($bits.Count -ge 3) {
+                if ($iss -notmatch ('#if defined\(ForjaColhido_' + $bits[-1] + '\)')) {
+                    $fail++; Write-Host "FAIL $($prop.Name)/pkg[$($pkg.slug)]: grupo '$($bits[-1])' sem bloco ForjaColhido_$($bits[-1]) no forja.iss" -ForegroundColor Red
+                }
+            }
+            $filtroRaiz = $bits[0]
+            if ($filtroRaiz -and -not (Test-Path (Join-Path (Join-Path $PSScriptRoot '..') $filtroRaiz))) {
+                $fail++; Write-Host "FAIL $($prop.Name)/pkg[$($pkg.slug)]: pathFilter aponta para pasta inexistente: $($pkg.pathFilter)" -ForegroundColor Red
+            }
+            if ($pkg.readme -and -not (Test-Path (Join-Path (Join-Path $PSScriptRoot '..') ($pkg.readme -replace '/', '\')))) {
+                $fail++; Write-Host "FAIL $($prop.Name)/pkg[$($pkg.slug)]: readme nao encontrado: $($pkg.readme)" -ForegroundColor Red
             }
         }
     }
@@ -138,6 +173,33 @@ foreach ($prop in $products.PSObject.Properties) {
     foreach ($nome in $selecionados) {
         if (-not $alvos.ContainsKey("forja_$nome")) {
             $fail++; Write-Host "FAIL $($prop.Name): teste '$nome' nao tem alvo 'forja_$nome' (regra do job de macOS)" -ForegroundColor Red
+        }
+    }
+
+    # Pacote: mesmo contrato de testRegex, e o pathFilter tem que estar
+    # coberto por um dos pathFilters do trem-pai (senao o build do macOS
+    # nao compila aquele plugin e o coletor local nao acha bundle).
+    if ($prop.Value.PSObject.Properties.Name -contains 'packages' -and $prop.Value.packages) {
+        $pais = @($prop.Value.pathFilters)
+        foreach ($pkg in @($prop.Value.packages)) {
+            $selPkg = @($testes.Keys | Where-Object { $_ -match $pkg.testRegex } | Sort-Object)
+            if ($selPkg.Count -eq 0) {
+                $fail++; Write-Host "FAIL $($prop.Name)/pkg[$($pkg.slug)]: testRegex '$($pkg.testRegex)' nao casa com nenhum teste" -ForegroundColor Red
+            }
+            foreach ($nome in $selPkg) {
+                if (-not $alvos.ContainsKey("forja_$nome")) {
+                    $fail++; Write-Host "FAIL $($prop.Name)/pkg[$($pkg.slug)]: teste '$nome' nao tem alvo 'forja_$nome'" -ForegroundColor Red
+                }
+            }
+            $pf = ($pkg.pathFilter -replace '\\', '/').TrimEnd('/')
+            $coberto = $false
+            foreach ($f in $pais) {
+                $fp = ($f -replace '\\', '/').TrimEnd('/')
+                if ($pf -eq $fp -or $pf.StartsWith("$fp/", [System.StringComparison]::Ordinal)) { $coberto = $true; break }
+            }
+            if (-not $coberto) {
+                $fail++; Write-Host "FAIL $($prop.Name)/pkg[$($pkg.slug)]: pathFilter '$($pkg.pathFilter)' nao esta coberto por pathFilters do trem ($($pais -join ', '))" -ForegroundColor Red
+            }
         }
     }
 }

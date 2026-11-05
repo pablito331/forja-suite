@@ -102,6 +102,74 @@ e o `forja_alloc_guard` (que inclui os 31 adaptadores num TU só). Dispara em pu
 `Forja/Source/**`, `Forja/CMakeLists.txt`, `Airwindows/Eq/Cinzel/**`, `Forjarack/**`,
 `Minis/**`, `drumforge/**`, `cmake/**` e `CMakeLists.txt`.
 
+## Empacotamento por plugin dentro de um trem (`packages`)
+
+Um trem de linha (ex.: `vminis-1.0.0`) normalmente empacota **um** `.zip` por SO e **um**
+instalador Windows, todos agregados. Quando a linha tem plugins independentes e o público
+pede download granular, o trem pode declarar `packages` em `ci/products.json`:
+
+```json
+"minis": {
+  "kind": "product",
+  "pathFilters": ["Minis"],
+  "testRegex": "^(canivete|minidrum|minisat)$",
+  "packages": [
+    { "slug": "canivete", "display": "CANIVETE", "artifactBase": "ForjaCanivete",
+      "pathFilter": "Minis/Canivete/Canivete", "testRegex": "^canivete$",
+      "readme": "Minis/Canivete/README.md" },
+    { "slug": "minidrum", "display": "MINIDRUM", "artifactBase": "ForjaMinidrum",
+      "pathFilter": "Minis/Minidrum/Minidrum", "testRegex": "^minidrum$",
+      "readme": "Minis/Minidrum/README.md" },
+    { "slug": "minisat",  "display": "MINISAT",  "artifactBase": "ForjaMinisat",
+      "pathFilter": "Minis/Minisat/Minisat",    "testRegex": "^minisat$",
+      "readme": "Minis/Minisat/README.md" }
+  ]
+}
+```
+
+Com `packages` presente:
+
+- **Build e testes continuam integrais** no Windows e no Linux (`pathFilters`/`testRegex`
+  do trem-pai), e o macOS só compila os `pathFilters` do trem-pai — nada muda na regra do
+  teto.
+- O `resolve` emite o output `packages` como JSON array. Vazio ou ausente é `[]`, e nesse
+  caso o comportamento antigo (aggregate) continua intacto.
+- O Windows faz **um `collect_payload` por package** (com o `pathFilter` e o `readme` do
+  package), congela cada payload em `installer/staging/<slug>/payload`, roda **um ISCC por
+  package** e renomeia o `.exe` para `<pkg.artifactBase>-<versão>-windows-x64.exe`. Depois
+  gera **um `.zip` por package** com o `VST3/` achatado daquele staging e o `LEIA-ME.txt`
+  correspondente. **Sem aggregate** quando `packages` está presente.
+- Linux e macOS espelham: um zip `<pkg.artifactBase>-<versão>-<so>.zip` por package.
+- O job `release` anexa **todos os assets na mesma tag**. A página da Release fica com N
+  pares `.zip`/`.exe` em vez de um pacote grande; os cards do site continuam apontando para
+  `/releases/tag/vminis-<v>` e o usuário escolhe o arquivo do SO dele.
+
+Contrato por package (o `ci/test_resolve.ps1` reprova antes de taggear):
+
+- `slug` precisa existir como item em `site/catalogo.json` (é o plugin que o card mostra).
+- `pathFilter` é **um** caminho de três segmentos (`Base/Família/Plugin`) coberto por um dos
+  `pathFilters` do trem-pai; o coletor agrupa pelo último segmento e o `installer/forja.iss`
+  precisa ter o bloco `#if defined(ForjaColhido_<Plugin>)` correspondente nos dois lados
+  (`[Components]` e `[Files]`).
+- `testRegex` casa com pelo menos um nome de teste do ctest, e cada nome tem
+  `forja_<nome>` em `Tests/CMakeLists.txt` (regra do macOS).
+- `artifactBase` é ASCII sem espaços e começa com `Forja` (o glob do upload é `Forja*.zip` /
+  `Forja*.exe`).
+- `readme` aponta para um arquivo existente no repo (o `.md` do próprio plugin é o normal).
+
+Quando **não** usar `packages`:
+
+- O produto é um só (Rack, Drumforge, Traco, Pianoforge): um zip já é granular o bastante.
+- A família Airwindows inteira: são 31 plugins que evoluem juntos; empacotar um por um
+  multiplicaria os assets por SO sem ganho real pro usuário (o instalador da suíte já tem
+  `[Components]`). Se um dia a linha quiser fatiar por família, dá pra adicionar `packages`
+  com granularidade de família em vez de plugin — a mesma machinery serve.
+
+Adicionar um package novo é append-only dentro do array do trem-pai (a ordem não é contrato
+público, mas manter a mesma ordem do `site/catalogo.json` ajuda leitura). Não precisa mexer
+no `forja.iss` se o grupo `<Plugin>` do `pathFilter` já tiver bloco — que é o caso dos três
+minis hoje.
+
 ## O teto do runner de macOS
 
 Medido em sonda (`workflow_dispatch` de cronômetro, runner gratuito de macOS, build
@@ -150,7 +218,8 @@ Nomes (`artifactBase` + versão resolvida do tag):
 | Trem | Windows | macOS / Linux |
 | --- | --- | --- |
 | suíte | `Forja-<tag>-windows-x64.exe` + `.zip` | `Forja-<tag>-macos-universal.zip`, `Forja-<tag>-linux-x64.zip` |
-| produto | `Forja<Produto>-<x.y.z>-windows-x64.exe` + `.zip` | `Forja<Produto>-<x.y.z>-<so>.zip` |
+| produto (sem `packages`) | `Forja<Produto>-<x.y.z>-windows-x64.exe` + `.zip` | `Forja<Produto>-<x.y.z>-<so>.zip` |
+| produto (com `packages`) | um par `.exe` + `.zip` **por package**, todos na mesma tag (`ForjaCanivete-<x.y.z>-...`, `ForjaMinidrum-<x.y.z>-...`, `ForjaMinisat-<x.y.z>-...`) | um `.zip` **por package** por SO (`ForjaCanivete-<x.y.z>-macos-universal.zip`, etc.) |
 
 O `.exe` é o instalador Inno Setup e só existe no Windows; o `.zip` é a pasta `VST3/`
 solta com o LEIA-ME. No produto, o LEIA-ME é o `readme` do registro (ex.:

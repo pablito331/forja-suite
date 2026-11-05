@@ -35,7 +35,11 @@ concurrency:
 
 jobs:
   # Lê ci/products.json e decide o que o trem empacota. Um job só, barato; os
-  # outputs saem em bruto para os jobs de SO consumirem.
+  # outputs saem em bruto para os jobs de SO consumirem. Quando o trem declara
+  # `packages`, o output homônimo sai como JSON array (`[{slug,display,
+  # artifactBase,pathFilter,testRegex,readme}, ...]`); vazio ou ausente é `[]`.
+  # Os jobs de SO trocam o empacotamento aggregate pelo loop 1-zip-por-plugin
+  # quando o array vem não-vazio (doc em docs/RELEASES.md).
   resolve:
     name: Resolve release train
     runs-on: ubuntu-22.04
@@ -48,6 +52,7 @@ jobs:
       pathFilters: ${{ steps.pick.outputs.pathFilters }}
       testRegex: ${{ steps.pick.outputs.testRegex }}
       leiam: ${{ steps.pick.outputs.leiam }}
+      packages: ${{ steps.pick.outputs.packages }}
       tag: ${{ steps.pick.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
@@ -83,6 +88,12 @@ jobs:
             LEIAM=$(jq -r --arg s "$SLUG" '.[$s].readme' ci/products.json)
             FILTERS=$(jq -r --arg s "$SLUG" '.[$s].pathFilters | join(",")' ci/products.json)
             TESTREGEX=$(jq -r --arg s "$SLUG" '.[$s].testRegex' ci/products.json)
+            # packages: sempre JSON valido, `[]` quando o trem nao declara. O
+            # `// []` cobre chave ausente; `if type=="array"` cobre valor
+            # malformado sem derrubar o job (o test_resolve.ps1 ja reprova).
+            PACKAGES=$(jq -c --arg s "$SLUG" '
+              (.[$s].packages // [])
+              | if type == "array" then . else [] end' ci/products.json)
           else
             KIND=suite
             SLUG=suite
@@ -92,6 +103,7 @@ jobs:
             LEIAM=$(jq -r '.suite.readme' ci/products.json)
             FILTERS=""
             TESTREGEX=$(jq -r '.suite.testRegex' ci/products.json)
+            PACKAGES="[]"
           fi
 
           {
@@ -104,9 +116,15 @@ jobs:
             echo "pathFilters=$FILTERS"
             echo "testRegex=$TESTREGEX"
             echo "leiam=$LEIAM"
+            echo "packages=$PACKAGES"
           } >> "$GITHUB_OUTPUT"
 
-          echo "trem: $KIND ($SLUG) versao $VERSION -> $BASE, filtros: ${FILTERS:-todos}"
+          NPKGS=$(echo "$PACKAGES" | jq 'length')
+          if [ "$NPKGS" -gt 0 ]; then
+            echo "trem: $KIND ($SLUG) versao $VERSION -> empacotando $NPKGS packages, sem aggregate"
+          else
+            echo "trem: $KIND ($SLUG) versao $VERSION -> $BASE, filtros: ${FILTERS:-todos}"
+          fi
 
   windows:
     name: Windows x64
@@ -131,19 +149,40 @@ jobs:
       - name: Stage installer payload
         shell: powershell
         run: |
-          $filters = '${{ needs.resolve.outputs.pathFilters }}'
-          $splat = @{
-            BuildRoot = 'build'
-            Clean     = $true
-            LeiamE    = '${{ needs.resolve.outputs.leiam }}'
-          }
-          if ($filters) { $splat['OnlyPath'] = @($filters -split ',') }
-          # O log do job de repo publico so abre para quem tem sessao, entao o
-          # erro vai para as anotacoes (tee para nao perder a saida do console).
+          $pkgsStr = '${{ needs.resolve.outputs.packages }}'
+          $packages = @()
+          if ($pkgsStr -and $pkgsStr -ne '[]') { $packages = @($pkgsStr | ConvertFrom-Json) }
+
           try {
-            & ./installer/collect_payload.ps1 @splat 2>&1 |
-              Tee-Object -FilePath payload.log | Out-Host
-            if (-not $?) { throw "collect_payload.ps1 terminou com sucesso falso" }
+            if ($packages.Count -gt 0) {
+              # Trem com packages: um collect por plugin, cada payload
+              # congelado em installer/staging/<slug>/payload para as duas
+              # etapas seguintes (ISCC e zip) consumirem em ordem.
+              $staging = 'installer/staging'
+              if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
+              New-Item -ItemType Directory -Force $staging | Out-Null
+              foreach ($pkg in $packages) {
+                Write-Host ("==> collect: " + $pkg.slug)
+                & ./installer/collect_payload.ps1 -BuildRoot build -Clean `
+                    -OnlyPath @($pkg.pathFilter) -LeiamE $pkg.readme 2>&1 |
+                  Tee-Object -FilePath "payload-$($pkg.slug).log" | Out-Host
+                if (-not $?) { throw "collect_payload[$($pkg.slug)] falhou" }
+                $dst = Join-Path $staging $pkg.slug
+                New-Item -ItemType Directory -Force $dst | Out-Null
+                Copy-Item installer/payload (Join-Path $dst 'payload') -Recurse -Force
+              }
+            } else {
+              $filters = '${{ needs.resolve.outputs.pathFilters }}'
+              $splat = @{
+                BuildRoot = 'build'
+                Clean     = $true
+                LeiamE    = '${{ needs.resolve.outputs.leiam }}'
+              }
+              if ($filters) { $splat['OnlyPath'] = @($filters -split ',') }
+              & ./installer/collect_payload.ps1 @splat 2>&1 |
+                Tee-Object -FilePath payload.log | Out-Host
+              if (-not $?) { throw "collect_payload.ps1 terminou com sucesso falso" }
+            }
           } catch {
             $msg = ("{0}: {1}" -f $_.Exception.GetType().FullName, $_.Exception.Message)
             $msg = $msg -replace '%', '%25' -replace "`r|`n", ' '
@@ -159,28 +198,80 @@ jobs:
           choco install innosetup --no-progress -y
           $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
           $kind = '${{ needs.resolve.outputs.kind }}'
-          $defines = @("/DAppVersion=${{ needs.resolve.outputs.tag }}")
-          if ($kind -eq 'product') {
-            $defines += "/DProductName=${{ needs.resolve.outputs.product }}"
-            $defines += "/DProductVersion=${{ needs.resolve.outputs.version }}"
+          $version = '${{ needs.resolve.outputs.version }}'
+          $pkgsStr = '${{ needs.resolve.outputs.packages }}'
+          $packages = @()
+          if ($pkgsStr -and $pkgsStr -ne '[]') { $packages = @($pkgsStr | ConvertFrom-Json) }
+
+          if ($packages.Count -gt 0) {
+            # Um .exe por package: restaura o payload daquele slug, roda o
+            # ISCC com ProductName/Version proprios, e renomeia o exe para
+            # <artifactBase>-<versao>-windows-x64.exe (o mesmo padrao do zip,
+            # garantindo que o glob Forja*.exe da etapa de upload pegue).
+            foreach ($pkg in $packages) {
+              if (Test-Path installer/payload) { Remove-Item installer/payload -Recurse -Force }
+              Copy-Item "installer/staging/$($pkg.slug)/payload" installer/payload -Recurse -Force
+              $defines = @(
+                "/DAppVersion=${{ needs.resolve.outputs.tag }}",
+                "/DProductName=$($pkg.display)",
+                "/DProductVersion=$version"
+              )
+              & $iscc @defines installer\forja.iss 2>&1 |
+                Tee-Object -FilePath "iscc-$($pkg.slug).log" | Out-Host
+              if (-not $?) {
+                $causa = Select-String -Path "iscc-$($pkg.slug).log" -Pattern '^Error' | Select-Object -Last 1
+                Write-Host ("::error::ISCC[$($pkg.slug)] falhou -- {0}" -f ("$causa" -replace '%','%25'))
+                exit 1
+              }
+              $exe = Get-ChildItem installer/dist -Filter *.exe |
+                Sort-Object LastWriteTime -Descending | Select-Object -First 1
+              if (-not $exe) { Write-Host "::error::ISCC[$($pkg.slug)] nao gerou .exe"; exit 1 }
+              Move-Item $exe.FullName "./$($pkg.artifactBase)-$version-windows-x64.exe" -Force
+            }
+          } else {
+            $defines = @("/DAppVersion=${{ needs.resolve.outputs.tag }}")
+            if ($kind -eq 'product') {
+              $defines += "/DProductName=${{ needs.resolve.outputs.product }}"
+              $defines += "/DProductVersion=$version"
+            }
+            & $iscc @defines installer\forja.iss 2>&1 | Tee-Object -FilePath iscc.log | Out-Host
+            if (-not $?) {
+              $causa = Select-String -Path iscc.log -Pattern '^Error' | Select-Object -Last 1
+              Write-Host ("::error::ISCC falhou -- {0}" -f ("$causa" -replace '%','%25'))
+              exit 1
+            }
+            Copy-Item installer/dist/Forja*.exe ./
           }
-          & $iscc @defines installer\forja.iss 2>&1 | Tee-Object -FilePath iscc.log | Out-Host
-          if (-not $?) {
-            $causa = Select-String -Path iscc.log -Pattern '^Error' | Select-Object -Last 1
-            Write-Host ("::error::ISCC falhou -- {0}" -f ("$causa" -replace '%','%25'))
-            exit 1
-          }
-          Copy-Item installer/dist/Forja*.exe ./
 
       - name: Package
         shell: powershell
         run: |
-          New-Item -ItemType Directory -Force package/VST3 | Out-Null
-          Get-ChildItem installer/payload -Recurse -Directory -Filter *.vst3 | ForEach-Object {
-            Copy-Item $_.FullName package/VST3/ -Recurse -Force
+          $version = '${{ needs.resolve.outputs.version }}'
+          $pkgsStr = '${{ needs.resolve.outputs.packages }}'
+          $packages = @()
+          if ($pkgsStr -and $pkgsStr -ne '[]') { $packages = @($pkgsStr | ConvertFrom-Json) }
+
+          if ($packages.Count -gt 0) {
+            # Um .zip por package com a mesma cara do aggregate (VST3/ achatado
+            # + LEIA-ME na raiz), so que lendo o payload congelado do staging.
+            foreach ($pkg in $packages) {
+              $src = "installer/staging/$($pkg.slug)/payload"
+              if (Test-Path package) { Remove-Item package -Recurse -Force }
+              New-Item -ItemType Directory -Force package/VST3 | Out-Null
+              Get-ChildItem $src -Recurse -Directory -Filter *.vst3 | ForEach-Object {
+                Copy-Item $_.FullName package/VST3/ -Recurse -Force
+              }
+              Copy-Item (Join-Path $src 'LEIA-ME.txt') package/LEIA-ME.txt -Force
+              Compress-Archive -Path package/* -DestinationPath "$($pkg.artifactBase)-$version-windows-x64.zip" -Force
+            }
+          } else {
+            New-Item -ItemType Directory -Force package/VST3 | Out-Null
+            Get-ChildItem installer/payload -Recurse -Directory -Filter *.vst3 | ForEach-Object {
+              Copy-Item $_.FullName package/VST3/ -Recurse -Force
+            }
+            Get-ChildItem installer/payload/LEIA-ME.txt | Copy-Item -Destination package/LEIA-ME.txt -Force
+            Compress-Archive -Path package/* -DestinationPath "${{ needs.resolve.outputs.artifactBase }}-$version-windows-x64.zip"
           }
-          Get-ChildItem installer/payload/LEIA-ME.txt | Copy-Item -Destination package/LEIA-ME.txt -Force
-          Compress-Archive -Path package/* -DestinationPath "${{ needs.resolve.outputs.artifactBase }}-${{ needs.resolve.outputs.version }}-windows-x64.zip"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -267,25 +358,51 @@ jobs:
 
       - name: Package
         run: |
-          mkdir -p package/VST3
-          FILTERS='${{ needs.resolve.outputs.pathFilters }}'
-          while IFS= read -r bundle; do
-            rel="${bundle#build/}"
-            if [ -z "$FILTERS" ]; then
-              cp -R "$bundle" package/VST3/
-              continue
-            fi
-            IFS=','; for filter in $FILTERS; do
-              case "$rel" in "$filter"*) cp -R "$bundle" package/VST3/ ;; esac
+          set -euo pipefail
+          VERSION='${{ needs.resolve.outputs.version }}'
+          PKGS='${{ needs.resolve.outputs.packages }}'
+          NPKGS=$(echo "$PKGS" | jq 'length')
+          if [ "$NPKGS" -gt 0 ]; then
+            # Um zip por plugin no mesmo tag; sem aggregate. O pathFilter do
+            # package e um prefixo do caminho relativo a build/ (ex.:
+            # Minis/Canivete/Canivete -> Minis/Canivete/Canivete/Canivete_artefacts/...).
+            for i in $(seq 0 $((NPKGS - 1))); do
+              SLUG=$(echo "$PKGS" | jq -r ".[$i].slug")
+              PF=$(echo "$PKGS" | jq -r ".[$i].pathFilter")
+              BASE=$(echo "$PKGS" | jq -r ".[$i].artifactBase")
+              LEIAM=$(echo "$PKGS" | jq -r ".[$i].readme")
+              echo "::group::package $SLUG"
+              rm -rf package
+              mkdir -p package/VST3
+              while IFS= read -r bundle; do
+                rel="${bundle#build/}"
+                case "$rel" in "$PF"*) cp -R "$bundle" package/VST3/ ;; esac
+              done < <(find build -type d -name "*.vst3" -path "*_artefacts*" | sort)
+              cp "$LEIAM" package/LEIA-ME.txt
+              (cd package && zip -qry "../${BASE}-${VERSION}-macos-universal.zip" .)
+              echo "::endgroup::"
             done
-          done < <(find build -type d -name "*.vst3" -path "*_artefacts*" | sort)
-          if [ '${{ needs.resolve.outputs.kind }}' = suite ]; then
-            cp docs/instalar/INSTALAR-MACOS.txt package/LEIA-ME.txt
           else
-            cp '${{ needs.resolve.outputs.leiam }}' package/LEIA-ME.txt
+            mkdir -p package/VST3
+            FILTERS='${{ needs.resolve.outputs.pathFilters }}'
+            while IFS= read -r bundle; do
+              rel="${bundle#build/}"
+              if [ -z "$FILTERS" ]; then
+                cp -R "$bundle" package/VST3/
+                continue
+              fi
+              IFS=','; for filter in $FILTERS; do
+                case "$rel" in "$filter"*) cp -R "$bundle" package/VST3/ ;; esac
+              done
+            done < <(find build -type d -name "*.vst3" -path "*_artefacts*" | sort)
+            if [ '${{ needs.resolve.outputs.kind }}' = suite ]; then
+              cp docs/instalar/INSTALAR-MACOS.txt package/LEIA-ME.txt
+            else
+              cp '${{ needs.resolve.outputs.leiam }}' package/LEIA-ME.txt
+            fi
+            cd package
+            zip -qry "../${{ needs.resolve.outputs.artifactBase }}-${VERSION}-macos-universal.zip" .
           fi
-          cd package
-          zip -qry "../${{ needs.resolve.outputs.artifactBase }}-${{ needs.resolve.outputs.version }}-macos-universal.zip" .
 
       - uses: actions/upload-artifact@v4
         with:
@@ -343,25 +460,49 @@ jobs:
 
       - name: Package
         run: |
-          mkdir -p package/VST3
-          FILTERS='${{ needs.resolve.outputs.pathFilters }}'
-          while IFS= read -r bundle; do
-            rel="${bundle#build/}"
-            if [ -z "$FILTERS" ]; then
-              cp -R "$bundle" package/VST3/
-              continue
-            fi
-            IFS=','; for filter in $FILTERS; do
-              case "$rel" in "$filter"*) cp -R "$bundle" package/VST3/ ;; esac
+          set -euo pipefail
+          VERSION='${{ needs.resolve.outputs.version }}'
+          PKGS='${{ needs.resolve.outputs.packages }}'
+          NPKGS=$(echo "$PKGS" | jq 'length')
+          if [ "$NPKGS" -gt 0 ]; then
+            # Espelho do job de macOS: um zip por plugin, sem aggregate.
+            for i in $(seq 0 $((NPKGS - 1))); do
+              SLUG=$(echo "$PKGS" | jq -r ".[$i].slug")
+              PF=$(echo "$PKGS" | jq -r ".[$i].pathFilter")
+              BASE=$(echo "$PKGS" | jq -r ".[$i].artifactBase")
+              LEIAM=$(echo "$PKGS" | jq -r ".[$i].readme")
+              echo "::group::package $SLUG"
+              rm -rf package
+              mkdir -p package/VST3
+              while IFS= read -r bundle; do
+                rel="${bundle#build/}"
+                case "$rel" in "$PF"*) cp -R "$bundle" package/VST3/ ;; esac
+              done < <(find build -type d -name "*.vst3" -path "*_artefacts*" | sort)
+              cp "$LEIAM" package/LEIA-ME.txt
+              (cd package && zip -qry "../${BASE}-${VERSION}-linux-x64.zip" .)
+              echo "::endgroup::"
             done
-          done < <(find build -type d -name "*.vst3" -path "*_artefacts*" | sort)
-          if [ '${{ needs.resolve.outputs.kind }}' = suite ]; then
-            cp docs/instalar/INSTALAR-LINUX.txt package/LEIA-ME.txt
           else
-            cp '${{ needs.resolve.outputs.leiam }}' package/LEIA-ME.txt
+            mkdir -p package/VST3
+            FILTERS='${{ needs.resolve.outputs.pathFilters }}'
+            while IFS= read -r bundle; do
+              rel="${bundle#build/}"
+              if [ -z "$FILTERS" ]; then
+                cp -R "$bundle" package/VST3/
+                continue
+              fi
+              IFS=','; for filter in $FILTERS; do
+                case "$rel" in "$filter"*) cp -R "$bundle" package/VST3/ ;; esac
+              done
+            done < <(find build -type d -name "*.vst3" -path "*_artefacts*" | sort)
+            if [ '${{ needs.resolve.outputs.kind }}' = suite ]; then
+              cp docs/instalar/INSTALAR-LINUX.txt package/LEIA-ME.txt
+            else
+              cp '${{ needs.resolve.outputs.leiam }}' package/LEIA-ME.txt
+            fi
+            cd package
+            zip -qry "../${{ needs.resolve.outputs.artifactBase }}-${VERSION}-linux-x64.zip" .
           fi
-          cd package
-          zip -qry "../${{ needs.resolve.outputs.artifactBase }}-${{ needs.resolve.outputs.version }}-linux-x64.zip" .
 
       - uses: actions/upload-artifact@v4
         with:

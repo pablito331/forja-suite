@@ -233,6 +233,18 @@ ctest --test-dir build -C Release --output-on-failure
   sonda em `docs/RELEASES.md`). Enquanto não houver shards, **tag de suíte para no build do
   macOS**. Se um trem novo precisar de macOS inteiro, fatiar é o trabalho, não subir o teto.
   Tag de produto **não** bumpa a versão da suíte. Passo a passo em `docs/RELEASES.md`.
+- **Packages dentro de um trem** (`ci/products.json`): um produto de linha pode declarar
+  `packages[]` para empacotar **um artefato por plugin dentro da mesma tag**, sem aggregate.
+  Hoje só `minis` usa (três packages: `canivete`, `minidrum`, `minisat`). Build e testes não
+  mudam — o que muda é o loop nos steps `Package`/`ISCC`/`collect_payload` do `release.yml`
+  (Windows) e `Package` (macOS/Linux). Cada package precisa de `slug` (existe em
+  `site/catalogo.json`), `pathFilter` de três segmentos coberto por um dos `pathFilters` do
+  trem-pai, `testRegex`, `artifactBase` começando com `Forja` e `readme` — o
+  `ci/test_resolve.ps1` reprova qualquer um fora do contrato. O `installer/forja.iss` já tem
+  os blocos `ForjaColhido_Canivete/Minidrum/Minisat`, então não precisa mexer. Antes de
+  taggar com packages, rode `ci/dryrun_packages.ps1 -Trem minis -Versao <v>` (produz os
+  `.exe`/`.zip` por plugin localmente com o mesmo shell da CI). Doc completo em
+  `docs/RELEASES.md`.
 - Site: `site/catalogo.json` é o conteúdo da página pública; `tools/build_site.ps1` gera o
   `site/index.html` commitado e `tools/validate_site.ps1` confere o catálogo contra os
   targets CMake, os `ForjaInfoText.h`, as capturas e o `ci/products.json` (roda na CI de

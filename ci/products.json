@@ -1,5 +1,5 @@
 {
-  "_": "Registro unico de produtos da Forja. Fonte de verdade para a CI de release (job resolve), para o coletor de payload (pathFilters) e para o catalogo do site (linha). Append-only: produto novo entra com tagPrefix novo e NUNCA reordena os existentes, porque o tagPrefix e o contrato publico do trem de release. ATENCAO 1: testRegex casa com o NOME DO TESTE do ctest (canivete, forjarack_engine, parity_cinzel, alloc_guard), nao com o target CMake (forja_canivete). ATENCAO 2: pathFilters de tres segmentos (Minis/Canivete/Canivete) fazem o coletor agrupar o payload pelo NOME DO PLUGIN; esse grupo precisa da linha correspondente no catalogo de familias do installer/forja.iss, senao o bundle e coletado mas nao instalado.",
+  "_": "Registro unico de produtos da Forja. Fonte de verdade para a CI de release (job resolve), para o coletor de payload (pathFilters) e para o catalogo do site (linha). Append-only: produto novo entra com tagPrefix novo e NUNCA reordena os existentes, porque o tagPrefix e o contrato publico do trem de release. ATENCAO 1: testRegex casa com o NOME DO TESTE do ctest (canivete, forjarack_engine, parity_cinzel, alloc_guard), nao com o target CMake (forja_canivete). ATENCAO 2: pathFilters de tres segmentos (Minis/Canivete/Canivete) fazem o coletor agrupar o payload pelo NOME DO PLUGIN; esse grupo precisa da linha correspondente no catalogo de familias do installer/forja.iss, senao o bundle e coletado mas nao instalado. ATENCAO 3: um trem pode declarar 'packages' (array) para empacotar 1 plugin por artefato dentro de uma MESMA tag; quando packages esta presente a CI NAO gera o zip aggregate do trem - gera N zips/instaladores, um por package, todos anexados a mesma Release. Cada package e { slug, display, artifactBase, pathFilter, testRegex, readme } e obedece as mesmas regras ATENCAO 1 e 2; slug deve existir em site/catalogo.json como item.",
 
   "suite": {
     "display": "Forja (suite completa)",
@@ -31,7 +31,33 @@
     "versionFrom": "1.0.0",
     "pathFilters": ["Minis"],
     "testRegex": "^(canivete|minidrum|minisat)$",
-    "readme": "docs/instalar/INSTALAR-WINDOWS.txt"
+    "readme": "docs/instalar/INSTALAR-WINDOWS.txt",
+    "packages": [
+      {
+        "slug": "canivete",
+        "display": "CANIVETE",
+        "artifactBase": "ForjaCanivete",
+        "pathFilter": "Minis/Canivete/Canivete",
+        "testRegex": "^canivete$",
+        "readme": "Minis/Canivete/README.md"
+      },
+      {
+        "slug": "minidrum",
+        "display": "MINIDRUM",
+        "artifactBase": "ForjaMinidrum",
+        "pathFilter": "Minis/Minidrum/Minidrum",
+        "testRegex": "^minidrum$",
+        "readme": "Minis/Minidrum/README.md"
+      },
+      {
+        "slug": "minisat",
+        "display": "MINISAT",
+        "artifactBase": "ForjaMinisat",
+        "pathFilter": "Minis/Minisat/Minisat",
+        "testRegex": "^minisat$",
+        "readme": "Minis/Minisat/README.md"
+      }
+    ]
   },
 
   "canivete": {

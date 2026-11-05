@@ -195,7 +195,7 @@ if ($catalogo.PSObject.Properties.Name -contains "repo" -and $catalogo.repo) { $
 $base = "https://github.com/$repo"
 
 function Get-TagMaisRecente {
-    param([string] $Prefixo)
+    param([string] $Prefixo, [string] $Filtro)
 
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) { return "" }
     try {
@@ -203,6 +203,8 @@ function Get-TagMaisRecente {
     }
     catch { return "" }
     if (-not $tags) { return "" }
+    if ($Filtro) { $tags = @($tags | Where-Object { $_ -match $Filtro }) }
+    if (@($tags).Count -eq 0) { return "" }
 
     # ordem de versao: mesmo truque do CI (sort -V) resolvido no PowerShell
     $ordenadas = $tags | ForEach-Object {
@@ -220,7 +222,13 @@ function Get-TagMaisRecente {
 function Get-UrlRelease {
     param([string] $Slug)
 
-    if ($Slug -eq "suite" -or -not $Slug) { return "$base/releases/latest" }
+    if ($Slug -eq "suite" -or -not $Slug) {
+        # Suíte usa tag sem prefixo (vX.Y.Z). Get-TagMaisRecente "v" casaria
+        # vrack-, vminis- etc; o filtro regex separa só os numericos.
+        $tag = Get-TagMaisRecente -Prefixo "v" -Filtro '^v\d+\.\d+\.\d+$'
+        if ($tag) { return "$base/releases/tag/$tag" }
+        return "$base/releases/latest"
+    }
 
     $nome = $Slug
     if (-not $produtos.PSObject.Properties.Name -contains $nome) { return "$base/releases" }

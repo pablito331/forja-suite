@@ -19,7 +19,7 @@
   <div class="pagina__hero">
     <h1>Pianos</h1>
     <p>Bons soundfonts de piano já existem; o corpo é que falta. O PIANOFORGE lê os seus e acrescenta o modelo físico.</p>
-    <p class="card__acoes"><a class="botao" href="https://github.com/pablito331/forja-suite/releases/tag/vpiano-1.0.3">Download</a></p>
+    <p class="card__acoes"><a class="botao" href="https://github.com/pablito331/forja-suite/releases/tag/vpiano-1.0.4">Download</a></p>
   </div>
 
   <section class="produto" id="pianoforge">
@@ -66,7 +66,7 @@
       <dt>Commit</dt><dd>vendor byte-exato em Forja/Source/forja/vendor/soundfont (SHA-256 em PROVENANCE.md); cadeia portada do projeto-irmão pianoforge; compressor é DSP original da Forja e o MESMO compressor de canal do mixer do Drumforge (mesmo algoritmo) em Pianos/Pianoforge/Source/engine/dsp/Compressor.h (detector de pico com decaimento, joelho 6 dB e redução suavizada em dB por dois tempos — ganho que não degrada —, ratio fixa em 5:1, threshold −40→0 dB — faixa do canal —, mais makeup de laço fechado (camada Forja); sem vendor e sem paridade de disco); shimmer é engine espectral proprio em Pianos/Pianoforge/Source/engine/dsp/Shimmer.h (FFT radix-2 + energia por bin com decaimento + fase aleatoria + shift fixo de oitava/quinta), tecnica reimplementada do Atlantis, sem vendor e sem paridade de disco</dd>
       <dt>Notas</dt><dd>O PIANOFORGE é o produto da suíte; o repositório irmão pianoforge fica como referência histórica de DSP. Não há paridade com a Airwindows — o compressor de um knob e o shimmer são DSP original da Forja (o shimmer nao e mais o reverb ClearCoat: e um resonador espectral original). Aqui os testes cobrem adoção de banco com reap, sustain, fatiamento de eventos, monotonia de tampa/martelo, o mapeamento bit-exato dos 23 parâmetros, a prova de energia no peito (banda 80–500 Hz) para corpo e madeira, a prova de que o compressor não degrada (THD baixo num seno puro, attack finito e ganho suavizado) e ainda assim ACHATA a macro-dinâmica segurando o nível (range alto/baixo cai, RMS no lugar) e que a CAUDA dosar o RT do halo espectral (halo que floresce, não eco que repete), a rejeição de .pforge com CRC errado e a ausência de alocação no áudio.</dd>
     </dl>
-    <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/tag/vpiano-1.0.3">Download</a></p>
+    <p class="card__acoes"><a class="botao botao--sm" href="https://github.com/pablito331/forja-suite/releases/tag/vpiano-1.0.4">Download</a></p>
   </section>
 </main>
 

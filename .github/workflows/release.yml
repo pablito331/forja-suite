@@ -240,7 +240,15 @@ jobs:
               Write-Host ("::error::ISCC falhou -- {0}" -f ("$causa" -replace '%','%25'))
               exit 1
             }
-            Copy-Item installer/dist/Forja*.exe ./
+            # O OutputBaseFilename do .iss usa o ProductName (ex.: "Drumforge",
+            # "TRACO"), que nem sempre comeca com "Forja". Renomeia para
+            # <artifactBase>-<versao>-windows-x64.exe -- o artifactBase e sempre
+            # Forja<Nome>, casando com o glob de upload (Forja*.exe).
+            $base = '${{ needs.resolve.outputs.artifactBase }}'
+            $exe = Get-ChildItem installer/dist -Filter *.exe |
+              Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            if (-not $exe) { Write-Host "::error::ISCC nao gerou .exe"; exit 1 }
+            Move-Item $exe.FullName "./${base}-$version-windows-x64.exe" -Force
           }
 
       - name: Package

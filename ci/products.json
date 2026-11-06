@@ -49,6 +49,11 @@
     "pathFilters": ["Minis"],
     "testRegex": "^(canivete|minidrum|minisat)$",
     "readme": "docs/instalar/INSTALAR-WINDOWS.txt",
+    "macosShards": [
+      { "name": "canivete", "pathFilters": ["Minis/Canivete"], "testRegex": "^canivete$" },
+      { "name": "minidrum", "pathFilters": ["Minis/Minidrum"], "testRegex": "^minidrum$" },
+      { "name": "minisat", "pathFilters": ["Minis/Minisat"], "testRegex": "^minisat$" }
+    ],
     "packages": [
       {
         "slug": "canivete",

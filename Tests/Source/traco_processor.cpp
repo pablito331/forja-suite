@@ -385,12 +385,18 @@ int main()
         TracoAudioProcessor revived;
         revived.setStateInformation (state.getData(), static_cast<int> (state.getSize()));
 
-        check (std::abs (rawOf (revived, "b3Freq") - 0.3f) < 1e-3
-               && rawOf (revived, "b3On") > 0.5f
-               && rawOf (revived, "hpOn") > 0.5f
-               && rawOf (revived, "essListen") > 0.5f
-               && rawOf (revived, "b1On") > 0.5f,
-               "estado sobrevive ao getState/setState em outro processador");
+        const float gotB3Freq = rawOf (revived, "b3Freq");
+        const float gotB3On = rawOf (revived, "b3On");
+        const float gotHpOn = rawOf (revived, "hpOn");
+        const float gotEssListen = rawOf (revived, "essListen");
+        const float gotB1On = rawOf (revived, "b1On");
+        std::printf ("  (round-trip: b3Freq=%.4f b3On=%.4f hpOn=%.4f essListen=%.4f b1On=%.4f)\n",
+                     gotB3Freq, gotB3On, gotHpOn, gotEssListen, gotB1On);
+        check (std::abs (gotB3Freq - 0.3f) < 1e-3, "round-trip: b3Freq sobrevive");
+        check (gotB3On > 0.5f, "round-trip: b3On sobrevive");
+        check (gotHpOn > 0.5f, "round-trip: hpOn sobrevive");
+        check (gotEssListen > 0.5f, "round-trip: essListen sobrevive");
+        check (gotB1On > 0.5f, "round-trip: b1On default (liga) sobrevive");
     }
 
     // --- Mono pela API do host ------------------------------------------------

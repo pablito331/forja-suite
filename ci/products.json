@@ -16,7 +16,7 @@
       { "name": "airwindows-eq",         "pathFilters": ["Airwindows/Eq"],         "testRegex": "^parity_(cinzel|lima|torno)$" },
       { "name": "airwindows-lofi",       "pathFilters": ["Airwindows/Lofi"],       "testRegex": "^parity_granalha$" },
       { "name": "airwindows-oneknob",    "pathFilters": ["Airwindows/OneKnob"],    "testRegex": "^parity_(cera|corpo|impeto|lixa|mel|rebarba)$" },
-      { "name": "airwindows-saturation", "pathFilters": ["Airwindows/Saturation"], "testRegex": "^parity_brasa$" },
+      { "name": "airwindows-saturation", "pathFilters": ["Airwindows/Saturation"], "testRegex": "^alloc_guard$" },
       { "name": "airwindows-space",      "pathFilters": ["Airwindows/Space"],      "testRegex": "^parity_(eco|folego|repique|salao)$" },
       { "name": "airwindows-strips",     "pathFilters": ["Airwindows/Strips"],     "testRegex": "^parity_(bigorna|cadinho)$" },
       { "name": "airwindows-tape",       "pathFilters": ["Airwindows/Tape"],       "testRegex": "^parity_(laminador|oxido)$" },
@@ -141,7 +141,7 @@
       { "name": "eq",         "pathFilters": ["Airwindows/Eq"],         "testRegex": "^parity_(cinzel|lima|torno)$" },
       { "name": "lofi",       "pathFilters": ["Airwindows/Lofi"],       "testRegex": "^parity_granalha$" },
       { "name": "oneknob",    "pathFilters": ["Airwindows/OneKnob"],    "testRegex": "^parity_(cera|corpo|impeto|lixa|mel|rebarba)$" },
-      { "name": "saturation", "pathFilters": ["Airwindows/Saturation"], "testRegex": "^parity_brasa$" },
+      { "name": "saturation", "pathFilters": ["Airwindows/Saturation"], "testRegex": "^alloc_guard$" },
       { "name": "space",      "pathFilters": ["Airwindows/Space"],      "testRegex": "^parity_(eco|folego|repique|salao)$" },
       { "name": "strips",     "pathFilters": ["Airwindows/Strips"],     "testRegex": "^parity_(bigorna|cadinho)$" },
       { "name": "tape",       "pathFilters": ["Airwindows/Tape"],       "testRegex": "^parity_(laminador|oxido)$" }

@@ -158,12 +158,12 @@ Name: "minisat"; Description: "Minisat - saturador de um knob"; Types: full cust
 #endif
 ; Base Pianos.
 #if defined(ForjaColhido_Pianos)
-Name: "pianos"; Description: "Pianos - Pianoforge, piano de soundfont com corpo fisico"; Types: full custom
+Name: "pianos"; Description: "Pianos - Pianoforge (Em construcao / Experimental)"; Types: custom
 #endif
 ; Trem de plugin unico da base Pianos: com -OnlyPath descendo ate a pasta do
 ; plugin (Pianos/Pianoforge/Pianoforge), o coletor agrupa pelo nome do plugin.
 #if defined(ForjaColhido_Pianoforge)
-Name: "pianoforge"; Description: "Pianoforge - piano de soundfont com corpo fisico"; Types: full custom
+Name: "pianoforge"; Description: "Pianoforge (Em construcao / Experimental)"; Types: custom
 #endif
 ; Base Traco (EQ grafico original Forja).
 #if defined(ForjaColhido_Traco)
@@ -236,6 +236,15 @@ Source: "payload\LICENSE.txt";   DestDir: "{commonappdata}\Forja"; Flags: ignore
 Source: "payload\LEIA-ME.txt";   DestDir: "{commonappdata}\Forja"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "..\docs\instalar\INSTALAR-MACOS.txt";    DestDir: "{commonappdata}\Forja"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "..\docs\instalar\INSTALAR-LINUX.txt";    DestDir: "{commonappdata}\Forja"; Flags: ignoreversion skipifsourcedoesntexist
+
+[Dirs]
+; Garante a criacao da arvore de pastas em Documents\Forja para presets, soundfonts, kits e gavetas
+Name: "{userdocs}\Forja"
+Name: "{userdocs}\Forja\Canivete"
+Name: "{userdocs}\Forja\Drumforge"
+Name: "{userdocs}\Forja\Drumforge\Kits"
+Name: "{userdocs}\Forja\Drumforge\Loops"
+Name: "{userdocs}\Forja\Rack"
 
 [Icons]
 Name: "{group}\Documentacao {#EfetivoName}"; Filename: "{commonappdata}\Forja\LEIA-ME.txt"; Tasks: docs

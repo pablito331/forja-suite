@@ -6,6 +6,13 @@ O arquivo traz os plugins em VST3 (x86_64). Todos usam DSP Airwindows
 
 VST3
 ----
+Instalacao automatica:
+1. Abra um terminal na pasta extraida.
+2. Execute o instalador:
+      bash instalar.sh
+   (copia os plugins para ~/.vst3/ e cria a pasta ~/Documents/Forja)
+
+Instalacao manual:
 1. Feche o seu DAW.
 2. Copie as pastas .vst3 de VST3/ para:
       ~/.vst3/

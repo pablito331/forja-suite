@@ -472,6 +472,10 @@ jobs:
                 case "$rel" in "$PF"*) cp -R "$bundle" package/VST3/ ;; esac
               done < <(find build -type d -name "*.vst3" -path "*_artefacts*" | sort)
               cp "$LEIAM" package/LEIA-ME.txt
+              if [ -f docs/instalar/instalar.sh ]; then
+                cp docs/instalar/instalar.sh package/
+                chmod +x package/instalar.sh
+              fi
               (cd package && zip -qry "../${BASE}-${VERSION}-linux-x64.zip" .)
               echo "::endgroup::"
             done
@@ -492,6 +496,10 @@ jobs:
               cp docs/instalar/INSTALAR-LINUX.txt package/LEIA-ME.txt
             else
               cp '${{ needs.resolve.outputs.leiam }}' package/LEIA-ME.txt
+            fi
+            if [ -f docs/instalar/instalar.sh ]; then
+              cp docs/instalar/instalar.sh package/
+              chmod +x package/instalar.sh
             fi
             cd package
             zip -qry "../${{ needs.resolve.outputs.artifactBase }}-${VERSION}-linux-x64.zip" .

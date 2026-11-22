@@ -14,6 +14,7 @@ on:
   push:
     tags:
       - "v*"
+      - "!vmac-*"
   workflow_dispatch:
     inputs:
       ref:

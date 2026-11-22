@@ -1,0 +1,78 @@
+name: Assemble macOS Suite Bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_tag:
+        description: 'Tag de destino da Suite (ex: v0.6.4)'
+        required: true
+        default: 'v0.6.4'
+
+permissions:
+  contents: write
+
+jobs:
+  assemble-macos:
+    name: Assemble and Upload macOS Suite Zip
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download macOS assets from product releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p dl/individual
+          mkdir -p bundle/VST3
+
+          echo "Buscando os zips de macOS mais recentes das releases de produtos..."
+          # Lista releases e baixa os zips de macOS universal
+          RELEASES=$(gh release list --limit 30 --json tagName -q '.[].tagName')
+
+          # Produtos esperados
+          # drumforge, rack, minis, traco, airwindows
+          echo "Releases encontradas: $RELEASES"
+
+          for tag in $RELEASES; do
+            # Pula a suite
+            if [[ "$tag" =~ ^v[0-9] ]]; then
+              continue
+            fi
+            echo "Verificando assets na release $tag..."
+            # Baixa arquivos que terminam com macos-universal.zip
+            gh release download "$tag" --pattern "*macos-universal.zip" --dir dl/individual || true
+          done
+
+          echo "Arquivos baixados:"
+          ls -la dl/individual/
+
+          # Descompacta todos os zips dentro de bundle/VST3
+          for zipfile in dl/individual/*.zip; do
+            if [ -f "$zipfile" ]; then
+              echo "Descompactando $zipfile..."
+              unzip -q -o "$zipfile" -d dl/unpacked
+              # Move os .vst3 para bundle/VST3
+              find dl/unpacked -type d -name "*.vst3" -exec cp -R {} bundle/VST3/ \;
+              rm -rf dl/unpacked
+            fi
+          done
+
+          # Copia LEIA-ME para macOS
+          if [ -f docs/instalar/INSTALAR-MACOS.txt ]; then
+            cp docs/instalar/INSTALAR-MACOS.txt bundle/LEIA-ME.txt
+          fi
+
+          echo "Conteúdo final de bundle/VST3:"
+          ls -la bundle/VST3/
+
+          # Cria o zip consolidado da suíte
+          TARGET_TAG="${{ github.event.inputs.target_tag }}"
+          ZIP_NAME="Forja-${TARGET_TAG}-macos-universal.zip"
+          (cd bundle && zip -qry "../$ZIP_NAME" .)
+
+          echo "Zip gerado: $ZIP_NAME"
+          ls -lh "$ZIP_NAME"
+
+          echo "Fazendo upload para a release $TARGET_TAG..."
+          gh release upload "$TARGET_TAG" "$ZIP_NAME" --clobber

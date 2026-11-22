@@ -1,6 +1,9 @@
 name: Build macOS Plugins
 
 on:
+  push:
+    tags:
+      - 'vmac-*'
   workflow_dispatch:
     inputs:
       target:
@@ -42,10 +45,24 @@ jobs:
           -DFORJA_LTO=OFF
           -DFORJA_STANDALONE=OFF
 
+      - name: Resolve target
+        id: resolve
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TARGET="${{ github.event.inputs.target }}"
+          else
+            # Extrai o alvo da tag, ex: vmac-minis -> minis, vmac-drumforge -> drumforge
+            TAG="${GITHUB_REF#refs/tags/}"
+            TARGET="${TAG#vmac-}"
+          fi
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          echo "Target resolvido: $TARGET"
+
       - name: Build target
         run: |
           set -euo pipefail
-          TARGET="${{ github.event.inputs.target }}"
+          TARGET="${{ steps.resolve.outputs.target }}"
           echo "Compilando $TARGET para macOS universal..."
 
           case "$TARGET" in
@@ -76,7 +93,7 @@ jobs:
       - name: Package VST3
         run: |
           set -euo pipefail
-          TARGET="${{ github.event.inputs.target }}"
+          TARGET="${{ steps.resolve.outputs.target }}"
           rm -rf package
           mkdir -p package/VST3
 
@@ -95,6 +112,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: macos-${{ github.event.inputs.target }}
+          name: macos-${{ steps.resolve.outputs.target }}
           path: Forja-*-macos-universal.zip
           if-no-files-found: error

@@ -43,6 +43,17 @@ inline void ensureLibraryDirectory()
 
     if (! directory.isDirectory())
         directory.createDirectory();
+
+    const auto root = directory.getParentDirectory();
+    if (root.isDirectory())
+    {
+        for (const auto& sub : { "Drumforge/Kits", "Drumforge/Loops", "Pianoforge", "Rack" })
+        {
+            auto dir = root.getChildFile (sub);
+            if (! dir.isDirectory())
+                dir.createDirectory();
+        }
+    }
 }
 
 } // namespace forja::canivete

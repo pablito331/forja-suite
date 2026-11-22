@@ -1,6 +1,7 @@
 #include "PluginProcessor.h"
 
 #include "PluginEditor.h"
+#include "forja/ForjaDirectories.h"
 
 #include <algorithm>
 
@@ -72,6 +73,8 @@ DrumforgeAudioProcessor::DrumforgeAudioProcessor()
 {
     aliveFlag = std::make_shared<std::atomic<bool>> (true);
     cacheParameterPointers();
+
+    forja::ensureForjaDirectories();
 
     startTimerHz (4);
 }

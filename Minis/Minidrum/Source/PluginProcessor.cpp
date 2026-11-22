@@ -1,6 +1,7 @@
 #include "PluginProcessor.h"
 
 #include "PluginEditor.h"
+#include "forja/ForjaDirectories.h"
 
 using forja::drumforge::mapping::trimDb;
 
@@ -21,6 +22,8 @@ MinidrumAudioProcessor::MinidrumAudioProcessor()
       apvts (*this, nullptr, "PARAMETERS", createParameterLayout())
 {
     volumeParam = apvts.getRawParameterValue ("volume");
+
+    forja::ensureForjaDirectories();
 
     // Reap dos kits substituidos; 4 Hz igual ao do Drumforge.
     startTimerHz (4);

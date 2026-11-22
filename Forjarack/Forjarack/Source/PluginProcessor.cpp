@@ -10,6 +10,7 @@
 #include "canivete/CaniveteRackModule.h"
 #include "canivete/BankLibrary.h"
 #include "PianoforgeRackModule.h"
+#include "forja/ForjaDirectories.h"
 
 namespace
 {
@@ -56,6 +57,8 @@ ForjarackAudioProcessor::ForjarackAudioProcessor()
       apvts (*this, nullptr, "PARAMETERS", createParameterLayout())
 {
     cacheParameterPointers();
+
+    forja::ensureForjaDirectories();
 
     // Gaveta hospedada: resolve a ficha publicada no catalogo e varre a pasta
     // uma vez (scan barato quando a pasta esta vazia; o botao PROCURAR revarre).

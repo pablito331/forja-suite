@@ -30,6 +30,7 @@ add_library(forja_ui STATIC
     Source/forja/ui/ForjaTapeArt.h
     Source/forja/ui/ForjaEditorBase.h
     Source/forja/ui/ForjaCanvas.h
+    Source/forja/ForjaDirectories.h
 )
 
 # O plugin e uma biblioteca compartilhada (.so no Linux, .dylib no macOS) e liga

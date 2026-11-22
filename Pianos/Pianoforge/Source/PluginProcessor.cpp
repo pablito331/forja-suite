@@ -39,6 +39,17 @@ void ensureLibraryDirectory()
 
     if (! directory.isDirectory())
         directory.createDirectory();
+
+    const auto root = directory.getParentDirectory();
+    if (root.isDirectory())
+    {
+        for (const auto& sub : { "Canivete", "Drumforge/Kits", "Drumforge/Loops", "Rack" })
+        {
+            auto dir = root.getChildFile (sub);
+            if (! dir.isDirectory())
+                dir.createDirectory();
+        }
+    }
 }
 
 const char* reverbRoomName (int type) noexcept

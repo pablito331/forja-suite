@@ -1,0 +1,100 @@
+name: Build macOS Plugins
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Qual grupo/produto compilar para macOS'
+        required: true
+        type: choice
+        options:
+          - 'minis'
+          - 'drumforge'
+          - 'rack'
+          - 'traco'
+          - 'airwindows-dynamics'
+          - 'airwindows-eq'
+          - 'airwindows-saturation'
+          - 'airwindows-space'
+          - 'airwindows-amps'
+          - 'airwindows-strips'
+          - 'airwindows-tape'
+          - 'airwindows-lofi'
+          - 'airwindows-oneknob'
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    name: Build macOS (${{ github.event.inputs.target }})
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
+          -DFORJA_LTO=OFF
+          -DFORJA_STANDALONE=OFF
+
+      - name: Build target
+        run: |
+          set -euo pipefail
+          TARGET="${{ github.event.inputs.target }}"
+          echo "Compilando $TARGET para macOS universal..."
+
+          case "$TARGET" in
+            minis)
+              cmake --build build/Minis --parallel
+              ;;
+            drumforge)
+              cmake --build build/drumforge --parallel
+              ;;
+            rack)
+              cmake --build build/Forjarack --parallel
+              ;;
+            traco)
+              cmake --build build/Traco --parallel
+              ;;
+            airwindows-*)
+              FAM="${TARGET#airwindows-}"
+              # Converte ex: dynamics -> Dynamics
+              FAM_CAP="$(tr '[:lower:]' '[:upper:]' <<< ${FAM:0:1})${FAM:1}"
+              cmake --build "build/Airwindows/$FAM_CAP" --parallel
+              ;;
+            *)
+              echo "Alvo desconhecido: $TARGET"
+              exit 1
+              ;;
+          esac
+
+      - name: Package VST3
+        run: |
+          set -euo pipefail
+          TARGET="${{ github.event.inputs.target }}"
+          rm -rf package
+          mkdir -p package/VST3
+
+          while IFS= read -r bundle; do
+            echo "Adicionando $bundle..."
+            cp -R "$bundle" package/VST3/
+          done < <(find build -type d -name "*.vst3" -path "*_artefacts*" | sort)
+
+          if [ -f docs/instalar/INSTALAR-MACOS.txt ]; then
+            cp docs/instalar/INSTALAR-MACOS.txt package/LEIA-ME.txt
+          fi
+
+          ZIP_NAME="Forja-${TARGET}-macos-universal.zip"
+          (cd package && zip -qry "../$ZIP_NAME" .)
+          echo "Pacote gerado: $ZIP_NAME"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ github.event.inputs.target }}
+          path: Forja-*-macos-universal.zip
+          if-no-files-found: error

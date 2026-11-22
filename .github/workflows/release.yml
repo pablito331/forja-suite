@@ -297,111 +297,8 @@ jobs:
   # testRegex do proprio trem (o que basta para rack, minis, drumforge, piano,
   # traco e os trens de um plugin). macos-shard compila e testa cada shard em
   # paralelo e sobe um tar.gz com os bundles daquele subtree, preservando o
-  # macOS roda apenas para produtos individuais (ex: vrack-, vdrumforge-, vminis-, etc.),
-  # onde a compilação é rápida (5 a 15 min). Para a suíte completa (v*), o pacote consolidado de macOS
-  # é montado juntando os zips já prontos das releases dos produtos.
-  macos:
-    name: macOS (Produtos)
-    if: needs.resolve.outputs.kind != 'suite'
-    needs: resolve
-    runs-on: macos-15
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure
-        run: >
-          cmake -S . -B build
-          -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
-          -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
-          -DFORJA_LTO=OFF
-          -DFORJA_STANDALONE=OFF
-
-      - name: Build
-        run: |
-          set -euo pipefail
-          FILTERS='${{ needs.resolve.outputs.pathFilters }}'
-          if [ -z "$FILTERS" ]; then
-            cmake --build build --parallel 2>&1 | tee -a build-macos.log
-          else
-            IFS=','; for filtro in $FILTERS; do
-              echo "::group::$filtro"
-              cmake --build "build/$filtro" --parallel 2>&1 | tee -a build-macos.log
-              echo "::endgroup::"
-            done
-          fi
-
-      - name: Test
-        run: |
-          set -euo pipefail
-          REGEX='${{ needs.resolve.outputs.testRegex }}'
-          if [ -z "$REGEX" ]; then
-            echo "sem testRegex neste trem"
-            exit 0
-          fi
-          nomes=$(ctest --test-dir build -N -R "$REGEX" |
-            sed -n 's/^[[:space:]]*Test[[:space:]]*#[[:space:]]*[0-9]*:[[:space:]]*//p' |
-            tr -d '\r')
-          if [ -z "$nomes" ]; then
-            echo "::error::nenhum teste casa com '$REGEX' de ci/products.json"
-            exit 1
-          fi
-          for nome in $nomes; do
-            alvo="forja_$nome"
-            cmake --build build --target "$alvo" --parallel 2>&1 | tee -a test-macos.log
-          done
-          ctest --test-dir build -R "$REGEX" --output-on-failure 2>&1 | tee -a test-macos.log
-
-      - name: Package
-        run: |
-          set -euo pipefail
-          VERSION='${{ needs.resolve.outputs.version }}'
-          BASE='${{ needs.resolve.outputs.artifactBase }}'
-          LEIAM='${{ needs.resolve.outputs.leiam }}'
-          PKGS='${{ needs.resolve.outputs.packages }}'
-
-          NPKGS=$(echo "$PKGS" | jq 'length')
-          if [ "$NPKGS" -gt 0 ]; then
-            for i in $(seq 0 $((NPKGS - 1))); do
-              SLUG=$(echo "$PKGS" | jq -r ".[$i].slug")
-              PF=$(echo "$PKGS" | jq -r ".[$i].pathFilter")
-              PBASE=$(echo "$PKGS" | jq -r ".[$i].artifactBase")
-              PLEIAM=$(echo "$PKGS" | jq -r ".[$i].readme")
-              echo "::group::package $SLUG"
-              rm -rf package
-              mkdir -p package/VST3
-              while IFS= read -r bundle; do
-                rel="${bundle#build/}"
-                case "$rel" in "$PF"*) cp -R "$bundle" package/VST3/ ;; esac
-              done < <(find build -type d -name "*.vst3" -path "*_artefacts*" | sort)
-              cp "$PLEIAM" package/LEIA-ME.txt
-              (cd package && zip -qry "../${PBASE}-${VERSION}-macos-universal.zip" .)
-              echo "::endgroup::"
-            done
-          else
-            rm -rf package
-            mkdir -p package/VST3
-            FILTERS='${{ needs.resolve.outputs.pathFilters }}'
-            while IFS= read -r bundle; do
-              rel="${bundle#build/}"
-              if [ -z "$FILTERS" ]; then
-                cp -R "$bundle" package/VST3/
-                continue
-              fi
-              IFS=','; for filter in $FILTERS; do
-                case "$rel" in "$filter"*) cp -R "$bundle" package/VST3/ ;; esac
-              done
-            done < <(find build -type d -name "*.vst3" -path "*_artefacts*" | sort)
-            cp "$LEIAM" package/LEIA-ME.txt
-            (cd package && zip -qry "../${BASE}-${VERSION}-macos-universal.zip" .)
-          fi
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: forja-macos-universal
-          path: Forja*.zip
-          if-no-files-found: error
+  # macOS compilado em workflow separado dedicado para nao atrasar nem misturar com Windows/Linux.
+  # Na suite completa (v*), os bundles de macOS sao consolidados a partir dos zips ja prontos.
 
   linux:
     name: Linux x64
@@ -513,8 +410,8 @@ jobs:
 
   release:
     name: Publish release
-    needs: [resolve, windows, macos, linux]
-    if: always() && startsWith(github.ref, 'refs/tags/v') && needs.resolve.result == 'success' && needs.windows.result == 'success' && needs.linux.result == 'success' && (needs.macos.result == 'success' || needs.macos.result == 'skipped')
+    needs: [resolve, windows, linux]
+    if: always() && startsWith(github.ref, 'refs/tags/v') && needs.resolve.result == 'success' && needs.windows.result == 'success' && needs.linux.result == 'success'
     permissions:
       contents: write
     runs-on: ubuntu-22.04
